@@ -466,7 +466,7 @@ export default async function handler(req, res) {
             // Load logo for PDF embedding via fetch (avoids serverless path issues)
             let logoBuffer = null;
             try {
-                const logoRes = await fetch('https://happycorner.top/loguito.png');
+                const logoRes = await fetch('https://happycorner.top/Happylogo.png');
                 if (logoRes.ok) {
                     const arrayBuf = await logoRes.arrayBuffer();
                     logoBuffer = Buffer.from(arrayBuf);
@@ -651,7 +651,7 @@ export default async function handler(req, res) {
             // Load logo for PDF embedding via fetch (avoids serverless path issues)
             let logoBuffer = null;
             try {
-                const logoRes = await fetch('https://happycorner.top/loguito.png');
+                const logoRes = await fetch('https://happycorner.top/Happylogo.png');
                 if (logoRes.ok) {
                     const arrayBuf = await logoRes.arrayBuffer();
                     logoBuffer = Buffer.from(arrayBuf);
