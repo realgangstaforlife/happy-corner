@@ -492,17 +492,23 @@
     <!-- CONTENT -->
     <div class="pos-container">
 
-        <!-- LEFT: CATALOG -->
-        <div class="pos-catalog-panel">
-            <div class="category-filter">
-                <button class="category-btn active" onclick="filterCategory('all')">Todos</button>
-                <button class="category-btn" onclick="filterCategory('dulces')">Dulces & Snacks 🍭</button>
-                <button class="category-btn" onclick="filterCategory('reposteria')">Repostería 🍪</button>
-                <button class="category-btn" onclick="filterCategory('combos')">Combos & Favoritos 🍕</button>
-            </div>
+        <!-- LEFT: CATALOG (wrapped for progressive blur) -->
+        <div style="position: relative; flex: 1.6; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-color);">
+            <div class="pos-catalog-panel" style="flex: 1; border-right: none; padding-bottom: 24px;">
+                <div class="category-filter">
+                    <button class="category-btn active" onclick="filterCategory('all')">Todos</button>
+                    <button class="category-btn" onclick="filterCategory('dulces')">Dulces &amp; Snacks 🍭</button>
+                    <button class="category-btn" onclick="filterCategory('reposteria')">Repostería 🍪</button>
+                    <button class="category-btn" onclick="filterCategory('combos')">Combos &amp; Favoritos 🍕</button>
+                </div>
 
-            <div class="products-grid" id="pos-products-list">
-                <!-- Loaded dynamically -->
+                <div class="products-grid" id="pos-products-list">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+            <!-- Progressive blur at the bottom of the product list -->
+            <div class="progressive-blur" style="top: auto; bottom: 0; height: 56px; z-index: 10;">
+                <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
             </div>
         </div>
 

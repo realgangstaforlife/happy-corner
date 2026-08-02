@@ -154,8 +154,8 @@ export default async function handler(req, res) {
         // Obtener datos del llamador (solo para email bodies donde se necesite el nombre)
         const callerSnap = await db.collection('users').doc(decoded.uid).get();
         const callerData = callerSnap.data() || {};
-        // Admin check via JWT custom claim — not via Firestore field (cannot be spoofed)
-        const isCallerAdmin = decoded.role === 'admin';
+        // Admin check consultando el rol del documento de Firestore
+        const isCallerAdmin = callerData.role === 'admin';
 
         // --- 3. ACCIÓN: deleteAccount (ACCESIBLE POR EL PROPIO USUARIO O POR ADMIN) ---
         if (action === 'deleteAccount') {
@@ -375,7 +375,13 @@ export default async function handler(req, res) {
             const cleanEmail = email.trim().toLowerCase();
 
             try {
-                // Generate link via Firebase Admin SDK
+                const userRecord = await auth.getUserByEmail(cleanEmail);
+                const providers = userRecord.providerData.map(p => p.providerId);
+
+                if (providers.includes('google.com') && !providers.includes('password')) {
+                    return json(res, 200, { ok: true, isGoogleOnly: true });
+                }
+
                 const actionCodeSettings = {
                     url: 'https://happycorner.top/auth/action'
                 };
@@ -422,12 +428,12 @@ export default async function handler(req, res) {
                         html: emailHtml
                     });
                 }
+
+                return json(res, 200, { ok: true, isGoogleOnly: false });
             } catch (err) {
                 console.log("sendPasswordReset handled silently or user not found:", err.message);
+                return json(res, 200, { ok: true, isGoogleOnly: false });
             }
-
-            // Always respond with success to prevent account enumeration
-            return json(res, 200, { ok: true, message: 'Si el correo existe, recibirás instrucciones de recuperación.' });
         }
 
         return json(res, 400, { error: 'Acción no válida' });

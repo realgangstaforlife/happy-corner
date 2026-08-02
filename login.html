@@ -237,7 +237,7 @@
     <!-- Script de autenticación -->
     <script type="module">
         import { initPromise, auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, db, doc, getDoc, setDoc } from './firebase-auth.js';
-        import { collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
 
         const loginBtn = document.getElementById('googleLoginBtn');
         const loginEmailBtn = document.getElementById('loginEmailBtn');
@@ -338,30 +338,6 @@
             }
             showLoading();
             try {
-                await initPromise;
-
-                // Check Firestore if account was created with Google only
-                const q = query(collection(db, 'users'), where('email', '==', email.toLowerCase()));
-                const querySnap = await getDocs(q);
-
-                let isGoogleOnly = false;
-                if (!querySnap.empty) {
-                    querySnap.forEach(d => {
-                        const data = d.data();
-                        if (data.provider === 'google.com' || data.provider === 'google') {
-                            isGoogleOnly = true;
-                        }
-                    });
-                }
-
-                if (isGoogleOnly) {
-                    hideLoading();
-                    errorMsg.innerText = "Esta cuenta inicia sesión con Google. No necesitas contraseña — solo toca 'Iniciar con Google'.";
-                    errorMsg.style.color = "#ff9d5c"; // Naranja de advertencia
-                    errorMsg.style.display = 'block';
-                    return;
-                }
-
                 // Call custom API sendPasswordReset
                 const res = await fetch('/api/account?action=sendPasswordReset', {
                     method: 'POST',
@@ -373,9 +349,15 @@
                 hideLoading();
 
                 if (res.ok && data.ok) {
-                    errorMsg.innerText = "¡Correo de recuperación enviado! Revisa tu bandeja de entrada.";
-                    errorMsg.style.color = "#2ecc71"; // Verde para éxito
-                    errorMsg.style.display = 'block';
+                    if (data.isGoogleOnly) {
+                        errorMsg.innerText = "Esta cuenta inicia sesión con Google. No necesitas contraseña — solo toca 'Iniciar con Google'.";
+                        errorMsg.style.color = "#ff9d5c"; // Naranja de advertencia
+                        errorMsg.style.display = 'block';
+                    } else {
+                        errorMsg.innerText = "Si el correo está registrado, te llegará un link para restablecer tu contraseña.";
+                        errorMsg.style.color = "#2ecc71"; // Verde para éxito
+                        errorMsg.style.display = 'block';
+                    }
                 } else {
                     hideLoading(data.error || "Error al enviar el correo de recuperación.");
                     errorMsg.style.color = "#e74c3c";

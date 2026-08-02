@@ -130,19 +130,33 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
     const page = pdfDoc.addPage([width, 842]); // A4
 
 
-    // ——— Header band ———
-    page.drawRectangle({ x: 0, y: 792, width, height: 50, color: pink });
+    // ——— Header band with horizontal gradient (pink to orange) ———
+    const numSteps = 30;
+    const stepWidth = width / numSteps;
+    for (let i = 0; i < numSteps; i++) {
+        const t = i / (numSteps - 1);
+        const r = 1.0;
+        const g = 0.3215 * (1 - t) + 0.6156 * t;
+        const b = 0.6 * (1 - t) + 0.3607 * t;
+        page.drawRectangle({
+            x: i * stepWidth,
+            y: 792,
+            width: stepWidth + 0.5, // slight overlap to avoid gaps
+            height: 50,
+            color: rgb(r, g, b)
+        });
+    }
 
     // Logo in header
     if (logoBuffer) {
         try {
             const logoImg = await pdfDoc.embedPng(logoBuffer);
-            page.drawImage(logoImg, { x: margin, y: 800, width: 34, height: 34 });
+            page.drawImage(logoImg, { x: margin, y: 795, width: 44, height: 44 });
         } catch { /* skip if logo embed fails */ }
     }
 
     // Brand name in header
-    const titleX = logoBuffer ? margin + 44 : margin;
+    const titleX = logoBuffer ? margin + 54 : margin;
     page.drawText('Happy Corner', { x: titleX, y: 810, size: 17, font: fontBold, color: rgb(1, 1, 1) });
     page.drawText('Contrato de Responsabilidad', { x: titleX, y: 797, size: 9, font: fontReg, color: rgb(1, 1, 1, 0.75) });
 
@@ -449,16 +463,17 @@ export default async function handler(req, res) {
                 ContentType: `image/${match[1]}`
             }));
 
-            // Generar PDF y subirlo a R2
-            // Load logo for PDF embedding
+            // Load logo for PDF embedding via fetch (avoids serverless path issues)
             let logoBuffer = null;
             try {
-                const { readFileSync } = await import('fs');
-                const { join, dirname } = await import('path');
-                const { fileURLToPath } = await import('url');
-                const __dirname = dirname(fileURLToPath(import.meta.url));
-                logoBuffer = readFileSync(join(__dirname, '..', 'loguito.png'));
-            } catch { /* logo not critical */ }
+                const logoRes = await fetch('https://happycorner.top/loguito.png');
+                if (logoRes.ok) {
+                    const arrayBuf = await logoRes.arrayBuffer();
+                    logoBuffer = Buffer.from(arrayBuf);
+                }
+            } catch (err) {
+                console.error("Logo fetch failed:", err.message);
+            }
 
             const pdfBuffer = await generarPdfContrato({
                 typedName,
@@ -598,14 +613,13 @@ export default async function handler(req, res) {
                 return json(res, 401, { error: 'Token inválido.' });
             }
 
-            // Verify caller is admin via custom claim (JWT-level — cannot be spoofed via Firestore)
-            if (decoded.role !== 'admin') {
-                return json(res, 403, { error: 'Acción permitida solo para administradores.' });
-            }
-
-            // Still fetch caller display name for the email body
+            // Still fetch caller display name and verify role for the email body / admin validation
             const callerSnap = await db.collection('users').doc(decoded.uid).get();
             const callerData = callerSnap.data() || {};
+
+            if (callerData.role !== 'admin') {
+                return json(res, 403, { error: 'Acción permitida solo para administradores.' });
+            }
 
             const { uid, typedName, signatureImage, userAgent, screenWidth, screenHeight, language } = req.body;
             if (!uid || !typedName || !signatureImage) {
@@ -634,15 +648,17 @@ export default async function handler(req, res) {
                 ContentType: `image/${match[1]}`
             }));
 
-            // Generar PDF y subirlo a R2
+            // Load logo for PDF embedding via fetch (avoids serverless path issues)
             let logoBuffer = null;
             try {
-                const { readFileSync } = await import('fs');
-                const { join, dirname } = await import('path');
-                const { fileURLToPath } = await import('url');
-                const __dirname = dirname(fileURLToPath(import.meta.url));
-                logoBuffer = readFileSync(join(__dirname, '..', 'loguito.png'));
-            } catch { /* logo not critical */ }
+                const logoRes = await fetch('https://happycorner.top/loguito.png');
+                if (logoRes.ok) {
+                    const arrayBuf = await logoRes.arrayBuffer();
+                    logoBuffer = Buffer.from(arrayBuf);
+                }
+            } catch (err) {
+                console.error("Logo fetch failed:", err.message);
+            }
 
             const pdfBuffer = await generarPdfContrato({
                 typedName,
