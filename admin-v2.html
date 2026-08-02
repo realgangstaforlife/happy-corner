@@ -75,84 +75,292 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .admin-nav {
+        /* --- App Shell: 3-column layout --- */
+        .admin-shell {
             display: flex;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.04);
-            padding: 4px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
+            height: calc(100vh - 60px); /* below topbar */
+            overflow: hidden;
         }
 
-        .nav-tab {
-            padding: 8px 16px;
-            border-radius: 8px;
+        /* ---- Sidebar ---- */
+        .admin-sidebar {
+            width: 220px;
+            min-width: 220px;
+            background: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            overflow-y: auto;
+            transition: transform 0.28s ease;
+            z-index: 90;
+        }
+
+        .sidebar-section-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 12px 20px 6px;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
             font-size: 14px;
             font-weight: 600;
             color: var(--text-muted);
+            cursor: pointer;
             border: none;
             background: transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
+            width: 100%;
+            text-align: left;
+            border-radius: 0;
+            transition: background 0.15s, color 0.15s;
         }
 
-        .nav-tab.active {
-            color: #fff;
-            background: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(255, 82, 153, 0.25);
+        .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text-color); }
+
+        .sidebar-item.active {
+            background: rgba(255, 82, 153, 0.12);
+            color: var(--primary-color);
+            border-right: 3px solid var(--primary-color);
         }
 
-        .admin-profile {
+        .sidebar-item .s-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
             display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .btn-logout-small {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            padding: 8px 14px;
-            border-radius: 8px;
-            color: var(--text-color);
-            font-family: inherit;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+        /* ---- Content area ---- */
+        .admin-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 32px;
+            transition: margin-right 0.28s ease;
         }
 
-        .btn-logout-small:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: var(--accent-red);
-            color: var(--accent-red);
-        }
-
-        /* --- Main Content Grid --- */
-        main.admin-main {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 32px 24px;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.25s ease; }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+        /* ---- Detail Panel (slide-in right) ---- */
+        .detail-panel {
+            width: 0;
+            min-width: 0;
+            background: var(--surface-color);
+            border-left: 1px solid var(--border-color);
+            overflow: hidden;
+            transition: width 0.28s ease, min-width 0.28s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-panel.open {
+            width: 340px;
+            min-width: 340px;
+        }
+
+        .detail-panel-inner {
+            width: 340px;
+            padding: 24px 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* ---- Greeting ---- */
+        .admin-greeting {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+
+        /* ---- Hoy tab: KPI cards ---- */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .kpi-card {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            cursor: default;
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        /* ---- Quick-access buttons ---- */
+        .quick-access {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        /* ---- Orders table (shared between Hoy and Pedidos) ---- */
+        .orders-table-wrap {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .orders-table thead th {
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        .orders-table tbody tr {
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.12s;
+        }
+
+        .orders-table tbody tr:last-child { border-bottom: none; }
+        .orders-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+        .orders-table tbody tr.selected { background: rgba(255,82,153,0.07); }
+
+        .orders-table tbody td {
+            padding: 11px 14px;
+            vertical-align: middle;
+        }
+
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .status-pending   { background: rgba(255,193,7,0.15);  color: #ffc107; }
+        .status-preparing { background: rgba(74,108,247,0.15); color: #4a6cf7; }
+        .status-ready     { background: rgba(39,174,96,0.15);  color: #27ae60; }
+        .status-completed { background: rgba(134,134,139,0.15);color: #86868b; }
+        .status-cancelled { background: rgba(235,87,87,0.15);  color: #eb5757; }
+
+        /* Detail panel styles */
+        .dp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dp-close {
+            background: none; border: none; color: var(--text-muted);
+            font-size: 20px; cursor: pointer; padding: 4px;
+            line-height: 1; border-radius: 6px;
+            transition: color 0.15s;
+        }
+        .dp-close:hover { color: var(--text-color); }
+        .dp-section-label {
+            font-size: 10px; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.07em;
+            margin: 16px 0 8px;
+        }
+        .dp-item-row {
+            display: flex; justify-content: space-between;
+            font-size: 13px; padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dp-item-row:last-child { border-bottom: none; }
+        .dp-meta-row {
+            display: flex; justify-content: space-between;
+            font-size: 12px; color: var(--text-muted); padding: 4px 0;
+        }
+        .dp-total {
+            display: flex; justify-content: space-between;
+            font-size: 16px; font-weight: 900;
+            padding: 12px 0; margin-top: 4px;
+            border-top: 1px dashed var(--border-color);
+            color: var(--primary-color);
+        }
+        .dp-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+        .dp-action-btn {
+            width: 100%; padding: 10px; border-radius: 10px;
+            border: none; font-family: inherit; font-size: 13px;
+            font-weight: 700; cursor: pointer; transition: opacity 0.15s;
+        }
+        .dp-action-btn:hover { opacity: 0.85; }
+        .dp-action-btn.primary { background: var(--hp-gradient); color: white; }
+        .dp-action-btn.danger  { background: rgba(235,87,87,0.12); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .dp-action-btn.muted   { background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+        /* ---- Mobile hamburger ---- */
+        .sidebar-hamburger {
+            display: none;
+            background: none; border: none;
+            color: var(--text-color); font-size: 22px;
+            cursor: pointer; padding: 4px 8px;
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 89;
+        }
+
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                position: fixed;
+                top: 60px; left: 0; bottom: 0;
+                transform: translateX(-100%);
+                z-index: 200;
             }
+            .admin-sidebar.open { transform: translateX(0); }
+            .sidebar-overlay.visible { display: block; }
+            .sidebar-hamburger { display: block; }
+            .admin-content { padding: 20px 16px; }
+            .detail-panel.open { position: fixed; top: 60px; right: 0; bottom: 0; width: 100%; min-width: unset; z-index: 201; border-left: none; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
         }
 
         /* --- Search & Inputs --- */
@@ -442,27 +650,142 @@
     </div>
 
     <!-- MAIN PANEL LAYOUT -->
-    <header class="admin-header">
+    <!-- TOP BAR -->
+    <header class="admin-header" style="height:60px; padding: 0 20px; box-sizing:border-box; display:flex; align-items:center; gap:12px;">
+        <button class="sidebar-hamburger" id="sidebar-hamburger" aria-label="Menu" onclick="toggleSidebar()">☰</button>
         <div class="header-logo">
             <img src="/happyfavicon.png" alt="Happy Corner Logo">
-            <span class="header-title">Happy Corner Admin</span>
+            <span class="header-title">Admin</span>
         </div>
-        <div class="admin-nav">
-            <button class="nav-tab active" onclick="switchTab('tab-clients')">👥 Buscar Clientes</button>
-            <button class="nav-tab" onclick="switchTab('tab-orders')">📦 Pedidos</button>
-            <button class="nav-tab" onclick="switchTab('tab-contracts')">📄 Contratos Firmados</button>
-            <button class="nav-tab" onclick="switchTab('tab-credit')">📊 Dashboard & Score</button>
-            <button class="nav-tab" onclick="switchTab('tab-analytics'); refreshAnalytics();">📈 Analíticas</button>
-        </div>
-        <div class="admin-profile">
-            <span id="admin-display-name"
-                style="font-size:14px; font-weight:600; color:var(--text-muted);">Administrador</span>
-            <a href="/pos-v2" class="btn-logout-small" style="text-decoration:none; display:inline-flex; align-items:center; background:#ff5299; color:white; margin-right:10px;">🛒 Ir al POS</a>
-            <button class="btn-logout-small" id="btn-logout">Cerrar Sesión</button>
+        <span class="admin-greeting" id="admin-greeting" style="margin-left:8px;"></span>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px;">
+            <span id="admin-display-name" style="font-size:13px; font-weight:600; color:var(--text-muted);">Administrador</span>
+            <a href="/pos-v2" class="btn-logout-small" style="text-decoration:none; display:inline-flex; align-items:center; background:#ff5299; color:white;">🛒 POS</a>
+            <button class="btn-logout-small" id="btn-logout">Salir</button>
         </div>
     </header>
 
-    <main class="admin-main">
+    <!-- SIDEBAR OVERLAY (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- 3-COLUMN SHELL -->
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <nav class="admin-sidebar" id="admin-sidebar">
+            <div class="sidebar-section-label">PANEL</div>
+            <button class="sidebar-item active" id="snav-today" onclick="switchSidebar('today')"><span class="s-icon">🏠</span> Hoy</button>
+            <button class="sidebar-item" id="snav-orders" onclick="switchSidebar('orders')"><span class="s-icon">📦</span> Pedidos</button>
+            <button class="sidebar-item" id="snav-clients" onclick="switchSidebar('clients')"><span class="s-icon">👥</span> Clientes</button>
+            <button class="sidebar-item" id="snav-contracts" onclick="switchSidebar('contracts')"><span class="s-icon">📄</span> Contratos</button>
+            <button class="sidebar-item" id="snav-credit" onclick="switchSidebar('credit')"><span class="s-icon">📊</span> Score</button>
+            <button class="sidebar-item" id="snav-analytics" onclick="switchSidebar('analytics'); refreshAnalytics();"><span class="s-icon">📈</span> Analíticas</button>
+            <div class="sidebar-section-label" style="margin-top:12px;">SISTEMA</div>
+            <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
+            <div class="sidebar-footer">
+                <span style="font-size:11px; color:var(--text-muted);">Happy Corner Admin v2</span>
+            </div>
+        </nav>
+
+        <!-- CONTENT AREA -->
+        <main class="admin-content">
+
+            <!-- ============================================== -->
+            <!-- TAB: HOY (default)                            -->
+            <!-- ============================================== -->
+            <div id="tab-today" class="tab-content active">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+                    <div>
+                        <h1 style="font-weight:900; font-size:24px; margin:0 0 4px;">Hoy</h1>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;" id="today-date-label"></p>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">💰 Ingresos Hoy</div>
+                        <div class="kpi-value" id="kpi-today-revenue" style="color:var(--primary-color);">$0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">📦 Pedidos Pendientes</div>
+                        <div class="kpi-value" id="kpi-today-pending" style="color:#ffc107;">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">💳 Deuda Total</div>
+                        <div class="kpi-value" id="kpi-today-debt" style="color:#4a6cf7;">$0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">👤 Clientes con Deuda</div>
+                        <div class="kpi-value" id="kpi-today-debtors" style="color:var(--accent-orange);">0</div>
+                    </div>
+                </div>
+
+                <!-- Quick access -->
+                <div class="quick-access">
+                    <a href="/pos-v2" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px;">🛒 Ir al POS</a>
+                    <button class="admin-btn" style="background:var(--accent-green); font-size:13px; padding:10px 18px;" onclick="openCreateClientModal()">➕ Crear Cliente</button>
+                    <button class="admin-btn" style="background:#333; color:var(--text-color); border:1px solid var(--border-color); font-size:13px; padding:10px 18px;" onclick="switchSidebar('contracts')">📄 Ver Contratos</button>
+                </div>
+
+                <!-- Today's orders table -->
+                <h3 style="font-weight:800; font-size:15px; margin-bottom:12px;">Pedidos de las últimas 24h</h3>
+                <div class="orders-table-wrap">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="today-orders-tbody">
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:24px;">Cargando pedidos de hoy...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ============================================== -->
+            <!-- TAB: ORDERS (tabla detallada)                 -->
+            <!-- ============================================== -->
+            <div id="tab-orders" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h2 style="font-weight:900; margin:0;">📦 Pedidos</h2>
+                </div>
+                <!-- Filtros -->
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+                    <input type="text" id="orders-search-input" class="admin-input" style="flex:1; min-width:200px;" placeholder="Buscar por # pedido, cliente, código...">
+                    <select id="order-status-filter-new" class="admin-input" style="width:180px;" onchange="renderOrdersTable()">
+                        <option value="all">Todos los estados</option>
+                        <option value="pending">⏳ Pendiente</option>
+                        <option value="preparing">👨‍🍳 Preparando</option>
+                        <option value="ready">📦 Listo</option>
+                        <option value="completed">✅ Entregado</option>
+                        <option value="cancelled">❌ Cancelado</option>
+                    </select>
+                </div>
+                <div class="orders-table-wrap">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th style="width:32px;"></th>
+                                <th># Pedido</th>
+                                <th>Cliente</th>
+                                <th>Estado</th>
+                                <th>Total</th>
+                                <th>Fecha</th>
+                                <th style="width:32px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-tbody">
+                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:24px;">Cargando pedidos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
         <!-- ============================================== -->
         <!-- TAB: CLIENTS -->
@@ -661,7 +984,30 @@
             </div>
         </div>
 
-    </main>
+            <!-- ============================================== -->
+            <!-- TAB: CONFIG                                   -->
+            <!-- ============================================== -->
+            <div id="tab-config" class="tab-content">
+                <h2 style="font-weight:900; margin-bottom:8px;">⚙️ Configuración del Sistema</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Ajustes generales y parámetros operativos.</p>
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px;">
+                    <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Terminal POS</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Acceso directo y configuración de la caja registradora.</div>
+                    <a href="/pos-v2" class="admin-btn" style="text-decoration:none; display:inline-block;">🛒 Abrir POS Terminal</a>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- RIGHT DETAIL PANEL (slide-in) -->
+        <aside class="detail-panel" id="detail-panel">
+            <div class="detail-panel-inner" id="detail-panel-inner">
+                <!-- Populated dynamically via openDetailPanel(orderId) -->
+            </div>
+        </aside>
+
+    </div><!-- /.admin-shell -->
+
 
     <!-- ============================================== -->
     <!-- MODAL: CLIENT DETAIL -->
@@ -1020,14 +1366,284 @@
         };
 
         // Tab switcher
+        // ==============================================
+        // SIDEBAR & TAB SWITCHING LOGIC
+        // ==============================================
         window.switchTab = function (tabId) {
-            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.sidebar-item').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
 
-            const targetBtn = Array.from(document.querySelectorAll('.nav-tab')).find(btn => btn.onclick.toString().includes(tabId));
+            const sectionName = tabId.replace('tab-', '');
+            const targetBtn = document.getElementById(`snav-${sectionName}`);
             if (targetBtn) targetBtn.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.classList.add('active');
         };
+
+        window.switchSidebar = function (section) {
+            // Close mobile sidebar if open
+            const sidebar = document.getElementById('admin-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('visible');
+
+            switchTab(`tab-${section}`);
+            if (section === 'today') renderTodayTab();
+            if (section === 'orders') renderOrdersTable();
+        };
+
+        window.toggleSidebar = function () {
+            const sidebar = document.getElementById('admin-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar) sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('visible');
+        };
+
+        // Greeting update
+        function updateGreeting(name = 'Evan') {
+            const hour = new Date().getHours();
+            let g = 'Buenas noches';
+            if (hour >= 6 && hour < 12) g = 'Buenos días';
+            else if (hour >= 12 && hour < 19) g = 'Buenas tardes';
+            
+            const el = document.getElementById('admin-greeting');
+            if (el) el.textContent = `${g}, ${name}`;
+        }
+
+        // ==============================================
+        // DETAIL PANEL LOGIC
+        // ==============================================
+        let selectedOrderId = null;
+
+        window.openDetailPanel = function (orderId) {
+            selectedOrderId = orderId;
+            const order = allOrders.find(o => o.id === orderId);
+            const panel = document.getElementById('detail-panel');
+            const inner = document.getElementById('detail-panel-inner');
+            if (!panel || !inner || !order) return;
+
+            // Highlight selected row
+            document.querySelectorAll('.orders-table tbody tr').forEach(r => r.classList.remove('selected'));
+            const row = document.getElementById(`order-row-${orderId}`);
+            if (row) row.classList.add('selected');
+
+            // Find client info
+            const client = currentClientsList.find(c => c.uid === (order.customerUID || order.customer?.uid)) || {};
+            const clientName = client.displayName || client.name || order.nombre || 'Cliente Anónimo';
+            const avatar = client.photoURL 
+                ? `<img src="${client.photoURL}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">`
+                : `<div style="width:40px; height:40px; border-radius:50%; background:var(--primary-color); color:white; display:flex; align-items:center; justify-content:center; font-weight:700;">${clientName.charAt(0).toUpperCase()}</div>`;
+
+            // Format items
+            let itemsHtml = '';
+            if (Array.isArray(order.items) && order.items.length > 0) {
+                itemsHtml = order.items.map(item => `
+                    <div class="dp-item-row">
+                        <span>${item.qty || 1}x ${item.name || item.titulo || 'Producto'}</span>
+                        <span style="font-weight:700;">$${((item.price || item.precio || 0) * (item.qty || 1)).toLocaleString('es-CO')}</span>
+                    </div>
+                `).join('');
+            } else {
+                itemsHtml = `<div style="font-size:13px; color:var(--text-muted);">${order.resumen || order.itemsSummary || 'Sin detalle de productos'}</div>`;
+            }
+
+            // Action buttons state
+            let actionsHtml = '';
+            if (order.status === 'pending') {
+                actionsHtml = `
+                    <button class="dp-action-btn primary" onclick="updateOrderStatus('${order.id}', 'preparing')">👨‍🍳 Marcar Preparando</button>
+                    <button class="dp-action-btn danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">✕ Cancelar Pedido</button>
+                `;
+            } else if (order.status === 'preparing') {
+                actionsHtml = `
+                    <button class="dp-action-btn primary" onclick="updateOrderStatus('${order.id}', 'ready')">📦 Marcar Listo para Entrega</button>
+                    <button class="dp-action-btn danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">✕ Cancelar Pedido</button>
+                `;
+            } else if (order.status === 'ready') {
+                actionsHtml = `
+                    <button class="dp-action-btn primary" style="background:var(--accent-green);" onclick="updateOrderStatus('${order.id}', 'completed')">✅ Marcar Entregado</button>
+                    <button class="dp-action-btn danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">✕ Cancelar Pedido</button>
+                `;
+            } else if (order.status === 'completed') {
+                actionsHtml = `<div style="text-align:center; color:var(--accent-green); font-weight:700; font-size:13px; padding:8px;">✅ Pedido Completado</div>`;
+            } else if (order.status === 'cancelled') {
+                actionsHtml = `<div style="text-align:center; color:var(--accent-red); font-weight:700; font-size:13px; padding:8px;">❌ Pedido Cancelado</div>`;
+            }
+
+            const dateStr = order.createdAt ? new Date(order.createdAt).toLocaleString('es-CO') : '—';
+
+            inner.innerHTML = `
+                <div class="dp-header">
+                    <div>
+                        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Pedido</div>
+                        <h3 style="font-weight:900; margin:2px 0 0; font-size:18px;">#${order.id}</h3>
+                    </div>
+                    <button class="dp-close" onclick="closeDetailPanel()">✕</button>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                    ${avatar}
+                    <div>
+                        <div style="font-weight:700; font-size:14px;">${clientName}</div>
+                        <div style="font-size:12px; color:var(--text-muted);">${client.phone || order.telefono || 'Sin teléfono'}</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:16px;">
+                    ${getStatusBadgeHtml(order.status)}
+                </div>
+
+                <div class="dp-section-label">ÍTEMS</div>
+                <div style="margin-bottom:12px;">${itemsHtml}</div>
+
+                <div class="dp-total">
+                    <span>Total</span>
+                    <span>$${parsePrice(order.total).toLocaleString('es-CO')}</span>
+                </div>
+
+                <div class="dp-section-label">DETALLES</div>
+                <div class="dp-meta-row"><span>Fecha:</span><span>${dateStr}</span></div>
+                <div class="dp-meta-row"><span>Método pago:</span><span style="text-transform:capitalize;">${order.paymentMethod || 'Efectivo'}</span></div>
+                <div class="dp-meta-row"><span>Tipo entrega:</span><span>${order.deliveryType || 'Presencial'}</span></div>
+
+                <div class="dp-actions">${actionsHtml}</div>
+            `;
+
+            panel.classList.add('open');
+        };
+
+        window.closeDetailPanel = function () {
+            const panel = document.getElementById('detail-panel');
+            if (panel) panel.classList.remove('open');
+            document.querySelectorAll('.orders-table tbody tr').forEach(r => r.classList.remove('selected'));
+            selectedOrderId = null;
+        };
+
+        function getStatusBadgeHtml(status) {
+            const map = {
+                pending: '<span class="status-badge status-pending">⏳ Pendiente</span>',
+                preparing: '<span class="status-badge status-preparing">👨‍🍳 Preparando</span>',
+                ready: '<span class="status-badge status-ready">📦 Listo</span>',
+                completed: '<span class="status-badge status-completed">✅ Entregado</span>',
+                cancelled: '<span class="status-badge status-cancelled">❌ Cancelado</span>'
+            };
+            return map[status] || `<span class="status-badge status-completed">${status || 'Completado'}</span>`;
+        }
+
+        // ==============================================
+        // HOY TAB LOGIC
+        // ==============================================
+        function renderTodayTab() {
+            const now = new Date();
+            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+            // 24h filter
+            const todayOrders = allOrders.filter(o => {
+                if (!o.createdAt) return false;
+                const ts = typeof o.createdAt === 'string'
+                    ? new Date(o.createdAt)
+                    : (o.createdAt?.seconds ? new Date(o.createdAt.seconds * 1000) : new Date(Number(o.createdAt)));
+                return ts >= startOfDay;
+            });
+
+            // KPIs
+            const todayRevenue = todayOrders
+                .filter(o => o.status !== 'cancelled')
+                .reduce((sum, o) => sum + parsePrice(o.total), 0);
+
+            const pendingCount = allOrders.filter(o => o.status === 'pending' || o.status === 'preparing').length;
+
+            const totalDebt = currentClientsList.reduce((sum, c) => sum + (c.activeDebt || 0), 0);
+            const debtorsCount = currentClientsList.filter(c => (c.activeDebt || 0) > 0).length;
+
+            // Set KPI labels
+            const elRev = document.getElementById('kpi-today-revenue');
+            const elPen = document.getElementById('kpi-today-pending');
+            const elDeb = document.getElementById('kpi-today-debt');
+            const elDbt = document.getElementById('kpi-today-debtors');
+            const elDate = document.getElementById('today-date-label');
+
+            if (elRev) elRev.textContent = `$${Math.round(todayRevenue).toLocaleString('es-CO')}`;
+            if (elPen) elPen.textContent = pendingCount;
+            if (elDeb) elDeb.textContent = `$${Math.round(totalDebt).toLocaleString('es-CO')}`;
+            if (elDbt) elDbt.textContent = debtorsCount;
+            if (elDate) elDate.textContent = now.toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            // Render today table
+            const tbody = document.getElementById('today-orders-tbody');
+            if (!tbody) return;
+
+            if (todayOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:24px;">No hay pedidos registrados el día de hoy.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = todayOrders.map(o => {
+                const client = currentClientsList.find(c => c.uid === (o.customerUID || o.customer?.uid));
+                const name = client?.displayName || client?.name || o.nombre || 'Cliente Anónimo';
+                return `
+                    <tr id="order-row-${o.id}" onclick="openDetailPanel('${o.id}')">
+                        <td style="font-weight:700; color:var(--primary-color);">#${o.id.slice(0, 8)}</td>
+                        <td style="font-weight:600;">${name}</td>
+                        <td style="font-weight:700;">$${parsePrice(o.total).toLocaleString('es-CO')}</td>
+                        <td>${getStatusBadgeHtml(o.status)}</td>
+                        <td><button class="admin-btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation(); openDetailPanel('${o.id}');">Ver</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // ==============================================
+        // ORDERS TABLE RENDERER (detallada)
+        // ==============================================
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-table-tbody');
+            if (!tbody) return;
+
+            const searchInput = document.getElementById('orders-search-input');
+            const filterInput = document.getElementById('order-status-filter-new');
+
+            const queryStr = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const statusFilter = filterInput ? filterInput.value : 'all';
+
+            let filtered = allOrders.filter(o => {
+                const client = currentClientsList.find(c => c.uid === (o.customerUID || o.customer?.uid));
+                const name = client?.displayName || client?.name || o.nombre || '';
+                const text = `${o.id} ${name} ${o.resumen || ''}`.toLowerCase();
+
+                if (queryStr && !text.includes(queryStr)) return false;
+                if (statusFilter !== 'all' && o.status !== statusFilter) return false;
+                return true;
+            });
+
+            // Sort newest first
+            filtered.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:30px;">No se encontraron pedidos.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(o => {
+                const client = currentClientsList.find(c => c.uid === (o.customerUID || o.customer?.uid));
+                const name = client?.displayName || client?.name || o.nombre || 'Cliente Anónimo';
+                const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+                const isSelected = selectedOrderId === o.id ? 'selected' : '';
+
+                return `
+                    <tr id="order-row-${o.id}" class="${isSelected}" onclick="openDetailPanel('${o.id}')">
+                        <td style="color:var(--text-muted);">📦</td>
+                        <td style="font-weight:700; color:var(--primary-color);">#${o.id.slice(0, 10)}</td>
+                        <td style="font-weight:600;">${name}</td>
+                        <td>${getStatusBadgeHtml(o.status)}</td>
+                        <td style="font-weight:800;">$${parsePrice(o.total).toLocaleString('es-CO')}</td>
+                        <td style="color:var(--text-muted); font-size:12px;">${dateStr}</td>
+                        <td style="color:var(--text-muted); font-size:16px;">···</td>
+                    </tr>
+                `;
+            }).join('');
+        }
 
         // ==============================================
         // CORE MODULE LOGIC
@@ -1035,6 +1651,7 @@
         let allOrders = [];
 
         function initAdminPanel() {
+            updateGreeting();
             // Real-time setup
             setupClientsListener();
             setupOrdersListener();
@@ -1046,10 +1663,8 @@
                 renderClients(e.target.value);
             });
 
-            // Setup orders filters typing & change helpers
-            document.getElementById('order-search-input').addEventListener('input', () => renderOrders());
-            document.getElementById('order-status-filter').addEventListener('change', () => renderOrders());
-            document.getElementById('order-sort-filter').addEventListener('change', () => renderOrders());
+            const osi = document.getElementById('orders-search-input');
+            if (osi) osi.addEventListener('input', () => renderOrdersTable());
         }
 
         // Users listener
@@ -1129,7 +1744,9 @@
                     list.push({ id: d.id, ...d.data() });
                 });
                 allOrders = list;
-                renderOrders();
+                renderTodayTab();
+                renderOrdersTable();
+                if (selectedOrderId) openDetailPanel(selectedOrderId);
             }, (err) => {
                 console.error("Orders listener failed", err);
             });

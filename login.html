@@ -201,7 +201,7 @@
 
     <!-- Script de autenticación -->
     <script type="module">
-        import { initPromise, auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, db, doc, getDoc, setDoc } from './firebase-auth.js';
+        import { initPromise, auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, db, doc, getDoc, setDoc, collection, query, where, getDocs } from './firebase-auth.js';
 
         const loginBtn = document.getElementById('googleLoginBtn');
         const loginEmailBtn = document.getElementById('loginEmailBtn');
@@ -248,6 +248,7 @@
             const userRef = doc(db, 'users', user.uid);
             const userSnap = await getDoc(userRef);
             const email = user.email || null; // Google always provides email; email/password always has it too
+            const providerId = user.providerData?.[0]?.providerId || 'password';
 
             if (!userSnap.exists()) {
                 // New user: create profile with new schema
@@ -257,6 +258,7 @@
                     displayName: displayName,
                     name: displayName,
                     email: email,
+                    provider: providerId,
                     photoURL: user.photoURL || null,
                     activeDebt: 0,
                     happyPoints: 0,
@@ -271,10 +273,15 @@
                 window.location.href = '/onboarding';
             } else {
                 const userData = userSnap.data();
-                // Auto-backfill email for legacy accounts
-                if (!userData.email && email) {
-                    await setDoc(userRef, { email: email }, { merge: true });
+                // Auto-backfill email / provider for legacy accounts
+                const updates = {};
+                if (!userData.email && email) updates.email = email;
+                if (!userData.provider) updates.provider = providerId;
+
+                if (Object.keys(updates).length > 0) {
+                    await setDoc(userRef, updates, { merge: true });
                 }
+
                 logLoginSession(user);
                 if (!userData.customerCode) {
                     window.location.href = '/onboarding';
@@ -287,7 +294,7 @@
         // Forgot Password
         forgotPasswordLink.addEventListener('click', async (e) => {
             e.preventDefault();
-            const email = emailInput.value;
+            const email = emailInput.value.trim();
             if (!email) {
                 errorMsg.innerText = "Por favor ingresa tu correo para recuperar la contraseña.";
                 errorMsg.style.display = 'block';
@@ -296,15 +303,51 @@
             showLoading();
             try {
                 await initPromise;
-                await sendPasswordResetEmail(auth, email);
+
+                // Check Firestore if account was created with Google only
+                const q = query(collection(db, 'users'), where('email', '==', email.toLowerCase()));
+                const querySnap = await getDocs(q);
+
+                let isGoogleOnly = false;
+                if (!querySnap.empty) {
+                    querySnap.forEach(d => {
+                        const data = d.data();
+                        if (data.provider === 'google.com' || data.provider === 'google') {
+                            isGoogleOnly = true;
+                        }
+                    });
+                }
+
+                if (isGoogleOnly) {
+                    hideLoading();
+                    errorMsg.innerText = "Esta cuenta inicia sesión con Google. No necesitas contraseña — solo toca 'Iniciar con Google'.";
+                    errorMsg.style.color = "#ff9d5c"; // Naranja de advertencia
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // Call custom API sendPasswordReset
+                const res = await fetch('/api/account?action=sendPasswordReset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
                 hideLoading();
-                errorMsg.innerText = "¡Correo de recuperación enviado! Revisa tu bandeja de entrada.";
-                errorMsg.style.color = "#2ecc71"; // Verde para éxito
-                errorMsg.style.display = 'block';
+
+                if (res.ok && data.ok) {
+                    errorMsg.innerText = "¡Correo de recuperación enviado! Revisa tu bandeja de entrada.";
+                    errorMsg.style.color = "#2ecc71"; // Verde para éxito
+                    errorMsg.style.display = 'block';
+                } else {
+                    hideLoading(data.error || "Error al enviar el correo de recuperación.");
+                    errorMsg.style.color = "#e74c3c";
+                }
             } catch (error) {
                 console.error("Error sending password reset email:", error);
                 hideLoading("Error al enviar el correo de recuperación.");
-                errorMsg.style.color = "#e74c3c"; // Restaurar a rojo
+                errorMsg.style.color = "#e74c3c";
             }
         });
 

@@ -365,6 +365,71 @@ export default async function handler(req, res) {
             return json(res, 200, { ok: true, resetLink });
         }
 
+        // --- 6. ACCIÓN: sendPasswordReset (PÚBLICA PARA USUARIOS) ---
+        if (action === 'sendPasswordReset') {
+            const { email } = req.body || {};
+            if (!email || !email.includes('@')) {
+                return json(res, 400, { error: 'Correo electrónico no válido.' });
+            }
+
+            const cleanEmail = email.trim().toLowerCase();
+
+            try {
+                // Generate link via Firebase Admin SDK
+                const actionCodeSettings = {
+                    url: 'https://happycorner.top/auth/action'
+                };
+                const resetLink = await auth.generatePasswordResetLink(cleanEmail, actionCodeSettings);
+
+                // Send custom branded email via Resend
+                const resendKey = process.env.RESEND_API_KEY;
+                if (resendKey) {
+                    const { Resend } = await import('resend');
+                    const resend = new Resend(resendKey);
+
+                    const emailHtml = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head><meta charset="utf-8"></head>
+                    <body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
+                      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 20px;">
+                        <tr><td align="center">
+                          <table width="100%" maxWidth="500" cellpadding="0" cellspacing="0" style="max-width:500px;background:#141414;border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:32px;text-align:left;">
+                            <tr><td style="text-align:center;padding-bottom:24px;">
+                              <img src="https://happycorner.top/happyfavicon.png" width="48" height="48" alt="Happy Corner" style="border-radius:10px;display:block;margin:0 auto 10px;">
+                              <div style="font-size:18px;font-weight:900;color:#ff5299;letter-spacing:-0.02em;">Happy Corner</div>
+                              <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Recuperación de Contraseña</div>
+                            </td></tr>
+                            <tr><td>
+                              <p style="color:#ccc;font-size:15px;margin:0 0 12px;">Hola 👋</p>
+                              <p style="color:#ccc;font-size:15px;margin:0 0 24px;line-height:1.5;">Has solicitado restablecer la contraseña de tu cuenta en Happy Corner. Haz clic en el botón de abajo para crear una nueva contraseña:</p>
+                              <div style="text-align:center;margin:0 0 28px;">
+                                <a href="${resetLink}" target="_blank" style="background:linear-gradient(135deg, #b01e5a, #ff5299, #ff8c42);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 28px;border-radius:14px;display:inline-block;">Restablecer Contraseña</a>
+                              </div>
+                              <p style="color:#666;font-size:12px;margin:0;line-height:1.4;">Si no solicitaste este cambio, puedes ignorar este correo de forma segura. Tu contraseña actual seguirá siendo la misma.</p>
+                            </td></tr>
+                          </table>
+                        </td></tr>
+                      </table>
+                    </body>
+                    </html>
+                    `;
+
+                    await resend.emails.send({
+                        from: 'Seguridad Happy Corner <seguridad@alertas.happycorner.top>',
+                        to: [cleanEmail],
+                        subject: '🔒 Restablecer tu contraseña en Happy Corner',
+                        html: emailHtml
+                    });
+                }
+            } catch (err) {
+                console.log("sendPasswordReset handled silently or user not found:", err.message);
+            }
+
+            // Always respond with success to prevent account enumeration
+            return json(res, 200, { ok: true, message: 'Si el correo existe, recibirás instrucciones de recuperación.' });
+        }
+
         return json(res, 400, { error: 'Acción no válida' });
 
     } catch (e) {

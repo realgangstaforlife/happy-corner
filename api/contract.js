@@ -125,7 +125,7 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
     const midGray = rgb(0.35, 0.35, 0.35);
     const lightGray = rgb(0.88, 0.88, 0.88);
     const width = 595;
-    const margin = 50;
+    const margin = 62; // Increased to 62px for better symmetry and breathing room
 
     const page = pdfDoc.addPage([width, 842]); // A4
 
@@ -142,18 +142,23 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
     }
 
     // Brand name in header
-    page.drawText('Happy Corner', { x: 92, y: 810, size: 18, font: fontBold, color: rgb(1, 1, 1) });
-    page.drawText('Contrato de Responsabilidad', { x: 92, y: 796, size: 9, font: fontReg, color: rgb(1, 1, 1, 0.75) });
+    const titleX = logoBuffer ? margin + 44 : margin;
+    page.drawText('Happy Corner', { x: titleX, y: 810, size: 17, font: fontBold, color: rgb(1, 1, 1) });
+    page.drawText('Contrato de Responsabilidad', { x: titleX, y: 797, size: 9, font: fontReg, color: rgb(1, 1, 1, 0.75) });
 
-    let y = 760;
+    let y = 752;
 
     // ——— Title ———
-    page.drawText('ACUERDO DE RESPONSABILIDAD DE DEUDA', {
-        x: margin, y, size: 13, font: fontBold, color: pink
+    const titleText = 'ACUERDO DE RESPONSABILIDAD DE DEUDA';
+    const titleWidth = fontBold.widthOfTextAtSize(titleText, 13);
+    const centerTitleX = (width - titleWidth) / 2;
+
+    page.drawText(titleText, {
+        x: centerTitleX, y, size: 13, font: fontBold, color: pink
     });
-    y -= 6;
+    y -= 8;
     page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1.5, color: pink });
-    y -= 20;
+    y -= 24;
 
     // ——— Contract clauses ———
     const clauses = [
@@ -166,34 +171,35 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
 
     for (const cl of clauses) {
         page.drawText(`${cl.num} ${cl.title}`, { x: margin, y, size: 10, font: fontBold, color: darkGray });
-        y -= 14;
-        // Word-wrap body into chunks of ~80 chars
+        y -= 15;
+        // Word-wrap body into chunks of ~76 chars
         const words = cl.body.split(' ');
         let line = '';
         for (const w of words) {
-            if ((line + w).length > 82) {
+            if ((line + w).length > 76) {
                 page.drawText(line.trim(), { x: margin + 12, y, size: 9, font: fontReg, color: midGray });
-                y -= 13;
+                y -= 14;
                 line = w + ' ';
             } else { line += w + ' '; }
         }
         if (line.trim()) {
             page.drawText(line.trim(), { x: margin + 12, y, size: 9, font: fontReg, color: midGray });
-            y -= 13;
+            y -= 14;
         }
-        y -= 8;
+        y -= 10;
     }
 
+    y -= 4;
     page.drawText('Este documento es para control interno de Happy Corner y no constituye un instrumento legal formal.', {
         x: margin, y, size: 8, font: fontReg, color: lightGray
     });
-    y -= 28;
+    y -= 30;
 
     // ——— Signature Data Table ———
     page.drawText('DATOS DE LA FIRMA', { x: margin, y, size: 11, font: fontBold, color: pink });
     y -= 6;
     page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: pink });
-    y -= 16;
+    y -= 18;
 
     const tableData = [
         ['Firmado por', typedName],
@@ -213,11 +219,11 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
         const bg = i % 2 === 0 ? rgb(0.97, 0.97, 0.97) : rgb(1, 1, 1);
         page.drawRectangle({ x: col1 - 4, y: rowY - 4, width: width - margin * 2 + 8, height: rowH, color: bg });
         page.drawText(label, { x: col1, y: rowY + 3, size: 9, font: fontBold, color: darkGray });
-        page.drawText(String(value).slice(0, 72), { x: col2, y: rowY + 3, size: 9, font: fontReg, color: midGray });
+        page.drawText(String(value).slice(0, 68), { x: col2, y: rowY + 3, size: 9, font: fontReg, color: midGray });
         rowY -= rowH;
     });
 
-    y = rowY - 20;
+    y = rowY - 26;
 
     // ——— Signature image ———
     page.drawText('FIRMA DEL CLIENTE', { x: margin, y, size: 11, font: fontBold, color: pink });
@@ -233,10 +239,15 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
     page.drawText(typedName, { x: margin, y: y - 12, size: 9, font: fontReg, color: midGray });
 
     // ——— Footer band ———
-    page.drawRectangle({ x: 0, y: 0, width, height: 28, color: rgb(0.06, 0.06, 0.06) });
+    const footerH = 32;
+    page.drawRectangle({ x: 0, y: 0, width, height: footerH, color: rgb(0.06, 0.06, 0.06) });
     const year = new Date().getFullYear();
-    page.drawText(`© ${year} Happy Corner · happycorner.top · Contrato versión v1 · Generado el ${new Date().toLocaleDateString('es-CO')}`, {
-        x: margin, y: 9, size: 7.5, font: fontReg, color: rgb(0.5, 0.5, 0.5)
+    const footerStr = `© ${year} Happy Corner · happycorner.top · Contrato versión v1 · Generado el ${new Date().toLocaleDateString('es-CO')}`;
+    const footerStrWidth = fontReg.widthOfTextAtSize(footerStr, 7.5);
+    const centerFooterX = (width - footerStrWidth) / 2;
+
+    page.drawText(footerStr, {
+        x: centerFooterX, y: 11, size: 7.5, font: fontReg, color: rgb(0.5, 0.5, 0.5)
     });
 
     const pdfBytes = await pdfDoc.save();
