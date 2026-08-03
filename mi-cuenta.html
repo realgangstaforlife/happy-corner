@@ -862,10 +862,11 @@
 
     <!-- Domain change banner -->
     <div class="domain-banner" id="domain-banner">
-        <span>🌐 ¡Ahora también en <a href="https://happycorner.top" target="_blank">happycorner.top</a>! Guarda el nuevo dominio.</span>
+        <span>🌐 ¡Ahora también en <a href="https://happycorner.top" target="_blank">happycorner.top</a>! Guarda el
+            nuevo dominio.</span>
         <button class="domain-banner-close" onclick="dismissDomainBanner()" aria-label="Cerrar">✕</button>
     </div>
-    <script>(function(){if(localStorage.getItem('hc_domain_banner_v1')==='1'){var b=document.getElementById('domain-banner');if(b)b.style.display='none';}})();window.dismissDomainBanner=function(){localStorage.setItem('hc_domain_banner_v1','1');var b=document.getElementById('domain-banner');if(b)b.style.display='none';};</script>
+    <script>(function () { if (localStorage.getItem('hc_domain_banner_v1') === '1') { var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; } })(); window.dismissDomainBanner = function () { localStorage.setItem('hc_domain_banner_v1', '1'); var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; };</script>
 
     <div class="side-menu" id="sideMenu">
         <a href="/index">🏠 Inicio</a>
@@ -949,6 +950,7 @@
                                 <div class="debt-amount loading" id="mc-debt-amount">$—</div>
                                 <div style="font-size:13px; color:var(--text-muted); margin-top:4px;"
                                     id="mc-debt-detail">Cargando...</div>
+                                <div id="mc-debt-action-container"></div>
                             </div>
                             <span class="debt-badge loading" id="mc-debt-badge">...</span>
                         </div>
@@ -1096,9 +1098,15 @@
                         restablecimiento</button>
 
                     <div style="margin-top:24px; padding-top:20px; border-top:1px solid rgba(255,82,82,0.2);">
-                        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#ff5252; margin-bottom:10px;">Zona de Peligro</div>
-                        <p style="font-size:13px; color:var(--text-muted); line-height:1.6; margin-bottom:14px;">Esta acción es permanente e irreversible. Tu cuenta, puntos y datos personales serán eliminados. No es posible si tienes deuda activa.</p>
-                        <button id="delete-account-btn" style="width:100%; padding:12px; background:transparent; border:1.5px solid #ff5252; color:#ff5252; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s;">🗑️ Eliminar mi cuenta permanentemente</button>
+                        <div
+                            style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#ff5252; margin-bottom:10px;">
+                            Zona de Peligro</div>
+                        <p style="font-size:13px; color:var(--text-muted); line-height:1.6; margin-bottom:14px;">Esta
+                            acción es permanente e irreversible. Tu cuenta, puntos y datos personales serán eliminados.
+                            No es posible si tienes deuda activa.</p>
+                        <button id="delete-account-btn"
+                            style="width:100%; padding:12px; background:transparent; border:1.5px solid #ff5252; color:#ff5252; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s;">🗑️
+                            Eliminar mi cuenta permanentemente</button>
                     </div>
                 </div>
             </div>
@@ -1366,18 +1374,30 @@
             const debtAmount = document.getElementById('mc-debt-amount');
             const debtBadge = document.getElementById('mc-debt-badge');
             const debtDetail = document.getElementById('mc-debt-detail');
+            const debtActionContainer = document.getElementById('mc-debt-action-container');
             const debt = data.activeDebt || 0;
+            const activeDebt = debt;
             debtAmount.textContent = `$${debt.toLocaleString('es-CO')}`;
             if (debt > 0) {
                 debtAmount.className = 'debt-amount has-debt';
                 debtBadge.textContent = 'Pendiente';
                 debtBadge.className = 'debt-badge has-debt';
                 debtDetail.textContent = 'Tienes deuda activa. Por favor, saldala con el administrador.';
+                if (debtActionContainer) {
+                    debtActionContainer.innerHTML = `
+                        <a href="https://wa.me/573112871046?text=${encodeURIComponent('Hola! Quiero pagar mi deuda de $' + activeDebt + '🩷')}" target="_blank" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px; margin-top:12px;">
+                            💬 Pagar mi deuda
+                        </a>
+                    `;
+                }
             } else {
                 debtAmount.className = 'debt-amount clear';
                 debtBadge.textContent = '✓ Al día';
                 debtBadge.className = 'debt-badge clear';
                 debtDetail.textContent = '¡Sin deudas! Todo limpio 🎉';
+                if (debtActionContainer) {
+                    debtActionContainer.innerHTML = '';
+                }
             }
 
             // Points
@@ -1404,12 +1424,12 @@
          */
         function buildOrderStepper(status) {
             const STEPS = [
-                { key: 'pending',   icon: '🧾', label: 'Recibido' },
+                { key: 'pending', icon: '🧾', label: 'Recibido' },
                 { key: 'preparing', icon: '👨‍🍳', label: 'Preparando' },
-                { key: 'ready',     icon: '📦', label: 'Listo' },
+                { key: 'ready', icon: '📦', label: 'Listo' },
                 { key: 'completed', icon: '✅', label: 'Entregado' },
             ];
-            const ORDER = ['pending','preparing','ready','completed'];
+            const ORDER = ['pending', 'preparing', 'ready', 'completed'];
             const currentIdx = ORDER.indexOf(status);
 
             if (status === 'cancelled') {
@@ -1942,7 +1962,7 @@
             };
         }
 
-</script>
+    </script>
     <script src="/credit-gauge.js"></script>
     <script src="/footer.js"></script>
 </body>

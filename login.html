@@ -224,6 +224,12 @@
                     style="font-size: 12px; color: var(--hp-pink); text-decoration: none; margin-top: 5px; display: inline-block;">¿Olvidaste
                     tu contraseña?</a>
             </div>
+            <div id="emailOptInContainer" style="display:none;">
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin:10px 0;">
+                    <input type="checkbox" id="emailOptIn" checked>
+                    Quiero recibir confirmaciones de mis pedidos por correo
+                </label>
+            </div>
             <button type="submit" class="btn-primary" id="loginEmailBtn">Iniciar Sesión</button>
             <button type="button" class="btn-secondary" id="registerEmailBtn">Crear Cuenta Nueva</button>
         </form>
@@ -289,6 +295,7 @@
             if (!userSnap.exists()) {
                 // New user: create profile with new schema
                 const displayName = user.displayName || (email ? email.split('@')[0] : 'Cliente HappyCorner');
+                const emailOptInVal = document.getElementById('emailOptIn') ? document.getElementById('emailOptIn').checked : true;
                 await setDoc(userRef, {
                     uid: user.uid,
                     displayName: displayName,
@@ -302,6 +309,7 @@
                     customerCode: null,
                     contractSigned: false,
                     contractVersion: null,
+                    emailOptIn: emailOptInVal,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 });
@@ -372,6 +380,7 @@
         // Email / Password Login or Register
         let isRegisterMode = false;
         const accountNotice = document.getElementById('account-creation-notice');
+        const optInContainer = document.getElementById('emailOptInContainer');
 
         // Toggle function
         window.toggleAuthMode = function (register) {
@@ -382,11 +391,13 @@
 
             if (isRegisterMode) {
                 accountNotice.style.display = 'block';
+                if (optInContainer) optInContainer.style.display = 'block';
                 loginEmailBtn.innerText = 'Registrarse y Crear Cuenta';
                 registerEmailBtn.innerText = '← Volver a Iniciar Sesión';
                 if (dividerO) dividerO.textContent = 'O crea tu cuenta con correo';
             } else {
                 accountNotice.style.display = 'none';
+                if (optInContainer) optInContainer.style.display = 'none';
                 loginEmailBtn.innerText = 'Iniciar Sesión';
                 registerEmailBtn.innerText = 'Crear Cuenta Nueva';
                 if (dividerO) dividerO.textContent = 'O con correo electrónico';
