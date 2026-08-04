@@ -436,6 +436,136 @@ export default async function handler(req, res) {
             return json(res, 200, { ok: true, resetLink });
         }
 
+        // --- 6. ACCIÓN: updateContractText (SOLO ADMIN) ---
+        if (action === 'updateContractText') {
+            const { articles } = req.body || {};
+            if (!Array.isArray(articles) || articles.length === 0) {
+                return json(res, 400, { error: 'Falta el contenido del contrato (articles).' });
+            }
+            for (const art of articles) {
+                if (!art.title || !art.body) {
+                    return json(res, 400, { error: 'Todos los artículos deben tener título y cuerpo.' });
+                }
+            }
+
+            const docRef = db.collection('config').doc('contractText');
+            const docSnap = await docRef.get();
+            let oldVersion = 1;
+            let oldData = null;
+            if (docSnap.exists) {
+                oldData = docSnap.data();
+                oldVersion = oldData.version || 1;
+            }
+
+            const newVersion = oldVersion + 1;
+            const now = new Date();
+            const timestamp = now.toISOString();
+
+            // Guardar versión anterior en historial
+            if (oldData) {
+                await docRef.collection('history').doc(`v${oldVersion}`).set({
+                    ...oldData,
+                    archivedAt: timestamp
+                });
+            }
+
+            // Guardar nueva versión
+            const newContractData = {
+                articles,
+                version: newVersion,
+                lastUpdated: timestamp,
+                updatedBy: decoded.uid
+            };
+            await docRef.set(newContractData);
+
+            // Consultar todos los usuarios con contractSigned: true
+            const usersSnap = await db.collection('users').where('contractSigned', '==', true).get();
+            const deadlineDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+            const deadlineIso = deadlineDate.toISOString();
+            const deadlineFormatted = deadlineDate.toLocaleDateString('es-CO', {
+                timeZone: 'America/Bogota',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            const batch = db.batch();
+            const emailPromises = [];
+            const resendKey = process.env.RESEND_API_KEY;
+
+            if (resendKey) {
+                const { Resend } = await import('resend');
+                usersSnap.forEach(userDoc => {
+                    const userData = userDoc.data();
+                    const userRef = db.collection('users').doc(userDoc.id);
+
+                    batch.update(userRef, {
+                        contractNeedsResign: true,
+                        contractResignDeadline: deadlineIso
+                    });
+
+                    if (userData.email) {
+                        const cleanEmail = userData.email.trim().toLowerCase();
+                        const userName = userData.name || userData.displayName || 'Cliente';
+                        
+                        const resend = new Resend(resendKey);
+                        const emailPromise = resend.emails.send({
+                            from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                            to: [cleanEmail],
+                            subject: '⚠️ Actualización Obligatoria: Acuerdo de Responsabilidad',
+                            html: `
+                            <!DOCTYPE html>
+                            <html>
+                            <head><meta charset="utf-8"></head>
+                            <body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
+                              <table width="100%" cellpadding="0" cellspacing="0" style="background:#0d0d0d;padding:40px 20px;">
+                                <tr><td align="center">
+                                  <table width="100%" style="max-width:520px;background:#141414;border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:32px;text-align:left;">
+                                    <tr><td style="text-align:center;padding-bottom:24px;">
+                                      <img src="https://happycorner.top/happyfavicon.png" width="48" height="48" alt="Happy Corner" style="border-radius:10px;display:block;margin:0 auto 10px;">
+                                      <div style="font-size:18px;font-weight:900;color:#ff5299;letter-spacing:-0.02em;">Happy Corner</div>
+                                      <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Actualización de Términos</div>
+                                    </td></tr>
+                                    <tr><td>
+                                      <p style="color:#ccc;font-size:15px;margin:0 0 12px;">Hola ${userName} 👋</p>
+                                      <p style="color:#ccc;font-size:15px;margin:0 0 20px;line-height:1.5;">Hemos actualizado nuestro <strong>Acuerdo de Responsabilidad de Deuda</strong> para reflejar los nuevos lineamientos de HappyScore y políticas de abonos.</p>
+                                      <p style="color:#ff5299;font-size:15px;font-weight:700;margin:0 0 24px;line-height:1.5;">⚠️ Tenés hasta el <strong>${deadlineFormatted}</strong> para firmarlo nuevamente, de lo contrario tu acceso a compras a crédito podría verse afectado.</p>
+                                      <div style="text-align:center;margin:0 0 28px;">
+                                        <a href="https://happycorner.top/mi-cuenta" target="_blank" style="background:linear-gradient(135deg, #b01e5a, #ff5299, #ff8c42);color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:14px 28px;border-radius:14px;display:inline-block;">✍️ Revisar y Firmar Contrato</a>
+                                      </div>
+                                      <p style="color:#666;font-size:12px;margin:0;line-height:1.4;">Si tienes alguna duda sobre las nuevas condiciones, puedes comunicarte con el administrador.</p>
+                                    </td></tr>
+                                  </table>
+                                </td></tr>
+                              </table>
+                            </body>
+                            </html>
+                            `
+                        }).catch(err => {
+                            console.error(`Error enviando correo a ${cleanEmail}:`, err.message);
+                        });
+                        emailPromises.push(emailPromise);
+                    }
+                });
+            } else {
+                usersSnap.forEach(userDoc => {
+                    const userRef = db.collection('users').doc(userDoc.id);
+                    batch.update(userRef, {
+                        contractNeedsResign: true,
+                        contractResignDeadline: deadlineIso
+                    });
+                });
+            }
+
+            await batch.commit();
+            if (emailPromises.length > 0) {
+                await Promise.all(emailPromises);
+            }
+
+            return json(res, 200, { ok: true, version: newVersion, usersNotified: usersSnap.size });
+        }
+
         return json(res, 400, { error: 'Acción no válida' });
 
     } catch (e) {
@@ -443,3 +573,4 @@ export default async function handler(req, res) {
         return json(res, 500, { error: 'Error interno del servidor.' });
     }
 }
+

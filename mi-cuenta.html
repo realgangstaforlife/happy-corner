@@ -793,7 +793,7 @@
             font-size: 13px;
             line-height: 1.7;
             color: var(--text-muted);
-            max-height: 200px;
+            max-height: 350px;
             overflow-y: auto;
             margin-bottom: 16px;
         }
@@ -1051,7 +1051,7 @@
                 <!-- Credit Score Widget -->
                 <div class="mc-section" id="mc-credit-section">
                     <div class="mc-section-header">
-                        <div class="mc-section-title"><span class="icon icon-purple">📊</span> Historial Crediticio
+                        <div class="mc-section-title"><span class="icon icon-purple">📊</span> HappyScore
                         </div>
                     </div>
                     <div
@@ -1059,14 +1059,14 @@
                         <div id="credit-gauge-container"
                             style="width: 250px; height: 130px; overflow: hidden; margin-top:10px;"></div>
                         <div style="font-size:13px; color:var(--text-muted); text-align:center;" id="mc-credit-label">
-                            Cargando puntaje crediticio...</div>
+                            Cargando HappyScore...</div>
                     </div>
                     <div
                         style="margin-top:8px; font-size:12px; color:var(--text-muted); font-weight:700; margin-bottom:8px;">
-                        HISTORIAL DE CAMBIOS DE SCORE</div>
+                        HISTORIAL DE CAMBIOS DE HAPPYSCORE</div>
                     <div id="mc-credit-history" style="display:flex; flex-direction:column; gap:8px;">
                         <div style="font-size:13px; color:var(--text-muted); text-align:center; padding:20px 0;">Sin
-                            historial todavía. Tu puntaje se irá construyendo con tus transacciones.</div>
+                            historial todavía. Tu HappyScore se irá construyendo con tus transacciones.</div>
                     </div>
                 </div>
 
@@ -1146,25 +1146,28 @@
             <div class="mc-step active" id="step-1">
                 <div class="mc-modal-title">📄 Contrato de Deuda</div>
                 <div class="mc-modal-subtitle">Lee el contrato y luego procede a firmar</div>
-                <div class="contract-text">
-                    <b>CONTRATO DE RESPONSABILIDAD DE DEUDA - HAPPY CORNER</b><br><br>
-                    Yo, el/la cliente, al registrarme y adquirir productos de Happy Corner a crédito, reconozco y acepto
-                    las siguientes condiciones:<br><br>
-                    <b>1. RECONOCIMIENTO DE DEUDA:</b> Acepto que cualquier saldo pendiente en mi cuenta representa una
-                    deuda real y exigible, que me comprometo a saldar en los plazos acordados con el
-                    administrador.<br><br>
-                    <b>2. TRANSPARENCIA:</b> Entiendo que mis movimientos de deuda y pagos son registrados en el sistema
-                    y puedo consultarlos en cualquier momento desde mi cuenta.<br><br>
-                    <b>3. COMPROMISO DE PAGO:</b> Me comprometo a no acumular deudas que superen mi capacidad de pago, y
-                    a comunicarme con el administrador si tengo dificultades para pagar.<br><br>
-                    <b>4. CONSECUENCIAS DE INCUMPLIMIENTO:</b> En caso de no pagar la deuda, entiendo que se me podrá
-                    negar el acceso a nuevas compras a crédito hasta que la deuda sea saldada.<br><br>
-                    <b>5. VOLUNTARIEDAD:</b> Confirmo que acepto este contrato de manera voluntaria y
-                    consciente.<br><br>
-                    Este contrato es para control interno de Happy Corner y no constituye un instrumento legal formal
-                    frente a terceros.
+                
+                <!-- Resumen informativo destacado -->
+                <div id="contract-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; font-size: 13px; line-height: 1.5; color: var(--text-color);">
+                    <strong style="color: var(--hp-pink); font-size: 13px;">💡 Resumen Rápido (Artículo 5):</strong>
+                    <ul style="margin: 6px 0 0 0; padding-left: 18px; color: var(--text-muted);">
+                        <li>Si tienes deudas, Happy Corner puede limitar nuevas ventas.</li>
+                        <li>Se te puede exigir abonar a la deuda antes de comprar algo nuevo.</li>
+                        <li>Los abonos reducen la deuda pero no habilitan créditos automáticamente.</li>
+                        <li>Tu HappyScore es una calificación interna de 0 a 100 que influye en tu crédito.</li>
+                    </ul>
                 </div>
-                <button class="mc-btn-primary" onclick="goToStep(2)">Continuar a la firma ✍️</button>
+
+                <div class="contract-text" id="contract-text-container">
+                    Cargando contrato...
+                </div>
+
+                <label style="display:flex; align-items:center; gap:8px; font-size:13px; margin: 12px 0 16px; color: var(--text-color); cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="confirm-read-checkbox">
+                    He leído y entiendo las condiciones del HappyScore 🩷
+                </label>
+
+                <button class="mc-btn-primary" id="continue-to-sign-btn" onclick="goToStep(2)" disabled style="opacity: 0.5; cursor: not-allowed;">Continuar a la firma ✍️</button>
             </div>
 
             <!-- Step 2: Sign -->
@@ -1323,7 +1326,8 @@
         });
 
         // Banner button to open signing modal
-        document.getElementById('firmar-ahora-banner-btn').onclick = () => {
+        document.getElementById('firmar-ahora-banner-btn').onclick = async () => {
+            await loadContractText();
             document.getElementById('contract-modal').classList.add('active');
         };
 
@@ -1553,35 +1557,158 @@
         // ============================================================
         // Contract status
         // ============================================================
+        let loadedContractText = null;
+
+        async function loadContractText() {
+            try {
+                // Reset checkbox and continue button
+                const checkbox = document.getElementById('confirm-read-checkbox');
+                if (checkbox) checkbox.checked = false;
+                const btn = document.getElementById('continue-to-sign-btn');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                }
+
+                const token = await currentUser.getIdToken();
+                const resp = await fetch('/api/contract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ action: 'getContractText' })
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    loadedContractText = data;
+                    renderContractTextHtml(data.articles);
+                } else {
+                    throw new Error('No se pudo cargar el contrato');
+                }
+            } catch (err) {
+                console.error("Error loading contract text:", err);
+                const fallbackArticles = [
+                    {
+                        title: "Artículo 1. Deudas pendientes y nuevas compras",
+                        body: "El cliente entiende y acepta que la existencia de una deuda pendiente podrá afectar su posibilidad de realizar nuevas compras en Happy Corner. La existencia de un saldo a favor de Happy Corner faculta al establecimiento para evaluar cada nueva solicitud de compra de manera individual, teniendo en cuenta las circunstancias particulares de cada caso.\n\nMientras exista una deuda activa, Happy Corner tendrá plena libertad para decidir si autoriza o no nuevas ventas al cliente, incluso cuando este manifieste su intención de pagar únicamente el valor del nuevo producto y no solicitar un crédito adicional. La decisión de aprobar o rechazar una venta corresponderá exclusivamente a Happy Corner y no requerirá motivación o justificación alguna.\n\nComo condición para aprobar una nueva compra, Happy Corner podrá exigir que el cliente destine previamente una parte del dinero disponible al pago de la deuda existente. El valor mínimo de dicho abono será determinado exclusivamente por Happy Corner, considerando el saldo pendiente, el historial de pagos del cliente, el tiempo transcurrido desde la generación de la deuda, el valor de la nueva compra, la frecuencia con la que utiliza el servicio de crédito y cualquier otra circunstancia que resulte pertinente para una adecuada administración del riesgo.\n\nEl cliente reconoce que la negativa de Happy Corner a realizar una venta en estas circunstancias constituye una decisión comercial legítima y no representa un incumplimiento, discriminación o vulneración de derecho alguno. Del mismo modo, el hecho de que Happy Corner haya autorizado ventas anteriores en condiciones similares no generará precedente ni obligación de actuar de la misma forma en futuras ocasiones.\n\nLa realización de una compra anterior, la existencia de un historial positivo, la puntualidad en pagos anteriores o la aprobación de créditos previos no obligan a Happy Corner a conceder nuevas ventas mientras exista una deuda pendiente. Cada solicitud será evaluada de manera independiente y podrá recibir una decisión diferente según las circunstancias existentes al momento de la compra."
+                    },
+                    {
+                        title: "Artículo 2. Pagos y abonos a la deuda",
+                        body: "El cliente podrá realizar pagos parciales sobre su deuda en cualquier momento, siempre que Happy Corner los considere adecuados para la correcta administración del saldo pendiente. Cada pago recibido será registrado y descontado del valor total adeudado una vez sea verificado.\n\nHappy Corner procurará aceptar cualquier abono realizado de buena fe con el propósito de reducir la deuda. No obstante, podrá rechazar pagos cuyo valor sea manifiestamente insignificante frente al saldo pendiente o que, razonavelmente, no reflejen una intención real de disminuir la obligación adquirida. La determinación de si un abono resulta suficiente corresponderá exclusivamente a Happy Corner.\n\nLa aceptación de un pago parcial no extingue la deuda restante, no modifica el plazo originalmente acordado, no constituye una renegociación de la obligación ni genera el derecho automático a realizar nuevas compras a crédito o de contado mientras Happy Corner considere necesario priorizar la recuperación del saldo pendiente.\n\nSalvo manifestación expresa de Happy Corner, ningún pago parcial implicará la condonación de intereses, obligaciones, restricciones comerciales o medidas adoptadas como consecuencia del incumplimiento del cliente. La deuda únicamente se considerará cancelada cuando Happy Corner registre el pago total del saldo pendiente."
+                    },
+                    {
+                        title: "Artículo 3. Derecho de admisión al servicio de crédito",
+                        body: "El servicio de compra a crédito constituye un beneficio otorgado exclusivamente por Happy Corner y no un derecho adquirido por el cliente. La posibilidad de acceder a dicho servicio dependerá de la evaluación que Happy Corner realice en cada caso y podrá variar con el tiempo según el comportamiento del cliente y las necesidades operativas del negocio.\n\nEn consecuencia, Happy Corner podrá aprobar, rechazar, suspender, limitar, modificar o cancelar el acceso al servicio de compra a crédito, de forma total o parcial, en cualquier momento y sin previo aviso, cuando lo considere conveniente para la adecuada administración del negocio.\n\nLa decisión de conceder o negar el acceso al crédito podrá fundamentarse, entre otros aspectos, en el historial de pagos del cliente, la existencia de deudas pendientes, el incumplimiento de acuerdos anteriores, el uso inadecuado del servicio de crédito, la disponibilidad operativa de Happy Corner o cualquier otro criterio comercial que resulte razonablemente pertinente. Ninguna decisión adoptada en relación con el servicio de crédito generará derecho a reclamación por parte del cliente ni constituirá obligación de mantener dicho beneficio en el futuro."
+                    },
+                    {
+                        title: "Artículo 4. HappyScore",
+                        body: "Con el fin de administrar de manera objetiva el servicio de compra a crédito, Happy Corner podrá asignar a cada cliente una calificación interna denominada HappyScore.\n\nEl HappyScore constituye un sistema de evaluación exclusivo de Happy Corner, con una escala comprendida entre 0 y 100 puntos. Todo cliente iniciará con una calificación base de 20 puntos, la cual podrá aumentar o disminuir de acuerdo con su comportamiento y el uso del servicio de compra a crédito.\n\nLa calificación podrá modificarse automáticamente por los sistemas de Happy Corner o manualmente por la administración cuando resulte necesario reflejar adecuadamente el comportamiento del cliente.\n\nEntre los factores que podrán influir en el HappyScore se encuentran, entre otros:\n* El cumplimiento oportuno de los pagos.\n* La frecuencia y el valor de los abonos realizados.\n* La antigüedad de las deudas pendientes.\n* El historial general de compras a crédito.\n* El incumplimiento de acuerdos de pago.\n* El comportamiento del cliente frente a las obligaciones adquiridas.\n* Cualquier otro criterio comercial o administrativo que Happy Corner considere razonablemente pertinente.\n\nEl HappyScore constituye una herramienta interna de gestión y evaluación de riesgo. Su valor no representa una calificación financiera oficial, una puntuación crediticia reconocida por entidades bancarias ni genera derecho alguno a la aprobación automática de futuras compras a crédito.\n\nHappy Corner podrá utilizar el HappyScore para decidir, entre otras cosas, la aprobación o rechazo de nuevas solicitudes de crédito, el monto máximo autorizado, la exigencia de pagos anticipados, la necesidad de realizar abonos previos, el plazo concedido para el pago de una deuda o cualquier otra condición relacionada con el servicio de compra a crédito.\n\nEl cliente podrá consultar su HappyScore cuando Happy Corner habilite dicha funcionalidad. Sin perjuicio de ello, Happy Corner no estará obligado a revelar la metodología exacta utilizada para calcularlo, actualizarlo o interpretarlo, la cual podrá ser modificada en cualquier momento con el propósito de mejorar la administración del servicio."
+                    },
+                    {
+                        title: "Artículo 5. Resumen informativo",
+                        body: "El presente artículo tiene carácter exclusivamente informativo y busca facilitar la comprensión general de las principales condiciones del servicio de compra a crédito. En caso de existir alguna diferencia entre este resumen y los artículos anteriores, prevalecerá el contenido íntegro de dichos artículos.\n\nEn términos generales:\n* Si el cliente mantiene una deuda pendiente, Happy Corner podrá decidir libremente si autoriza o no nuevas compras.\n* Happy Corner podrá exigir que una parte del dinero disponible sea destinada primero al pago de la deuda antes de aprobar una nueva venta.\n* Los pagos parciales ayudan a reducir el saldo pendiente, pero no garantizan la aprobación de futuras compras ni modifican automáticamente las condiciones del crédito.\n* El servicio de compra a crédito constituye un beneficio otorgado por Happy Corner y podrá ser suspendido, limitado o cancelado cuando las circunstancias lo justifiquen.\n* Cada cliente contará con un HappyScore, una calificación interna entre 0 y 100 puntos que podrá influir en las decisiones relacionadas con el servicio de compra a crédito.\n* Las decisiones relacionadas con la aprobación de créditos, nuevos préstamos, límites de deuda, solicitudes de abonos y demás condiciones serán tomadas exclusivamente por Happy Corner con base en sus criterios comerciales y administrativos.\n\nSi tiene alguna duda sobre el funcionamiento del servicio de compra a crédito, podrá solicitar información adicional a Happy Corner antes de aceptar el presente acuerdo."
+                    }
+                ];
+                renderContractTextHtml(fallbackArticles);
+            }
+        }
+
+        function renderContractTextHtml(articles) {
+            const container = document.getElementById('contract-text-container');
+            if (!container) return;
+            let html = `<b>CONTRATO DE RESPONSABILIDAD DE DEUDA - HAPPY CORNER</b><br><br>
+            Yo, el/la cliente, al registrarme y adquirir productos de Happy Corner a crédito, reconozco y acepto las siguientes condiciones:<br><br>`;
+            
+            articles.forEach(art => {
+                html += `<b>${art.title.toUpperCase()}</b><br>`;
+                const paragraphs = art.body.split('\n');
+                paragraphs.forEach(p => {
+                    const trimmed = p.trim();
+                    if (!trimmed) return;
+                    if (trimmed.startsWith('*')) {
+                        html += `• ${trimmed.substring(1).trim()}<br>`;
+                    } else {
+                        html += `${trimmed}<br><br>`;
+                    }
+                });
+            });
+            html += `<br>Este contrato es para control interno de Happy Corner y no constituye un instrumento legal formal frente a terceros.`;
+            container.innerHTML = html;
+
+            const art5 = articles.find(a => a.title.toLowerCase().includes('artículo 5') || a.title.toLowerCase().includes('articulo 5'));
+            if (art5) {
+                const summaryBox = document.getElementById('contract-summary-box');
+                const bulletList = summaryBox.querySelector('ul');
+                bulletList.innerHTML = '';
+                const bullets = art5.body.split('\n').filter(l => l.trim().startsWith('*') || l.trim().startsWith('-'));
+                bullets.forEach(b => {
+                    let text = b.trim();
+                    if (text.startsWith('*') || text.startsWith('-')) text = text.substring(1).trim();
+                    bulletList.innerHTML += `<li>${text}</li>`;
+                });
+                summaryBox.style.display = 'block';
+            }
+        }
+
         async function loadContractStatus(uid) {
             try {
                 const snap = await getDoc(doc(db, 'debtContracts', uid));
                 const userSnap = await getDoc(doc(db, 'users', uid));
                 const userData = userSnap.data() || {};
 
-                document.getElementById('mc-contract-version').textContent = userData.contractVersion || '—';
+                document.getElementById('mc-contract-version').textContent = userData.contractVersionSigned ? 'v' + userData.contractVersionSigned : (userData.contractVersion || '—');
                 const banner = document.getElementById('contract-unsigned-banner');
+                
                 if (snap.exists() && snap.data().signed) {
-                    document.getElementById('mc-contract-status').textContent = '✅ Firmado';
-                    document.getElementById('mc-contract-status').className = 'contract-signed-badge';
-                    const signedAt = snap.data().signedAt;
-                    document.getElementById('mc-contract-date').textContent = signedAt
-                        ? new Date(signedAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
-                        : '—';
+                    if (userData.contractNeedsResign === true) {
+                        document.getElementById('mc-contract-status').textContent = '⚠️ Requiere Re-firma';
+                        document.getElementById('mc-contract-status').className = 'contract-unsigned-badge';
+                        
+                        const deadline = userData.contractResignDeadline ? new Date(userData.contractResignDeadline).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+                        document.getElementById('mc-contract-date').textContent = `Límite: ${deadline}`;
 
-                    document.getElementById('firmar-contrato-btn').style.display = 'none';
-                    document.getElementById('ver-contrato-btn').style.display = 'block';
+                        document.getElementById('firmar-contrato-btn').style.display = 'block';
+                        document.getElementById('firmar-contrato-btn').textContent = '✍️ Volver a firmar contrato';
+                        document.getElementById('ver-contrato-btn').style.display = 'block';
 
-                    if (banner) banner.style.display = 'none';
+                        if (banner) {
+                            banner.style.display = 'block';
+                            banner.style.border = '1.5px solid #ffb26b';
+                            banner.style.background = 'linear-gradient(135deg, rgba(247,163,53,0.12), rgba(247,163,53,0.04))';
+                            banner.querySelector('div[style*="font-weight:800"]').textContent = 'Actualización de Contrato Requerida';
+                            banner.querySelector('div[style*="font-size:13px"]').textContent = `Hemos actualizado el Acuerdo de Responsabilidad. Tienes hasta el ${deadline} para volver a firmar el contrato.`;
+                        }
+                    } else {
+                        document.getElementById('mc-contract-status').textContent = '✅ Firmado';
+                        document.getElementById('mc-contract-status').className = 'contract-signed-badge';
+                        const signedAt = snap.data().signedAt;
+                        document.getElementById('mc-contract-date').textContent = signedAt
+                            ? new Date(signedAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+                            : '—';
+
+                        document.getElementById('firmar-contrato-btn').style.display = 'none';
+                        document.getElementById('ver-contrato-btn').style.display = 'block';
+
+                        if (banner) banner.style.display = 'none';
+                    }
                 } else {
                     document.getElementById('mc-contract-status').textContent = '⚠️ Sin firmar';
                     document.getElementById('mc-contract-status').className = 'contract-unsigned-badge';
                     document.getElementById('mc-contract-date').textContent = 'N/A';
 
                     document.getElementById('firmar-contrato-btn').style.display = 'block';
+                    document.getElementById('firmar-contrato-btn').textContent = '✍️ Firmar contrato ahora';
                     document.getElementById('ver-contrato-btn').style.display = 'none';
 
-                    if (banner) banner.style.display = 'block';
+                    if (banner) {
+                        banner.style.display = 'block';
+                        banner.style.border = '1.5px solid rgba(255,82,153,0.35)';
+                        banner.style.background = 'linear-gradient(135deg, rgba(255,82,153,0.12), rgba(255,82,153,0.04))';
+                        banner.querySelector('div[style*="font-weight:800"]').textContent = 'Firma tu contrato de responsabilidad';
+                        banner.querySelector('div[style*="font-size:13px"]').textContent = 'Necesitas firmar el acuerdo de responsabilidad para poder realizar compras a crédito en Happy Corner.';
+                    }
                 }
             } catch (e) { console.error('Contract status error', e); }
         }
@@ -1599,13 +1726,13 @@
 
                 if (!snap.exists()) {
                     if (window.renderCreditGauge) renderCreditGauge('credit-gauge-container', 20, []);
-                    labelEl.textContent = 'Puntaje en construcción. Realiza transacciones para comenzar.';
+                    labelEl.textContent = 'HappyScore en construcción. Realiza transacciones para comenzar.';
                     return;
                 }
 
                 const { score = 20, tier = 'C', history = [] } = snap.data();
                 const tierLabels = { A: 'Excelente', B: 'Bueno', C: 'Regular', D: 'En riesgo' };
-                labelEl.textContent = tierLabels[tier] || 'Puntaje crediticio';
+                labelEl.textContent = tierLabels[tier] || 'HappyScore';
 
                 if (window.renderCreditGauge) {
                     renderCreditGauge('credit-gauge-container', score, history);
@@ -1653,12 +1780,28 @@
             if (snap.exists() && snap.data().signed && snap.data().pdfUrl) {
                 window.open(snap.data().pdfUrl, '_blank');
             } else {
+                await loadContractText();
                 document.getElementById('contract-modal').classList.add('active');
             }
         };
-        document.getElementById('firmar-contrato-btn').onclick = () => {
+        document.getElementById('firmar-contrato-btn').onclick = async () => {
+            await loadContractText();
             document.getElementById('contract-modal').classList.add('active');
         };
+
+        // Checkbox change listener
+        document.getElementById('confirm-read-checkbox').addEventListener('change', (e) => {
+            const btn = document.getElementById('continue-to-sign-btn');
+            if (!btn) return;
+            btn.disabled = !e.target.checked;
+            if (e.target.checked) {
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+        });
         // Signature Canvas
         const canvas = document.getElementById('signature-canvas');
         const ctx = canvas.getContext('2d');
