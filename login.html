@@ -229,6 +229,10 @@
                     <input type="checkbox" id="emailOptIn" checked>
                     Quiero recibir confirmaciones de mis pedidos por correo
                 </label>
+                <label style='display:flex; align-items:center; gap:8px; font-size:13px; margin:6px 0;'>
+                    <input type='checkbox' id='marketingOptIn'>
+                    Quiero recibir promociones y ofertas especiales de Happy Corner
+                </label>
             </div>
             <button type="submit" class="btn-primary" id="loginEmailBtn">Iniciar Sesión</button>
             <button type="button" class="btn-secondary" id="registerEmailBtn">Crear Cuenta Nueva</button>
@@ -296,6 +300,7 @@
                 // New user: create profile with new schema
                 const displayName = user.displayName || (email ? email.split('@')[0] : 'Cliente HappyCorner');
                 const emailOptInVal = document.getElementById('emailOptIn') ? document.getElementById('emailOptIn').checked : true;
+                const marketingOptInVal = document.getElementById('marketingOptIn') ? document.getElementById('marketingOptIn').checked : false;
                 await setDoc(userRef, {
                     uid: user.uid,
                     displayName: displayName,
@@ -310,6 +315,7 @@
                     contractSigned: false,
                     contractVersion: null,
                     emailOptIn: emailOptInVal,
+                    marketingOptIn: marketingOptInVal,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 });

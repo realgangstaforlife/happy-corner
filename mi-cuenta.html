@@ -1385,7 +1385,9 @@
                 debtDetail.textContent = 'Tienes deuda activa. Por favor, saldala con el administrador.';
                 if (debtActionContainer) {
                     debtActionContainer.innerHTML = `
-                        <a href="https://wa.me/573112871046?text=${encodeURIComponent('Hola! Quiero pagar mi deuda de $' + activeDebt + '🩷')}" target="_blank" class="btn-primary" style="display:inline-flex; align-items:center; gap:8px; margin-top:12px;">
+                        <a href="https://wa.me/573112871046?text=${encodeURIComponent('Hola! Quiero pagar mi deuda de $' + activeDebt + '🩷')}" 
+                           target="_blank" 
+                           style="display:inline-flex; align-items:center; gap:8px; margin-top:12px; padding:14px 20px; background:var(--hp-gradient); color:white; border-radius:16px; font-weight:800; text-decoration:none; font-size:14px;">
                             💬 Pagar mi deuda
                         </a>
                     `;

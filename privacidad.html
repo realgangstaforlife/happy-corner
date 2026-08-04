@@ -3,150 +3,240 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Happy Corner | Política de Privacidad</title>
     <link rel="icon" href="/happyfavicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
-    <style>
-        .legal-container {
-            max-width: 760px;
-            margin: 40px auto 80px;
-            padding: 0 20px;
-            line-height: 1.7
-        }
-
-        .legal-container h1 {
-            font-size: 30px;
-            font-weight: 900;
-            margin-bottom: 6px
-        }
-
-        .legal-updated {
-            color: var(--text-muted);
-            font-size: 13px;
-            margin-bottom: 30px
-        }
-
-        .legal-container h2 {
-            font-size: 19px;
-            font-weight: 800;
-            color: var(--hp-pink);
-            margin: 34px 0 10px
-        }
-
-        .legal-container p,
-        .legal-container li {
-            font-size: 15px;
-            color: var(--text-color)
-        }
-
-        .legal-container ul {
-            margin: 10px 0 10px 20px
-        }
-
-        .legal-container a {
-            color: var(--hp-pink)
-        }
-    </style>
 </head>
 
 <body data-theme="dark">
+
     <header>
-        <a href="/index" class="logo"><img src="/loguito.png" alt="Happy Corner" class="logo-img"></a>
+        <a href="/index" class="logo">
+            <img src="/loguito.png" alt="Happy Corner" class="logo-img">
+        </a>
         <nav class="nav-desktop">
             <a href="/index">Inicio</a>
             <a href="/catalogo">Catálogo</a>
             <a href="/order">HappyOrder</a>
-            <a href="/terminos">Términos</a>
+            <a href="/track">Rastrear Pedido</a>
         </nav>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+            <a href="/login.html" id="auth-icon-desktop"
+                style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </a>
+            <div class="menu-btn" id="menuBtn">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
     </header>
 
-    <div class="legal-container">
-        <h1>Política de Privacidad</h1>
-        <div class="legal-updated">Última actualización: Julio de 2026</div>
+    <div class="overlay" id="overlay"></div>
+    <nav class="side-menu" id="sideMenu">
+        <a href="/index">Inicio</a>
+        <a href="/catalogo">Catálogo</a>
+        <a href="/order">HappyOrder</a>
+        <a href="/track">Rastrear Pedido</a>
+        <a href="/terminos">Términos</a>
+        <a href="/wallet">Happy Passes</a>
+        <a href="/login.html" class="login-mobile-link"
+            style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
+    </nav>
 
-        <p>Happy Corner reconoce la importancia de proteger la información personal de sus usuarios. Esta Política de
-            Privacidad explica cómo recopilamos, utilizamos, almacenamos y protegemos los datos personales suministrados
-            al utilizar nuestros servicios, de conformidad con la Ley 1581 de 2012, el Decreto 1377 de 2013 y demás
-            normas colombianas aplicables sobre protección de datos personales.</p>
+    <div class="legal-page-wrapper">
+        <nav class="legal-toc">
+            <div class="legal-toc-title">Contenido</div>
+            <a href="#seccion-1">1. Responsable del tratamiento</a>
+            <a href="#seccion-2">2. Información que recopilamos</a>
+            <a href="#seccion-3">3. ¿Para qué utilizamos esta información?</a>
+            <a href="#seccion-4">4. Compartición de la información</a>
+            <a href="#seccion-5">5. Conservación de los datos</a>
+            <a href="#seccion-6">6. Derechos del titular</a>
+            <a href="#seccion-7">7. ¿Cómo ejercer tus derechos?</a>
+            <a href="#seccion-8">8. Seguridad de la información</a>
+            <a href="#seccion-9">9. Menores de edad</a>
+            <a href="#seccion-10">10. Cambios a esta Política</a>
+            <a href="#seccion-11">11. Contacto</a>
+        </nav>
 
-        <h2>1. Responsable del tratamiento</h2>
-        <p>Happy Corner es el responsable del tratamiento de los datos personales recopilados a través de su plataforma
-            y de los servicios relacionados con pedidos, cuentas de usuario y demás funcionalidades ofrecidas.</p>
+        <div class="legal-content">
+            <h1>Política de Privacidad</h1>
+            <div class="legal-updated">Última actualización: Julio de 2026</div>
 
-        <h2>2. Información que recopilamos</h2>
-        <p>Dependiendo del servicio utilizado, podremos recopilar:</p>
-        <ul>
-            <li>Nombre completo.</li>
-            <li>Correo electrónico.</li>
-            <li>Número de teléfono o WhatsApp.</li>
-            <li>Información necesaria para la entrega de pedidos dentro de la institución.</li>
-            <li>Historial de pedidos, compras, pagos y beneficios del programa de fidelidad.</li>
-            <li>Información relacionada con acuerdos de crédito o responsabilidad de pago cuando corresponda.</li>
-            <li>Información técnica como dirección IP, tipo de dispositivo, navegador y registros de acceso con fines de
-                seguridad y funcionamiento.</li>
-        </ul>
+            <p>Happy Corner reconoce la importancia de proteger la información personal de sus usuarios. Esta Política de
+                Privacidad explica cómo recopilamos, utilizamos, almacenamos y protegemos los datos personales suministrados
+                al utilizar nuestros servicios, de conformidad con la Ley 1581 de 2012, el Decreto 1377 de 2013 y demás
+                normas colombianas aplicables sobre protección de datos personales.</p>
 
-        <h2>3. ¿Para qué utilizamos esta información?</h2>
-        <ul>
-            <li>Procesar y entregar pedidos.</li>
-            <li>Administrar tu cuenta.</li>
-            <li>Brindar atención al cliente.</li>
-            <li>Enviar comunicaciones relacionadas con pedidos o tu cuenta.</li>
-            <li>Administrar beneficios, promociones y programas de fidelidad.</li>
-            <li>Gestionar obligaciones de pago cuando exista un crédito autorizado.</li>
-            <li>Prevenir fraudes, accesos no autorizados y usos indebidos de la plataforma.</li>
-            <li>Cumplir obligaciones legales.</li>
-        </ul>
+            <div class="legal-section" id="seccion-1">
+                <h2><span class="legal-section-number">1</span> Responsable del tratamiento</h2>
+                <p>Happy Corner es el responsable del tratamiento de los datos personales recopilados a través de su plataforma
+                    y de los servicios relacionados con pedidos, cuentas de usuario y demás funcionalidades ofrecidas.</p>
+            </div>
 
-        <h2>4. Compartición de la información</h2>
-        <p>Para prestar nuestros servicios podemos apoyarnos en proveedores tecnológicos que facilitan el funcionamiento
-            de la plataforma, como servicios de almacenamiento, autenticación, comunicaciones electrónicas y otras
-            herramientas necesarias para la operación.</p>
-        <p>Estos proveedores únicamente tratarán la información siguiendo nuestras instrucciones y aplicando medidas de
-            seguridad apropiadas.</p>
-        <p>Happy Corner no vende, comercializa ni comparte datos personales con terceros para fines publicitarios.</p>
+            <div class="legal-section" id="seccion-2">
+                <h2><span class="legal-section-number">2</span> Información que recopilamos</h2>
+                <p>Dependiendo del servicio utilizado, podremos recopilar:</p>
+                <ul>
+                    <li>Nombre completo.</li>
+                    <li>Correo electrónico.</li>
+                    <li>Número de teléfono o WhatsApp.</li>
+                    <li>Información necesaria para la entrega de pedidos dentro de la institución.</li>
+                    <li>Historial de pedidos, compras, pagos y beneficios del programa de fidelidad.</li>
+                    <li>Información relacionada con acuerdos de crédito o responsabilidad de pago cuando corresponda.</li>
+                    <li>Información técnica como dirección IP, tipo de dispositivo, navegador y registros de acceso con fines de
+                        seguridad y funcionamiento.</li>
+                </ul>
+            </div>
 
-        <h2>5. Conservación de los datos</h2>
-        <p>Conservaremos la información únicamente durante el tiempo necesario para prestar nuestros servicios, cumplir
-            obligaciones legales o resolver posibles controversias. Cuando deje de ser necesaria, será eliminada o
-            anonimizada de forma segura, salvo que exista una obligación legal o contractual para conservarla.</p>
+            <div class="legal-section" id="seccion-3">
+                <h2><span class="legal-section-number">3</span> ¿Para qué utilizamos esta información?</h2>
+                <ul>
+                    <li>Procesar y entregar pedidos.</li>
+                    <li>Administrar tu cuenta.</li>
+                    <li>Brindar atención al cliente.</li>
+                    <li>Enviar comunicaciones relacionadas con pedidos o tu cuenta.</li>
+                    <li>Administrar beneficios, promociones y programas de fidelidad.</li>
+                    <li>Gestionar obligaciones de pago cuando exista un crédito autorizado.</li>
+                    <li>Prevenir fraudes, accesos no autorizados y usos indebidos de la plataforma.</li>
+                    <li>Cumplir obligaciones legales.</li>
+                </ul>
+            </div>
 
-        <h2>6. Derechos del titular</h2>
-        <ul>
-            <li>Conocer, actualizar y rectificar tus datos personales.</li>
-            <li>Solicitar prueba de la autorización otorgada cuando aplique.</li>
-            <li>Conocer el uso dado a tu información.</li>
-            <li>Solicitar la eliminación de tus datos cuando sea procedente.</li>
-            <li>Revocar la autorización otorgada, cuando la ley lo permita.</li>
-            <li>Acceder gratuitamente a tu información personal.</li>
-        </ul>
+            <div class="legal-section" id="seccion-4">
+                <h2><span class="legal-section-number">4</span> Compartición de la información</h2>
+                <p>Para prestar nuestros servicios podemos apoyarnos en proveedores tecnológicos que facilitan el funcionamiento
+                    de la plataforma, como servicios de almacenamiento, autenticación, comunicaciones electrónicas y otras
+                    herramientas necesarias para la operación.</p>
+                <p>Estos proveedores únicamente tratarán la información siguiendo nuestras instrucciones y aplicando medidas de
+                    seguridad apropiadas.</p>
+                <p>Happy Corner no vende, comercializa ni comparte datos personales con terceros para fines publicitarios.</p>
+            </div>
 
-        <h2>7. ¿Cómo ejercer tus derechos?</h2>
-        <p>Puedes enviar una solicitud al correo <a
-                href="mailto:happycorner.com@gmail.com">happycorner.com@gmail.com</a>. Atenderemos las solicitudes
-            dentro de los plazos establecidos por la legislación colombiana.</p>
+            <div class="legal-section" id="seccion-5">
+                <h2><span class="legal-section-number">5</span> Conservación de los datos</h2>
+                <p>Conservaremos la información únicamente durante el tiempo necesario para prestar nuestros servicios, cumplir
+                    obligaciones legales o resolver posibles controversias. Cuando deje de ser necesaria, será eliminada o
+                    anonimizada de forma segura, salvo que exista una obligación legal o contractual para conservarla.</p>
+            </div>
 
-        <h2>8. Seguridad de la información</h2>
-        <p>Implementamos medidas técnicas, administrativas y organizacionales razonables para proteger la información
-            frente a accesos no autorizados, pérdida, alteración o divulgación. No obstante, ningún sistema puede
-            garantizar una seguridad absoluta.</p>
+            <div class="legal-section" id="seccion-6">
+                <h2><span class="legal-section-number">6</span> Derechos del titular</h2>
+                <ul>
+                    <li>Conocer, actualizar y rectificar tus datos personales.</li>
+                    <li>Solicitar prueba de la autorización otorgada cuando aplique.</li>
+                    <li>Conocer el uso dado a tu información.</li>
+                    <li>Solicitar la eliminación de tus datos cuando sea procedente.</li>
+                    <li>Revocar la autorización otorgada, cuando la ley lo permita.</li>
+                    <li>Acceder gratuitamente a tu información personal.</li>
+                </ul>
+            </div>
 
-        <h2>9. Menores de edad</h2>
-        <p>Happy Corner presta sus servicios principalmente dentro del entorno escolar. Cuando corresponda el
-            tratamiento de datos de menores de edad, este se realizará respetando la normativa colombiana aplicable y
-            procurando proteger siempre su interés superior.</p>
+            <div class="legal-section" id="seccion-7">
+                <h2><span class="legal-section-number">7</span> ¿Cómo ejercer tus derechos?</h2>
+                <p>Puedes enviar una solicitud al correo <a
+                        href="mailto:happycorner.com@gmail.com">happycorner.com@gmail.com</a>. Atenderemos las solicitudes
+                    dentro de los plazos establecidos por la legislación colombiana.</p>
+            </div>
 
-        <h2>10. Cambios a esta Política</h2>
-        <p>Podremos modificar esta Política de Privacidad para reflejar cambios legales, operativos o en nuestros
-            servicios. La versión vigente estará siempre disponible en esta página junto con su fecha de actualización.
-        </p>
+            <div class="legal-section" id="seccion-8">
+                <h2><span class="legal-section-number">8</span> Seguridad de la información</h2>
+                <p>Implementamos medidas técnicas, administrativas y organizacionales razonables para proteger la información
+                    frente a accesos no autorizados, pérdida, alteración o divulgación. No obstante, ningún sistema puede
+                    garantizar una seguridad absoluta.</p>
+            </div>
 
-        <h2>11. Contacto</h2>
-        <p>Si tienes preguntas sobre esta Política de Privacidad o sobre el tratamiento de tus datos personales, puedes
-            escribirnos a <a href="mailto:happycorner.com@gmail.com">happycorner.com@gmail.com</a>.</p>
+            <div class="legal-section" id="seccion-9">
+                <h2><span class="legal-section-number">9</span> Menores de edad</h2>
+                <p>Happy Corner presta sus servicios principalmente dentro del entorno escolar. Cuando corresponda el
+                    tratamiento de datos de menores de edad, este se realizará respetando la normativa colombiana aplicable y
+                    procurando proteger siempre su interés superior.</p>
+            </div>
+
+            <div class="legal-section" id="seccion-10">
+                <h2><span class="legal-section-number">10</span> Cambios a esta Política</h2>
+                <p>Podremos modificar esta Política de Privacidad para reflejar cambios legales, operativos o en nuestros
+                    servicios. La versión vigente estará siempre disponible en esta página junto con su fecha de actualización.
+                </p>
+            </div>
+
+            <div class="legal-section" id="seccion-11">
+                <h2><span class="legal-section-number">11</span> Contacto</h2>
+                <p>Si tienes preguntas sobre esta Política de Privacidad o sobre el tratamiento de tus datos personales, puedes
+                    escribirnos a <a href="mailto:happycorner.com@gmail.com">happycorner.com@gmail.com</a>.</p>
+            </div>
+        </div>
     </div>
+
+    <a href="https://wa.me/573112871046" target="_blank" class="wa-fixed">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+            </path>
+        </svg>
+    </a>
+
+    <script>
+        let isDark = false;
+        function toggleTheme() {
+            isDark = !isDark;
+            const themeBtn = document.getElementById('theme-icon');
+            if (isDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeBtn.innerText = '☀️';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeBtn.innerText = '🌙';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const hour = new Date().getHours();
+            if (hour >= 18 || hour < 6) toggleTheme();
+
+            // Simple Scroll-Spy JS
+            const sections = document.querySelectorAll('.legal-section');
+            const navLinks = document.querySelectorAll('.legal-toc a');
+
+            function scrollSpy() {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (window.scrollY >= sectionTop - 150) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === `#${current}`) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+
+            window.addEventListener('scroll', scrollSpy);
+            scrollSpy(); // run once on load
+        });
+
+        const menuBtn = document.getElementById('menuBtn');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('overlay');
+        menuBtn.onclick = () => { sideMenu.classList.toggle('active'); overlay.classList.toggle('active'); };
+        overlay.onclick = () => { sideMenu.classList.remove('active'); overlay.classList.remove('active'); };
+    </script>
+    <script src="/footer.js"></script>
 </body>
 
 </html>
