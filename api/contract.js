@@ -404,7 +404,7 @@ async function generarPdfContrato({ typedName, signatureImageBuffer, signedAt, i
     ensureSpace(30);
     y -= 6;
     const disclaimerLines = wrapTextLines(
-        'Este documento es para control interno de Happy Corner y no constituye un instrumento legal formal frente a terceros.',
+        'Este acuerdo regula las condiciones bajo las cuales Happy Corner concede compras a crédito y será aceptado por el cliente mediante su firma electrónica antes de utilizar dicho beneficio.',
         fontReg, 8, CONTENT_W
     );
     for (const dl of disclaimerLines) {
