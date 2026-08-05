@@ -17,6 +17,7 @@
     <!-- Fonts and CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
     
     <!-- Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -73,171 +74,14 @@
     <main class="showcase-container">
         <h1 class="page-title">Catálogo Completo 🛒</h1>
 
-        <div class="section-tag">Pizzas 🍕</div>
-        <div class="grid">
-            <div class="card" id="pizza-normal">
-                <div class="img-container"><img src="pizza.png" alt="Pizza Normal"></div>
-                <div class="product-name">Pizza Normal</div>
-                <div class="price">$11.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('pizza-normal', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('pizza-normal', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('pizza-normal', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="pizza-x2-queso">
-                <div class="img-container"><img src="pizza.png" alt="Pizza x2 Queso"></div>
-                <div class="product-name">Pizza x2 Queso</div>
-                <div class="price">$13.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('pizza-x2-queso', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('pizza-x2-queso', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('pizza-x2-queso', event)">Añadir a Carrito</button>
-            </div>
-        </div>
+        <div class="section-tag" id="tag-combos">Pizzas &amp; Combos 🍕</div>
+        <div class="grid" id="cat-combos"></div>
 
-        <div class="section-tag">Dulces 🍭</div>
-        <div class="grid">
-            <div class="card" id="bubbaloo">
-                <div class="img-container"><img src="bb.png" alt="Bubbaloo"></div>
-                <div class="product-name">Bubbaloo</div>
-                <div class="price">$400</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('bubbaloo', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('bubbaloo', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('bubbaloo', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="bubbaloo-sparkies">
-                <div class="img-container"><img src="sparkies.png" alt="Bubbaloo Sparkies"></div>
-                <div class="product-name">Bubbaloo Sparkies</div>
-                <div class="price">$2.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('bubbaloo-sparkies', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('bubbaloo-sparkies', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('bubbaloo-sparkies', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="quipitos">
-                <div class="img-container"><img src="quipitos.png" alt="Quipitos"></div>
-                <div class="product-name">Quipitos</div>
-                <div class="price">$1.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('quipitos', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('quipitos', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('quipitos', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="piazza">
-                <div class="img-container"><img src="Piazza.png" alt="Piazza"></div>
-                <div class="product-name">Piazza</div>
-                <div class="price">$800</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('piazza', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('piazza', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('piazza', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="choco-disk">
-                <div class="img-container"><img src="chocodisk.png" alt="Choco Disk"></div>
-                <div class="product-name">Choco Disk</div>
-                <div class="price">$1.500</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('choco-disk', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('choco-disk', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('choco-disk', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="bombombum-tajin">
-                <div class="img-container"><img src="bt.png" alt="Bombombum Tajín"></div>
-                <div class="product-name">Bombombum Tajín</div>
-                <div class="price">$2.500</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('bombombum-tajin', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('bombombum-tajin', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('bombombum-tajin', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="ring-pop">
-                <div class="img-container"><img src="ringpop.png" alt="Ring Pop"></div>
-                <div class="product-name">Ring Pop</div>
-                <div class="price">$3.500</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('ring-pop', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('ring-pop', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('ring-pop', event)">Añadir a Carrito</button>
-            </div>
-        </div>
+        <div class="section-tag" id="tag-dulces">Dulces 🍭</div>
+        <div class="grid" id="cat-dulces"></div>
 
-        <div class="section-tag">Galletas y Brownies 🍪</div>
-        <div class="grid">
-            <div class="card" id="cookie-chips">
-                <div class="img-container"><img src="galletachocolate.png" alt="Galleta de Chispas"></div>
-                <div class="product-name">Cookie Chips</div>
-                <div class="price">$5.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('cookie-chips', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('cookie-chips', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('cookie-chips', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="galleta-red-velvet">
-                <div class="img-container"><img src="redvelvet.png" alt="Galleta Red Velvet"></div>
-                <div class="product-name">Galleta Red Velvet</div>
-                <div class="price">$6.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('galleta-red-velvet', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('galleta-red-velvet', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('galleta-red-velvet', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="brownie-avellana">
-                <div class="img-container"><img src="browniea.png" alt="Brownie Avellana"></div>
-                <div class="product-name">Brownie Avellana</div>
-                <div class="price">$5.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('brownie-avellana', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('brownie-avellana', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('brownie-avellana', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="galleta-choco-arequipe">
-                <div class="img-container"><img src="galletachocoa.png" alt="Galleta Choco Arequipe"></div>
-                <div class="product-name">Galleta Choco Arequipe</div>
-                <div class="price">$6.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('galleta-choco-arequipe', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('galleta-choco-arequipe', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('galleta-choco-arequipe', event)">Añadir a Carrito</button>
-            </div>
-            <div class="card" id="brownie-arequipe">
-                <div class="img-container"><img src="browniear.png" alt="Brownie Arequipe"></div>
-                <div class="product-name">Brownie Arequipe</div>
-                <div class="price">$5.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('brownie-arequipe', -1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('brownie-arequipe', 1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('brownie-arequipe', event)">Añadir a Carrito</button>
-            </div>
-        </div>
+        <div class="section-tag" id="tag-reposteria">Galletas y Brownies 🍪</div>
+        <div class="grid" id="cat-reposteria"></div>
 
         <div class="section-tag">Robux 🟢</div>
         <div class="grid">
@@ -409,7 +253,7 @@
             
             if (name.toLowerCase().includes('pizza')) {
                 if (!checkPizzaLimit(cart, qtyVal)) {
-                    alert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.");
+                    hcAlert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.", "warning");
                     return;
                 }
             }
@@ -438,7 +282,7 @@
             const amountInput = document.getElementById('custom-robux-amount').value;
             const amount = parseInt(amountInput);
             if (!amount || amount <= 0) {
-                alert("Por favor ingresa una cantidad válida de Robux.");
+                hcAlert("Por favor ingresa una cantidad válida de Robux.", "warning");
                 return;
             }
 
@@ -467,6 +311,91 @@
             document.getElementById('cart-count').innerText = total;
         }
     </script>
-<script src="/footer.js"></script>
+    <script src="/footer.js"></script>
+    <script type="module">
+        import { initPromise, db } from './firebase-auth.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        async function initCatalog() {
+            await initPromise;
+            const containers = {
+                combos: document.getElementById('cat-combos'),
+                dulces: document.getElementById('cat-dulces'),
+                reposteria: document.getElementById('cat-reposteria'),
+                bebidas: document.getElementById('cat-reposteria') // fallback or append if any
+            };
+
+            // Loading state
+            Object.values(containers).forEach(c => {
+                if (c) c.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:20px 0; width:100%; text-align:center;">Cargando...</div>';
+            });
+
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                // Clear loading state
+                Object.values(containers).forEach(c => {
+                    if (c) c.innerHTML = '';
+                });
+
+                let counts = { combos: 0, dulces: 0, reposteria: 0 };
+
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    if (p.available !== false) {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.id = docSnap.id;
+
+                        const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                        const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
+
+                        card.innerHTML = `
+                            ${badgeHtml}
+                            <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                            <div class="product-name">${p.name}</div>
+                            <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                            <div class="qty-row">
+                                <button class="qty-btn" onclick="changeQty('${docSnap.id}', -1)">-</button>
+                                <span class="qty-num">1</span>
+                                <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
+                            </div>
+                            <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
+                        `;
+
+                        // Decide where to put it
+                        let cat = p.category || 'dulces';
+                        if (cat === 'bebidas') cat = 'dulces'; // combine or put in dulces for now
+
+                        const targetGrid = containers[cat];
+                        if (targetGrid) {
+                            targetGrid.appendChild(card);
+                            counts[cat]++;
+                        }
+                    }
+                });
+
+                // Hide empty sections
+                if (counts.combos === 0) {
+                    document.getElementById('tag-combos').style.display = 'none';
+                    containers.combos.style.display = 'none';
+                }
+                if (counts.dulces === 0) {
+                    document.getElementById('tag-dulces').style.display = 'none';
+                    containers.dulces.style.display = 'none';
+                }
+                if (counts.reposteria === 0) {
+                    document.getElementById('tag-reposteria').style.display = 'none';
+                    containers.reposteria.style.display = 'none';
+                }
+
+            } catch (err) {
+                console.error("Failed to load catalog products:", err);
+                Object.values(containers).forEach(c => {
+                    if (c) c.innerHTML = '<div style="color:var(--accent-red); font-size:13px; padding:20px 0; width:100%; text-align:center;">Error al cargar.</div>';
+                });
+            }
+        }
+        window.addEventListener('DOMContentLoaded', initCatalog);
+    </script>
 </body>
 </html>

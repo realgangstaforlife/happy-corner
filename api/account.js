@@ -1,8 +1,33 @@
 import { db, auth } from './_lib/firebaseAdmin.js';
 import { applyCors, json } from './_lib/http.js';
 import { s3Client, bucketName } from './_lib/r2Client.js';
-import { DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import fetch from 'node-fetch';
+
+async function deleteR2Prefix(prefix) {
+    if (!s3Client || !bucketName) return;
+    try {
+        const listCommand = new ListObjectsV2Command({
+            Bucket: bucketName,
+            Prefix: prefix
+        });
+        const listData = await s3Client.send(listCommand);
+        if (!listData.Contents || listData.Contents.length === 0) return;
+
+        const deleteParams = {
+            Bucket: bucketName,
+            Delete: {
+                Objects: listData.Contents.map(item => ({ Key: item.Key }))
+            }
+        };
+        const deleteCommand = new DeleteObjectsCommand(deleteParams);
+        await s3Client.send(deleteCommand);
+        console.log(`Deleted prefix: ${prefix} (${listData.Contents.length} files)`);
+    } catch (e) {
+        console.error(`Error deleting prefix ${prefix}:`, e.message);
+    }
+}
+
 
 export default async function handler(req, res) {
     if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
@@ -228,14 +253,127 @@ export default async function handler(req, res) {
         // Admin check consultando el rol del documento de Firestore
         const isCallerAdmin = callerData.role === 'admin';
 
+        // --- 2.5. ACCIÓN: sendDeletePin (ACCESIBLE POR EL PROPIO USUARIO) ---
+        if (action === 'sendDeletePin') {
+            const { uid } = req.body;
+            if (!uid) return json(res, 400, { error: 'Falta el uid.' });
+            if (uid !== decoded.uid) {
+                return json(res, 403, { error: 'No autorizado para solicitar PIN de esta cuenta.' });
+            }
+
+            const targetUserSnap = await db.collection('users').doc(uid).get();
+            if (!targetUserSnap.exists) {
+                return json(res, 404, { error: 'El usuario no existe.' });
+            }
+            const userData = targetUserSnap.data();
+            const email = userData.email;
+            if (!email) return json(res, 400, { error: 'La cuenta no tiene correo registrado.' });
+
+            const resendKey = process.env.RESEND_API_KEY;
+            if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
+
+            // check rate limit of 3 minutes
+            const pinRef = db.collection('verificationPins').doc(`delete_${uid}`);
+            const existingPin = await pinRef.get();
+            if (existingPin.exists) {
+                const data = existingPin.data();
+                if (data.createdAt) {
+                    const createdTime = new Date(data.createdAt).getTime();
+                    if (Date.now() - createdTime < 3 * 60 * 1000) {
+                        return json(res, 429, { error: 'Por favor espera 3 minutos antes de solicitar un nuevo PIN.' });
+                    }
+                }
+            }
+
+            const { Resend } = await import('resend');
+            const resend = new Resend(resendKey);
+            const pin = Math.floor(100000 + Math.random() * 900000).toString();
+            const crypto = await import('crypto');
+            const hashedPin = crypto.createHash('sha256').update(pin).digest('hex');
+            const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+            await pinRef.set({ hashedPin, expiresAt, attempts: 0, createdAt: new Date().toISOString() });
+
+            await resend.emails.send({
+                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                to: [email],
+                subject: '⚠️ PIN para eliminar tu cuenta en Happy Corner',
+                html: `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0d0d0d;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#e11d48,#ff5252,#ff8c42);padding:28px 32px;text-align:center;">
+            <img src="https://happycorner.top/happyfavicon.png" width="48" height="48" alt="Happy Corner" style="border-radius:10px;display:block;margin:0 auto 10px;">
+            <div style="font-family:'Outfit',Arial,sans-serif;font-size:22px;font-weight:900;color:#fff;">Eliminación de Cuenta</div>
+            <div style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px;">Confirmación de Seguridad</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            <p style="font-family:'Outfit',Arial,sans-serif;color:#ccc;font-size:15px;margin:0 0 12px;">Hola 👋</p>
+            <p style="font-family:'Outfit',Arial,sans-serif;color:#ccc;font-size:15px;margin:0 0 24px;">Has solicitado eliminar permanentemente tu cuenta en Happy Corner. Esta acción borrará todo tu historial, score y datos de firma. Usa el siguiente PIN para confirmar:</p>
+            <div style="background:#0d0d0d;border:2px solid rgba(255,82,82,0.4);border-radius:16px;padding:24px;text-align:center;margin:0 0 24px;">
+              <div style="font-family:'Outfit',Arial,monospace;font-size:40px;font-weight:900;color:#ff5252;letter-spacing:10px;">${pin}</div>
+              <div style="font-family:'Outfit',Arial,sans-serif;color:#666;font-size:12px;margin-top:8px;">Válido por 10 minutos · No lo compartas</div>
+            </div>
+            <p style="font-family:'Outfit',Arial,sans-serif;color:#888;font-size:12px;margin:0;">Si no solicitaste esta eliminación, cambia la contraseña de tu cuenta inmediatamente.</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+            });
+
+            return json(res, 200, { success: true });
+        }
+
         // --- 3. ACCIÓN: deleteAccount (ACCESIBLE POR EL PROPIO USUARIO O POR ADMIN) ---
         if (action === 'deleteAccount') {
-            const { uid } = req.body;
+            const { uid, pin } = req.body;
             const targetUid = uid || decoded.uid;
 
             // Si intenta borrar a otro usuario, debe ser admin
             if (targetUid !== decoded.uid && !isCallerAdmin) {
                 return json(res, 403, { error: 'No autorizado.' });
+            }
+
+            // Si no es admin (el usuario se está borrando a sí mismo), verificar PIN
+            if (!isCallerAdmin) {
+                if (!pin) return json(res, 400, { error: 'Se requiere el PIN de verificación.' });
+                
+                const pinRef = db.collection('verificationPins').doc(`delete_${targetUid}`);
+                const pinSnap = await pinRef.get();
+                if (!pinSnap.exists) {
+                    return json(res, 400, { error: 'No se ha solicitado ningún PIN o ya expiró.' });
+                }
+
+                const pinData = pinSnap.data();
+                if (new Date(pinData.expiresAt) < new Date()) {
+                    await pinRef.delete();
+                    return json(res, 400, { error: 'El PIN ha expirado. Solicita uno nuevo.' });
+                }
+
+                if (pinData.attempts >= 5) {
+                    await pinRef.delete();
+                    return json(res, 400, { error: 'Has excedido el número máximo de intentos. Solicita un nuevo PIN.' });
+                }
+
+                const crypto = await import('crypto');
+                const incomingHashed = crypto.createHash('sha256').update(pin.trim()).digest('hex');
+                if (incomingHashed !== pinData.hashedPin) {
+                    await pinRef.update({ attempts: pinData.attempts + 1 });
+                    return json(res, 401, { error: `PIN incorrecto. Intento ${pinData.attempts + 1} de 5.` });
+                }
+
+                // Delete PIN code
+                await pinRef.delete();
             }
 
             // Consultar datos del usuario objetivo
@@ -271,44 +409,17 @@ export default async function handler(req, res) {
             });
             await movementsBatch.commit();
 
-            // 5. Anonimizar Pedidos
-            const userFullName = (targetData.displayName || targetData.name || '').trim();
-            const firstSpace = userFullName.indexOf(' ');
-            const firstName = firstSpace !== -1 ? userFullName.substring(0, firstSpace) : userFullName;
-
+            // 5. Eliminar Pedidos (completamente, como se aprobó en el plan)
             const ordersSnap = await db.collection('orders').where('customerUID', '==', targetUid).get();
             const ordersBatch = db.batch();
             ordersSnap.forEach(doc => {
-                ordersBatch.update(doc.ref, {
-                    nombre: firstName || 'Cliente',
-                    whatsapp: null,
-                    email: null,
-                    customerCode: null,
-                    accountDeleted: true,
-                    updatedAt: new Date().toISOString()
-                });
+                ordersBatch.delete(doc.ref);
             });
             await ordersBatch.commit();
 
-            // 6. Eliminar firma y PDF de R2
-            if (s3Client && bucketName) {
-                try {
-                    await s3Client.send(new DeleteObjectCommand({
-                        Bucket: bucketName,
-                        Key: `signatures/${targetUid}/contract_v1.png`
-                    }));
-                } catch (e) {
-                    console.error("Error al borrar firma de R2:", e.message);
-                }
-                try {
-                    await s3Client.send(new DeleteObjectCommand({
-                        Bucket: bucketName,
-                        Key: `contracts/${targetUid}/contract_v1.pdf`
-                    }));
-                } catch (e) {
-                    console.error("Error al borrar PDF de R2:", e.message);
-                }
-            }
+            // 6. Eliminar firma y PDF de R2 usando borrado de carpetas por prefijo
+            await deleteR2Prefix(`signatures/${targetUid}/`);
+            await deleteR2Prefix(`contracts/${targetUid}/`);
 
             // 7. Eliminar en Firestore
             await targetUserRef.delete();
@@ -564,6 +675,81 @@ export default async function handler(req, res) {
             }
 
             return json(res, 200, { ok: true, version: newVersion, usersNotified: usersSnap.size });
+        }
+
+        // --- 7. ACCIÓN: sendMarketingEmail (SOLO ADMIN) ---
+        if (action === 'sendMarketingEmail') {
+            const { subject, body, imageUrls } = req.body || {};
+            if (!subject || !body) return json(res, 400, { error: 'Falta el asunto o el cuerpo.' });
+
+            const resendKey = process.env.RESEND_API_KEY;
+            if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
+
+            // Get all marketing opt-in users
+            const usersSnap = await db.collection('users').where('marketingOptIn', '==', true).get();
+            if (usersSnap.empty) return json(res, 200, { ok: true, sent: 0 });
+
+            const { Resend } = await import('resend');
+            const resend = new Resend(resendKey);
+
+            const imagesHtml = (imageUrls && imageUrls.length > 0)
+                ? imageUrls.map(url => `<img src="${url}" alt="" style="width:100%;max-width:460px;border-radius:12px;margin:12px 0;display:block;">`).join('')
+                : '';
+
+            const bodyHtml = body.replace(/\n/g, '<br>');
+
+            const htmlTemplate = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0d0d0d;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);padding:28px 32px;text-align:center;">
+            <img src="https://happycorner.top/happyfavicon.png" width="48" height="48" alt="Happy Corner" style="border-radius:10px;display:block;margin:0 auto 10px;">
+            <div style="font-family:'Outfit',Arial,sans-serif;font-size:24px;font-weight:900;color:#fff;">Happy Corner 🩷</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;">
+            ${imagesHtml}
+            <div style="font-family:'Outfit',Arial,sans-serif;color:#ccc;font-size:15px;line-height:1.7;">${bodyHtml}</div>
+            <div style="margin-top:32px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.07);text-align:center;">
+              <a href="https://happycorner.top" style="display:inline-block;background:linear-gradient(135deg,#b01e5a,#ff5299);color:#fff;text-decoration:none;padding:12px 24px;border-radius:12px;font-weight:800;font-size:13px;">Visitar Happy Corner</a>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:rgba(255,255,255,0.03);padding:16px 32px;text-align:center;">
+            <div style="font-family:'Outfit',Arial,sans-serif;color:#555;font-size:11px;">Recibiste este correo porque optaste por recibir novedades de Happy Corner.<br>Para darte de baja, visita tu perfil en <a href="https://happycorner.top/mi-cuenta" style="color:#ff5299;">Mi Cuenta</a>.</div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+            // Send in batches of 50 (Resend limit per call is 1 recipient per call but we fire concurrent promises in groups)
+            const emails = [];
+            usersSnap.forEach(userDoc => {
+                const userData = userDoc.data();
+                if (userData.email) emails.push(userData.email.trim().toLowerCase());
+            });
+
+            const BATCH_SIZE = 10;
+            let sent = 0;
+            for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+                const batch = emails.slice(i, i + BATCH_SIZE);
+                await Promise.all(batch.map(to =>
+                    resend.emails.send({ from: 'Happy Corner <no-reply@alertas.happycorner.top>', to: [to], subject, html: htmlTemplate })
+                        .catch(err => console.error(`Error sending to ${to}:`, err.message))
+                ));
+                sent += batch.length;
+            }
+
+            return json(res, 200, { ok: true, sent, total: emails.length });
         }
 
         return json(res, 400, { error: 'Acción no válida' });

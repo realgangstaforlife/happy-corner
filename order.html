@@ -10,6 +10,7 @@
     <!-- Fonts and CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
 
     <!-- Confetti & SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -252,21 +253,8 @@
         let cart = JSON.parse(localStorage.getItem('hc_cart')) || [];
 
         // Catálogo para Upselling Dinámico y Rendereo de Carrito
-        const catalogItems = [
-            { id: 'bubbaloo', name: 'Bubbaloo', price: 400, img: 'bb.png' },
-            { id: 'bubbaloo-sparkies', name: 'Bubbaloo Sparkies', price: 2000, img: 'sparkies.png' },
-            { id: 'quipitos', name: 'Quipitos', price: 1000, img: 'quipitos.png' },
-            { id: 'piazza', name: 'Piazza', price: 800, img: 'Piazza.png' },
-            { id: 'choco-disk', name: 'Choco Disk', price: 1500, img: 'chocodisk.png' },
-            { id: 'bombombum-tajin', name: 'Bombombum Tajín', price: 2500, img: 'bt.png' },
-            { id: 'ring-pop', name: 'Ring Pop', price: 3500, img: 'ringpop.png' },
-            { id: 'cookie-chips', name: 'Cookie Chips', price: 5000, img: 'galletachocolate.png' },
-            { id: 'galleta-red-velvet', name: 'Galleta Red Velvet', price: 6000, img: 'redvelvet.png' },
-            { id: 'brownie-avellana', name: 'Brownie Avellana', price: 5000, img: 'browniea.png' },
-            { id: 'galleta-choco-arequipe', name: 'Galleta Choco Arequipe', price: 6000, img: 'galletachocoa.png' },
-            { id: 'brownie-arequipe', name: 'Brownie Arequipe', price: 5000, img: 'browniear.png' },
-            { id: 'pizza-normal', name: 'Pizza', price: 11000, img: 'pizza.png' }
-        ];
+        // Catálogo cargado dinámicamente desde Firestore
+        let catalogItems = [];
 
         let currentUpsellItem = null;
 
@@ -287,7 +275,7 @@
             // Bloquear si intentan pasar de 5 pizzas EN TOTAL
             if (tempCart[index].name.toLowerCase().includes('pizza') && delta > 0) {
                 if (!window.checkPizzaLimit(tempCart)) {
-                    alert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.");
+                    hcAlert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.", "warning");
                     return;
                 }
             }
@@ -406,7 +394,7 @@
 
             if (currentUpsellItem.name.toLowerCase().includes('pizza')) {
                 if (!window.checkPizzaLimit(cart)) {
-                    alert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.");
+                    hcAlert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.", "warning");
                     return;
                 }
             }
@@ -422,7 +410,7 @@
                 const sadAudio = document.getElementById('sadViolin');
                 sadAudio.volume = 0.5;
                 sadAudio.play().catch(e => console.log('Audio autoplay blocked', e));
-                alert("¿0% de propina? 💔 ... Entendido, estamos llorando un poquito por dentro, pero tu pedido sigue en pie.");
+                hcAlert("¿0% de propina? 💔 ... Entendido, estamos llorando un poquito por dentro, pero tu pedido sigue en pie.", "info");
             }
             renderCart();
         };
@@ -430,10 +418,11 @@
         // --- FETCH PUNTOS ---
         document.getElementById('consultar-puntos-btn').onclick = async function () {
              const code = document.getElementById('puntos_code').value.trim() ? 'HC' + document.getElementById('puntos_code').value.trim().toUpperCase() : '';
-            if (!code) return alert("Escribe tu código");
+            if (!code) { hcAlert("Escribe tu código", "warning"); return; }
 
             if (!auth.currentUser) {
-                return alert("Debes iniciar sesión para consultar tus puntos.");
+                hcAlert("Debes iniciar sesión para consultar tus puntos.", "warning");
+                return;
             }
 
             this.innerText = "...";
@@ -446,13 +435,13 @@
                 });
                 const data = await res.json();
                 if (data.nombre) {
-                    if (confirm(`¡Hola ${data.nombre}! ¿Usamos tus datos?`)) {
+                    if (await hcConfirm(`¡Hola ${data.nombre}! ¿Usamos tus datos para completar el formulario?`)) {
                         document.getElementById('nombre').value = data.nombre;
                         document.getElementById('email').value = data.correo && data.correo !== 'No registrado' ? data.correo : '';
                         document.getElementById('celular').value = String(data.telefono || '').replace(/\s+/g, '');
                     }
-                } else { alert(data.error || "Código no válido"); }
-            } catch (e) { alert("Error al conectar"); }
+                } else { hcAlert(data.error || "Código no válido", "warning"); }
+            } catch (e) { hcAlert("Error al conectar con el servidor", "error"); }
             this.innerText = "Consultar";
         };
 
@@ -461,7 +450,8 @@
             e.preventDefault();
 
             if (cart.length === 0) {
-                return alert("El carrito está vacío.");
+                hcAlert("El carrito está vacío.", "warning");
+                return;
             }
 
             const payload = {
@@ -559,7 +549,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert('❌ No pudimos enviar el pedido: ' + err.message);
+                hcAlert('❌ No pudimos enviar el pedido: ' + err.message, 'error');
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -567,6 +557,29 @@
         });
     </script>
     <script src="/footer.js"></script>
+    <script type="module">
+        import { initPromise, db } from './firebase-auth.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        async function loadCatalogItems() {
+            try {
+                await initPromise;
+                const snap = await getDocs(collection(db, 'products'));
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    if (p.available !== false) {
+                        const imgSrc = p.image && p.image.startsWith('http') ? p.image : (p.image || 'loguito.png');
+                        catalogItems.push({ id: docSnap.id, name: p.name, price: p.price, img: imgSrc });
+                    }
+                });
+            } catch (err) {
+                console.warn('Could not load products from Firestore, upsell will be empty:', err);
+            }
+            // Re-render cart so images and upsell are updated
+            if (typeof renderCart === 'function') renderCart();
+        }
+        window.addEventListener('DOMContentLoaded', loadCatalogItems);
+    </script>
 </body>
 
 </html>

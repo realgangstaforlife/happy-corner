@@ -86,5 +86,16 @@ allow create: if request.auth != null && request.auth.uid == uid &&
       allow read: if isAdmin();
       allow write: if false;
     }
+
+    // config collection rules (server-only write, no client reads/writes)
+    match /config/{documentId} {
+      allow read, write: if false;
+    }
+
+    // products collection rules (public read, admin write)
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

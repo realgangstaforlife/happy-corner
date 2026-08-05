@@ -9,6 +9,7 @@
     <link rel="icon" href="/happyfavicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
     <style>
         /* ====== MI CUENTA LAYOUT ====== */
         .mc-wrapper {
@@ -2075,32 +2076,58 @@
         const deleteAccountBtn = document.getElementById('delete-account-btn');
         if (deleteAccountBtn) {
             deleteAccountBtn.onclick = async function () {
-                const confirmed = window.confirm(
-                    '⚠️ ¿Estás seguro que quieres eliminar tu cuenta?\n\nEsta acción es PERMANENTE e irreversible. Perderás todos tus puntos y datos. Si tienes deuda activa, la eliminación será bloqueada.'
+                // Step 1: branded confirmation
+                const confirmed = await hcConfirm(
+                    '⚠️ ¿Estás seguro que quieres eliminar tu cuenta?\n\nEsta acción es PERMANENTE e irreversible. Perderás todos tus puntos y datos.'
                 );
                 if (!confirmed) return;
 
+                // Step 2: send PIN to email
                 deleteAccountBtn.disabled = true;
-                deleteAccountBtn.textContent = 'Eliminando...';
+                deleteAccountBtn.textContent = 'Enviando PIN...';
 
                 try {
                     const token = await currentUser.getIdToken();
-                    const resp = await fetch('/api/account?action=deleteAccount', {
+                    const pinResp = await fetch('/api/account?action=sendDeletePin', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         }
                     });
+                    const pinData = await pinResp.json();
+                    if (!pinResp.ok) throw new Error(pinData.error || 'Error enviando PIN');
+
+                    // Step 3: ask for the PIN
+                    hcAlert('Te enviamos un código de 6 dígitos a tu correo. Intróducelo a continuación para confirmar.', 'info');
+                    const pin = await hcPrompt('🔐 Ingresa el código de verificación de 6 dígitos que enviamos a tu correo:');
+
+                    if (!pin || pin.trim() === '') {
+                        hcAlert('Operación cancelada.', 'info');
+                        deleteAccountBtn.disabled = false;
+                        deleteAccountBtn.textContent = '🗑️ Eliminar mi cuenta permanentemente';
+                        return;
+                    }
+
+                    // Step 4: delete with PIN
+                    deleteAccountBtn.textContent = 'Eliminando...';
+                    const resp = await fetch('/api/account?action=deleteAccount', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ pin: pin.trim() })
+                    });
                     const data = await resp.json();
                     if (!resp.ok) throw new Error(data.error || 'Error eliminando cuenta');
 
-                    showToast('✅ Cuenta eliminada. ¡Hasta luego!');
+                    hcAlert('✅ Cuenta eliminada. ¡Hasta luego!', 'success');
                     await signOut(auth);
                     setTimeout(() => { window.location.href = '/'; }, 2000);
                 } catch (err) {
                     console.error('Delete account error:', err);
-                    showToast('❌ ' + err.message);
+                    hcAlert('❌ ' + err.message, 'error');
                     deleteAccountBtn.disabled = false;
                     deleteAccountBtn.textContent = '🗑️ Eliminar mi cuenta permanentemente';
                 }

@@ -6,6 +6,7 @@
     <title>Pre-Order | Happy Corner</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
     <style>
         .preorder-container { padding-bottom: 120px; }
         .form-section { background: white; margin: 15px; padding: 25px; border-radius: 25px; box-shadow: var(--shadow); }
@@ -148,7 +149,7 @@
 
             let sel = productos.filter(p => carrito[p.id] > 0);
             if (!nombre || !tel || sel.length === 0) {
-                alert("Oye! Selecciona tus galletas y pon tus datos. 😉");
+                hcAlert("Oye! Selecciona tus galletas y pon tus datos. 😉", "warning");
                 return;
             }
 
@@ -169,11 +170,13 @@
                     localStorage.setItem('hc_blacklist', 'true');
                     location.reload();
                 } else if (res.ok) {
-                    alert("¡Pedido enviado con éxito! 🍪");
-                    window.location.href = `https://wa.me/${WHATSAPP_ATENCION}?text=Hola! Soy ${encodeURIComponent(nombre)}, pedí: ${encodeURIComponent(resumen)}. Total: ${encodeURIComponent(totalStr)}`;
+                    hcAlert("¡Pedido enviado con éxito! 🍪", "success");
+                    setTimeout(() => {
+                        window.location.href = `https://wa.me/${WHATSAPP_ATENCION}?text=Hola! Soy ${encodeURIComponent(nombre)}, pedí: ${encodeURIComponent(resumen)}. Total: ${encodeURIComponent(totalStr)}`;
+                    }, 1800);
                 }
             } catch (e) {
-                alert("Error de conexión. Intenta de nuevo.");
+                hcAlert("Error de conexión. Intenta de nuevo.", "error");
                 btn.disabled = false;
                 btn.innerText = "ENVIAR PEDIDO 🚀";
             }

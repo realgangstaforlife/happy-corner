@@ -41,6 +41,7 @@
     <!-- CSS y Fuentes -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
 
     <!-- Librería Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -124,46 +125,8 @@
     <h1 class="page-title">Top Products</h1>
 
     <div class="section-tag">Combos & Favoritos</div>
-    <div class="grid">
-        <!-- Pizza -->
-        <div class="card" id="pizza-normal">
-            <div class="badge-top">TOP</div>
-            <div class="img-container"><img src="pizza.png" alt="Pizza Normal"></div>
-            <div class="product-name">Pizza</div>
-            <div class="price">$11.000</div>
-            <div class="qty-row">
-                <button class="qty-btn" onclick="qty('pizza-normal',-1)">-</button>
-                <span class="qty-num">1</span>
-                <button class="qty-btn" onclick="qty('pizza-normal',1)">+</button>
-            </div>
-            <button class="btn-add" onclick="add('pizza-normal', event)">Añadir a Carrito</button>
-        </div>
-
-        <!-- Galleta Red Velvet -->
-        <div class="card" id="galleta-red-velvet">
-            <div class="img-container"><img src="redvelvet.png" alt="Galleta Red Velvet"></div>
-            <div class="product-name">Galleta Red Velvet</div>
-            <div class="price">$6.000</div>
-            <div class="qty-row">
-                <button class="qty-btn" onclick="qty('galleta-red-velvet',-1)">-</button>
-                <span class="qty-num">1</span>
-                <button class="qty-btn" onclick="qty('galleta-red-velvet',1)">+</button>
-            </div>
-            <button class="btn-add" onclick="add('galleta-red-velvet', event)">Añadir a Carrito</button>
-        </div>
-
-        <!-- Ring Pop -->
-        <div class="card" id="ring-pop">
-            <div class="img-container"><img src="ringpop.png" alt="Ring Pop"></div>
-            <div class="product-name">Ring Pop</div>
-            <div class="price">$3.500</div>
-            <div class="qty-row">
-                <button class="qty-btn" onclick="qty('ring-pop',-1)">-</button>
-                <span class="qty-num">1</span>
-                <button class="qty-btn" onclick="qty('ring-pop',1)">+</button>
-            </div>
-            <button class="btn-add" onclick="add('ring-pop', event)">Añadir a Carrito</button>
-        </div>
+    <div class="grid" id="index-products-grid">
+        <!-- Loaded dynamically from Firestore -->
     </div>
 
     <!-- TOAST (Notificación pequeña abajo en el centro) -->
@@ -305,7 +268,7 @@
             // Verificación del límite de pizzas (Máximo 5)
             if (name.toLowerCase().includes('pizza')) {
                 if (!checkPizzaLimit(cart, qtyVal)) {
-                    alert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.");
+                    hcAlert("¡Límite alcanzado! Solo puedes pedir un máximo de 5 porciones de pizza por orden.", "warning");
                     return;
                 }
             }
@@ -354,6 +317,54 @@
     <script type="module" src="auth-state.js"></script>
     <script src="cookie-notice.js"></script>
     <script src="/footer.js"></script>
+    <script type="module">
+        import { initPromise, db } from './firebase-auth.js';
+        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        async function initIndex() {
+            await initPromise;
+            const grid = document.getElementById('index-products-grid');
+            grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">Cargando catálogo...</div>';
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                grid.innerHTML = '';
+                let count = 0;
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    if (p.available !== false && count < 8) {
+                        count++;
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.id = docSnap.id;
+                        
+                        const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                        const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
+
+                        card.innerHTML = `
+                            ${badgeHtml}
+                            <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                            <div class="product-name">${p.name}</div>
+                            <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                            <div class="qty-row">
+                                <button class="qty-btn" onclick="qty('${docSnap.id}',-1)">-</button>
+                                <span class="qty-num">1</span>
+                                <button class="qty-btn" onclick="qty('${docSnap.id}',1)">+</button>
+                            </div>
+                            <button class="btn-add" onclick="add('${docSnap.id}', event)">Añadir a Carrito</button>
+                        `;
+                        grid.appendChild(card);
+                    }
+                });
+                if (count === 0) {
+                    grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">No hay productos disponibles.</div>';
+                }
+            } catch (err) {
+                console.error("Failed to load index products:", err);
+                grid.innerHTML = '<div style="color:var(--accent-red); font-size:13px; text-align:center; width:100%; padding:20px 0;">Error al cargar catálogo.</div>';
+            }
+        }
+        window.addEventListener('DOMContentLoaded', initIndex);
+    </script>
 </body>
 
 </html>

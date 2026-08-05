@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
     <!-- Chart.js for Analytics tab -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
@@ -692,6 +693,8 @@
             <button class="sidebar-item" id="snav-credit" onclick="switchSidebar('credit')"><span class="s-icon">📊</span> Score</button>
             <button class="sidebar-item" id="snav-analytics" onclick="switchSidebar('analytics'); refreshAnalytics();"><span class="s-icon">📈</span> Analíticas</button>
             <div class="sidebar-section-label" style="margin-top:12px;">SISTEMA</div>
+            <button class="sidebar-item" id="snav-products" onclick="switchSidebar('products'); loadProductsTab();"><span class="s-icon">🛍️</span> Productos</button>
+            <button class="sidebar-item" id="snav-marketing" onclick="switchSidebar('marketing'); loadMarketingStats();"><span class="s-icon">📧</span> Marketing</button>
             <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
             <div class="sidebar-footer">
                 <span style="font-size:11px; color:var(--text-muted);">Happy Corner Admin v2</span>
@@ -734,6 +737,7 @@
 
                 <!-- Quick access -->
                 <div class="quick-access">
+                    <a href="https://happycorner.top" target="_blank" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);">🏠 happycorner.top</a>
                     <a href="/pos-v2" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px;">🛒 Ir al POS</a>
                     <button class="admin-btn" style="background:var(--accent-green); font-size:13px; padding:10px 18px;" onclick="openCreateClientModal()">➕ Crear Cliente</button>
                     <button class="admin-btn" style="background:#333; color:var(--text-color); border:1px solid var(--border-color); font-size:13px; padding:10px 18px;" onclick="switchSidebar('contracts')">📄 Ver Contratos</button>
@@ -998,6 +1002,56 @@
             <!-- ============================================== -->
             <!-- TAB: CONFIG                                   -->
             <!-- ============================================== -->
+            <!-- TAB: PRODUCTOS -->
+            <div id="tab-products" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 style="font-weight:900; margin-bottom:4px;">🛍️ Gestión de Productos</h2>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;">Agrega, edita y controla la disponibilidad de los productos del catálogo.</p>
+                    </div>
+                    <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openProductFormModal(null)">➕ Nuevo Producto</button>
+                </div>
+                <div id="products-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px;">
+                    <div style="color:var(--text-muted); font-size:13px; padding:40px 0;">Cargando productos...</div>
+                </div>
+            </div>
+
+            <!-- TAB: MARKETING -->
+            <div id="tab-marketing" class="tab-content">
+                <h2 style="font-weight:900; margin-bottom:8px;">📧 Campañas de Marketing</h2>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Compone y envía correos a todos los clientes que optaron por recibir novedades.</p>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; max-width:1000px;">
+                    <!-- Form -->
+                    <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;">
+                        <div style="font-weight:800; font-size:15px; margin-bottom:16px;">✏️ Composer</div>
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Asunto del correo</label>
+                        <input type="text" id="mkt-subject" class="admin-input" placeholder="Ej: ¡Nuevas galletas esta semana! 🍪" style="margin-bottom:16px;">
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Cuerpo del mensaje</label>
+                        <textarea id="mkt-body" class="admin-input" rows="8" placeholder="Escribe el contenido del correo aquí. Puedes usar saltos de línea." style="resize:vertical; margin-bottom:16px; font-family:inherit;"></textarea>
+
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Imagen (opcional, URL pública)</label>
+                        <input type="text" id="mkt-image-url" class="admin-input" placeholder="https://..." style="margin-bottom:16px;">
+
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button class="admin-btn" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);" onclick="refreshMarketingPreview()">👁️ Previsualizar</button>
+                            <button class="admin-btn" style="background:var(--hp-gradient);" onclick="sendMarketingCampaign()" id="mkt-send-btn">
+                                📤 Enviar a <span id="mkt-subscriber-count">—</span> suscritos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; overflow:auto; max-height:600px;">
+                        <div style="font-weight:800; font-size:15px; margin-bottom:16px;">📨 Vista previa</div>
+                        <div id="mkt-preview" style="font-size:13px; color:var(--text-muted); text-align:center; padding:40px 0;">Presiona "Previsualizar" para ver el correo.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: CONFIG -->
             <div id="tab-config" class="tab-content">
                 <h2 style="font-weight:900; margin-bottom:8px;">⚙️ Configuración del Sistema</h2>
                 <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Ajustes generales y parámetros operativos.</p>
@@ -1174,7 +1228,7 @@
                     </div>
                     <div id="password-reset-link-container" style="display:none; background:rgba(255,255,255,0.03); padding:10px; border-radius:12px; border:1px solid var(--border-color); word-break:break-all;">
                         <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px; color:var(--accent-purple);">Enlace generado:</span>
-                        <input type="text" id="generated-reset-link" class="admin-input" style="width:100%; font-size:11px; padding:6px; background:rgba(255,255,255,0.05); color:white;" readonly onclick="this.select(); document.execCommand('copy'); alert('¡Copiado!');">
+                        <input type="text" id="generated-reset-link" class="admin-input" style="width:100%; font-size:11px; padding:6px; background:rgba(255,255,255,0.05); color:white;" readonly onclick="this.select(); document.execCommand('copy'); hcAlert('¡Copiado!', 'success');">
                     </div>
                     
                     <div style="border-top: 1px solid var(--border-color); margin-top:8px; padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
@@ -1341,13 +1395,74 @@
     </div>
 
     <!-- ============================================== -->
+    <!-- MODAL: CREATE/EDIT PRODUCT -->
+    <!-- ============================================== -->
+    <div class="admin-modal-overlay" id="product-form-modal">
+        <div class="admin-modal" style="max-width:500px;">
+            <button class="modal-close" onclick="closeProductFormModal()">✕</button>
+            <h2 style="font-weight:900; margin-bottom:20px;" id="prod-modal-title">🛍️ Producto</h2>
+            
+            <div style="display:flex; flex-direction:column; gap:16px;">
+                <input type="hidden" id="prod-id">
+                
+                <div>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">NOMBRE DEL PRODUCTO</label>
+                    <input type="text" id="prod-name" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: Bubbaloo Sparkies" required>
+                </div>
+                <div>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">PRECIO ($ COP)</label>
+                    <input type="number" id="prod-price" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: 2000" required>
+                </div>
+                <div>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">CATEGORÍA</label>
+                    <select id="prod-category" class="admin-input" style="width:100%; margin-top:4px; background:#141414; color:#fff;">
+                        <option value="dulces">Dulces 🍭</option>
+                        <option value="reposteria">Repostería 🍪</option>
+                        <option value="combos">Combos 🍕</option>
+                        <option value="bebidas">Bebidas 🥤</option>
+                    </select>
+                </div>
+                
+                <div style="display:flex; gap:20px;">
+                    <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="prod-available" checked>
+                        Disponible para venta
+                    </label>
+                    <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="prod-iscombo">
+                        Es un Combo
+                    </label>
+                </div>
+
+                <div>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700; display:block; margin-bottom:4px;">IMAGEN DEL PRODUCTO</label>
+                    <div style="display:flex; gap:12px; align-items:center; margin-top:4px;">
+                        <div id="prod-image-preview-box" style="width:60px; height:60px; border-radius:12px; background:rgba(255,255,255,0.03); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+                            <span style="font-size:24px; color:var(--text-muted);">📷</span>
+                        </div>
+                        <div style="flex:1;">
+                            <input type="file" id="prod-image-file" accept="image/*" style="display:none;" onchange="handleProductImageUpload(this)">
+                            <button class="admin-btn" style="background:#333; font-size:12px; padding:8px 14px;" onclick="document.getElementById('prod-image-file').click()">Subir Imagen (R2)</button>
+                            <input type="text" id="prod-image-url" class="admin-input" style="width:100%; font-size:11px; margin-top:6px; padding:6px;" placeholder="O pega la URL de la imagen directamente">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:12px;">
+                    <button class="admin-btn" style="background:var(--hp-gradient); flex:1;" id="btn-save-product" onclick="saveProduct()">Guardar Producto</button>
+                    <button class="admin-btn" style="background:var(--accent-red); padding:10px 16px;" id="btn-delete-product" onclick="deleteProduct()">🗑️</button>
+                </div>
+            </div>
+        </div>
+
+    <!-- ============================================== -->
     <!-- DATABASE & FIREBASE CONFIGURATION -->
     <!-- ============================================== -->
     <script src="/credit-gauge.js"></script>
     <script type="module">
         import { initPromise, db, auth } from './firebase-auth.js';
         import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction, onSnapshot, orderBy, limit, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction, onSnapshot, orderBy, limit, addDoc, deleteDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         let adminUser = null;
         let selectedClientUid = null;
@@ -1557,18 +1672,18 @@
 
         window.saveContractText = async function () {
             if (editorArticles.length === 0) {
-                alert('Debes agregar al menos un artículo.');
+                hcAlert('Debes agregar al menos un artículo.', 'warning');
                 return;
             }
             for (let i = 0; i < editorArticles.length; i++) {
                 if (!editorArticles[i].title.trim() || !editorArticles[i].body.trim()) {
-                    alert(`El Artículo ${i + 1} no puede tener el título o el cuerpo vacío.`);
+                    hcAlert(`El Artículo ${i + 1} no puede tener el título o el cuerpo vacío.`, 'warning');
                     return;
                 }
             }
 
             const confirmMsg = `⚠️ ¡ATENCIÓN! ¿Estás seguro que deseas actualizar el contrato?\n\nAl guardar:\n1. Se incrementará la versión del contrato.\n2. Se notificará por correo a todos los clientes que ya firmaron.\n3. Se les dará un plazo de 7 días para volver a firmar el nuevo acuerdo.\n\nEsta acción no puede deshacerse de forma masiva.`;
-            if (!confirm(confirmMsg)) return;
+            if (!await hcConfirm(confirmMsg)) return;
 
             const btn = document.getElementById('save-contract-btn');
             const originalText = btn.textContent;
@@ -1589,13 +1704,13 @@
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Error al guardar el contrato.');
 
-                alert(`✅ Contrato actualizado con éxito.\nNueva versión del contrato guardada.\nSe ha notificado a ${data.usersNotified} clientes para re-firmar.`);
+                hcAlert(`✅ Contrato actualizado con éxito.\nNueva versión guardada. Se ha notificado a ${data.usersNotified} clientes para re-firmar.`, 'success');
                 
                 await loadContractEditor();
 
             } catch (err) {
                 console.error("Error saving contract text:", err);
-                alert("Error al actualizar contrato: " + err.message);
+                hcAlert("Error al actualizar contrato: " + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1717,6 +1832,9 @@
                 <div class="dp-meta-row"><span>Tipo entrega:</span><span>${order.deliveryType || 'Presencial'}</span></div>
 
                 <div class="dp-actions">${actionsHtml}</div>
+                <div style="margin-top:12px; text-align:center;">
+                    <button onclick="deleteOrder('${order.id}')" style="background:transparent; border:1px solid var(--accent-red); color:var(--accent-red); padding:8px 18px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s;" onmouseover="this.style.background='rgba(235,87,87,0.1)'" onmouseout="this.style.background='transparent'">🗑️ Eliminar pedido</button>
+                </div>
             `;
 
             panel.classList.add('open');
@@ -2113,10 +2231,517 @@
                     console.error("Telegram sync failed:", tgErr);
                 }
 
-                alert(`Pedido ${orderId} actualizado con éxito.`);
+                hcAlert(`Pedido ${orderId} actualizado con éxito.`, 'success');
             } catch (err) {
                 console.error("Failed to update order status", err);
-                alert("Error al actualizar estado del pedido: " + err.message);
+                hcAlert("Error al actualizar estado del pedido: " + err.message, 'error');
+            }
+        };
+
+        // ==============================================
+        // ORDER DELETION & LEDGER RECALCULATION
+        // ==============================================
+        async function recalculateClientLedger(clientUid) {
+            const userRef = doc(db, 'users', clientUid);
+            const scoreRef = doc(db, 'creditScores', clientUid);
+
+            await runTransaction(db, async (transaction) => {
+                const userSnap = await transaction.get(userRef);
+                if (!userSnap.exists()) return; // Client might have been deleted
+
+                // Get all movements
+                const movementsSnap = await getDocs(query(collection(db, 'movements'), where('customerUID', '==', clientUid)));
+                const allMovements = [];
+                movementsSnap.forEach(d => allMovements.push(d.data()));
+
+                // Sort chronologically
+                allMovements.sort((a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime());
+
+                // Calculate balances
+                let activeDebt = 0;
+                let happyPoints = 0;
+
+                const purchases = [];
+                const payments = [];
+
+                allMovements.forEach(m => {
+                    const amt = Number(m.amount) || 0;
+                    if (m.type === 'purchase' && amt > 0) {
+                        purchases.push({ amount: amt, date: m.createdAt, remaining: amt });
+                    }
+                    if (m.type === 'payment' || (m.type === 'adjustment' && amt < 0)) {
+                        payments.push({ amount: Math.abs(amt), date: m.createdAt });
+                    }
+
+                    if (['purchase', 'payment', 'refund', 'adjustment'].includes(m.type)) {
+                        activeDebt += amt;
+                    }
+                    if (m.type === 'points') {
+                        happyPoints += amt;
+                    }
+                });
+
+                // Calculate credit score FIFO
+                let score = 20;
+                const history = [];
+
+                for (const payment of payments) {
+                    let paymentRemaining = payment.amount;
+                    for (const purchase of purchases) {
+                        if (purchase.remaining <= 0 || paymentRemaining <= 0) continue;
+
+                        const settled = Math.min(purchase.remaining, paymentRemaining);
+                        purchase.remaining -= settled;
+                        paymentRemaining -= settled;
+
+                        const diffDays = Math.max(0, Math.round((new Date(payment.date).getTime() - new Date(purchase.date).getTime()) / (1000 * 60 * 60 * 24)));
+
+                        let delta = 0;
+                        let reason = '';
+                        if (diffDays <= 3) {
+                            delta = 5;
+                            reason = `Pago realizado en ${diffDays} días (+5 pts — Excelente)`;
+                        } else if (diffDays <= 7) {
+                            delta = 0;
+                            reason = `Pago realizado en ${diffDays} días (0 pts — A tiempo)`;
+                        } else if (diffDays <= 14) {
+                            delta = -5;
+                            reason = `Pago realizado en ${diffDays} días (-5 pts — Con retraso)`;
+                        } else if (diffDays <= 30) {
+                            delta = -10;
+                            reason = `Pago realizado en ${diffDays} días (-10 pts — Retraso significativo)`;
+                        } else {
+                            delta = -20;
+                            reason = `Pago realizado en ${diffDays} días (-20 pts — Mora)`;
+                        }
+
+                        score = Math.min(100, Math.max(0, score + delta));
+                        history.push({ date: payment.date, delta, reason });
+                    }
+                }
+
+                // Check default purchases > 30 days
+                const nowTime = Date.now();
+                for (const purchase of purchases) {
+                    if (purchase.remaining <= 0) continue;
+                    const diffDays = Math.round((nowTime - new Date(purchase.date).getTime()) / (1000 * 60 * 60 * 24));
+                    if (diffDays > 30) {
+                        score = Math.min(100, Math.max(0, score - 20));
+                        history.push({
+                            date: new Date().toISOString(),
+                            delta: -20,
+                            reason: `Deuda sin pagar por más de ${diffDays} días (-20 pts — Impago)`
+                        });
+                    }
+                }
+
+                let tier = 'D';
+                if (score >= 85) tier = 'A';
+                else if (score >= 65) tier = 'B';
+                else if (score >= 40) tier = 'C';
+
+                // Save
+                transaction.update(userRef, {
+                    activeDebt: Math.max(0, activeDebt),
+                    happyPoints: Math.max(0, happyPoints),
+                    debtStatus: activeDebt > 0 ? 'pending_payment' : 'clear',
+                    updatedAt: new Date().toISOString()
+                });
+
+                transaction.set(scoreRef, {
+                    score,
+                    tier,
+                    lastUpdated: new Date().toISOString(),
+                    history
+                });
+            });
+        }
+
+        window.deleteOrder = async function (orderId) {
+            if (!await hcConfirm(`¿Seguro que deseas eliminar permanentemente el pedido #${orderId}? Esta acción es irreversible.`)) {
+                return;
+            }
+
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                const orderSnap = await getDoc(orderRef);
+                if (!orderSnap.exists()) {
+                    hcAlert('El pedido no existe.', 'error');
+                    return;
+                }
+                const orderData = orderSnap.data();
+                const clientUid = orderData.customerUID;
+
+                // 1. Delete order doc
+                await deleteDoc(orderRef);
+
+                // 2. Find and delete movements with orderId == orderId
+                const movementsSnap = await getDocs(query(collection(db, 'movements'), where('orderId', '==', orderId)));
+                const batch = writeBatch(db);
+                movementsSnap.forEach(d => {
+                    batch.delete(d.ref);
+                });
+                await batch.commit();
+
+                // 3. Recalculate client ledger if clientUid exists
+                if (clientUid) {
+                    await recalculateClientLedger(clientUid);
+                }
+
+                hcAlert('Pedido eliminado con éxito.', 'success');
+                closeDetailPanel();
+                location.reload();
+            } catch (err) {
+                console.error("Error deleting order:", err);
+                hcAlert("Error al eliminar pedido: " + err.message, 'error');
+            }
+        };
+
+        // ==============================================
+        // PRODUCTS CRUD & SEED LOGIC
+        // ==============================================
+        const DEFAULT_PRODUCTS = [
+            { id: 'bubbaloo', name: 'Bubbaloo', price: 400, image: 'Gomitas.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'bubbaloo-sparkies', name: 'Bubbaloo Sparkies', price: 2000, image: 'sparkies.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'quipitos', name: 'Quipitos', price: 1000, image: 'quipitos.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'piazza', name: 'Piazza', price: 800, image: 'Piazza.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'choco-disk', name: 'Choco Disk', price: 1500, image: 'chocodisk.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'bombombum-tajin', name: 'Bombombum Tajín', price: 2500, image: 'bt.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'ring-pop', name: 'Ring Pop', price: 3500, image: 'ringpop.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'cookie-chips', name: 'Cookie Chips', price: 5000, image: 'galletachocolate.png', category: 'reposteria', available: true, isCombo: false },
+            { id: 'galleta-red-velvet', name: 'Galleta Red Velvet', price: 6000, image: 'redvelvet.png', category: 'reposteria', available: true, isCombo: false },
+            { id: 'brownie-avellana', name: 'Brownie Avellana', price: 5000, image: 'browniea.png', category: 'reposteria', available: true, isCombo: false },
+            { id: 'galleta-choco-arequipe', name: 'Galleta Choco Arequipe', price: 6000, image: 'galletachocoa.png', category: 'reposteria', available: true, isCombo: false },
+            { id: 'brownie-arequipe', name: 'Brownie Arequipe', price: 5000, image: 'browniear.png', category: 'reposteria', available: true, isCombo: false },
+            { id: 'gomitas-trululu', name: 'Gomitas Trululu', price: 3000, image: 'Gomitas.png', category: 'dulces', available: true, isCombo: false },
+            { id: 'pizza-normal', name: 'Pizza', price: 11000, image: 'pizza.png', category: 'combos', available: true, isCombo: false }
+        ];
+
+        async function checkAndSeedProducts() {
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                if (snap.empty) {
+                    console.log("Products collection is empty. Seeding defaults...");
+                    const batch = writeBatch(db);
+                    DEFAULT_PRODUCTS.forEach(p => {
+                        const ref = doc(db, 'products', p.id);
+                        batch.set(ref, {
+                            ...p,
+                            createdAt: new Date().toISOString()
+                        });
+                    });
+                    await batch.commit();
+                    console.log("Default products seeded successfully.");
+                }
+            } catch (err) {
+                console.error("Failed to seed default products:", err);
+            }
+        }
+
+        window.loadProductsTab = async function () {
+            await checkAndSeedProducts();
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:40px 0;">Cargando productos...</div>';
+
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                grid.innerHTML = '';
+                if (snap.empty) {
+                    grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:40px 0;">No hay productos registrados.</div>';
+                    return;
+                }
+
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    const id = docSnap.id;
+                    const card = document.createElement('div');
+                    card.className = 'client-card'; // reuses admin client card styles
+                    card.style.display = 'flex';
+                    card.style.flexDirection = 'column';
+                    card.style.justifyContent = 'space-between';
+                    card.style.padding = '16px';
+                    card.style.minHeight = '140px';
+
+                    const imgTag = p.image ? `<img src="${p.image}" style="width:36px; height:36px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.03); padding:4px;">` : `<span style="font-size:24px;">📦</span>`;
+
+                    card.innerHTML = `
+                        <div style="display:flex; gap:12px; align-items:center;">
+                            <div style="flex-shrink:0;">${imgTag}</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:900; font-size:14px; color:var(--text-color);">${p.name || 'Sin nombre'}</div>
+                                <div style="font-size:12px; color:var(--hp-pink); font-weight:800; margin-top:2px;">$${(p.price || 0).toLocaleString()}</div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px; text-transform:uppercase;">${p.category || 'dulces'}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--border-color); padding-top:12px;">
+                            <span style="font-size:12px; font-weight:700; color:${p.available ? 'var(--accent-green)' : 'var(--accent-red)'};">${p.available ? '● Disponible' : '○ No disponible'}</span>
+                            <button class="admin-btn" style="padding:6px 12px; font-size:11px; background:#222;" onclick="openProductFormModal('${id}')">Editar</button>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Failed to load products list:", err);
+                grid.innerHTML = `<div style="color:var(--accent-red); font-size:13px; padding:40px 0;">Error al cargar productos: ${err.message}</div>`;
+            }
+        };
+
+        let currentUploadedImageUrl = '';
+
+        window.openProductFormModal = async function (productId) {
+            const modal = document.getElementById('product-form-modal');
+            const title = document.getElementById('prod-modal-title');
+            const saveBtn = document.getElementById('btn-save-product');
+            const delBtn = document.getElementById('btn-delete-product');
+
+            // Reset inputs
+            document.getElementById('prod-id').value = '';
+            document.getElementById('prod-name').value = '';
+            document.getElementById('prod-price').value = '';
+            document.getElementById('prod-category').value = 'dulces';
+            document.getElementById('prod-available').checked = true;
+            document.getElementById('prod-iscombo').checked = false;
+            document.getElementById('prod-image-url').value = '';
+            document.getElementById('prod-image-preview-box').innerHTML = '<span style="font-size:24px; color:var(--text-muted);">📷</span>';
+            currentUploadedImageUrl = '';
+
+            if (productId) {
+                title.textContent = '🛍️ Editar Producto';
+                delBtn.style.display = 'block';
+                try {
+                    const snap = await getDoc(doc(db, 'products', productId));
+                    if (snap.exists()) {
+                        const p = snap.data();
+                        document.getElementById('prod-id').value = productId;
+                        document.getElementById('prod-name').value = p.name || '';
+                        document.getElementById('prod-price').value = p.price || '';
+                        document.getElementById('prod-category').value = p.category || 'dulces';
+                        document.getElementById('prod-available').checked = p.available !== false;
+                        document.getElementById('prod-iscombo').checked = p.isCombo === true;
+                        document.getElementById('prod-image-url').value = p.image || '';
+                        currentUploadedImageUrl = p.image || '';
+
+                        if (p.image) {
+                            document.getElementById('prod-image-preview-box').innerHTML = `<img src="${p.image}" style="width:100%; height:100%; object-fit:contain;">`;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to load product details:", err);
+                }
+            } else {
+                title.textContent = '🛍️ Nuevo Producto';
+                delBtn.style.display = 'none';
+            }
+
+            modal.classList.add('active');
+        };
+
+        window.closeProductFormModal = function () {
+            document.getElementById('product-form-modal').classList.remove('active');
+        };
+
+        window.handleProductImageUpload = async function (input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+
+            const previewBox = document.getElementById('prod-image-preview-box');
+            previewBox.innerHTML = '<span style="font-size:11px; color:var(--text-muted);">Subiendo...</span>';
+
+            const reader = new FileReader();
+            reader.onload = async function (e) {
+                const base64Data = e.target.result;
+                const tempId = document.getElementById('prod-id').value || 'new_' + Math.random().toString(36).substring(2, 9);
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    const res = await fetch('/api/uploadProductImage', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            productId: tempId,
+                            imageData: base64Data
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Failed upload');
+
+                    currentUploadedImageUrl = data.url;
+                    document.getElementById('prod-image-url').value = data.url;
+                    previewBox.innerHTML = `<img src="${data.url}" style="width:100%; height:100%; object-fit:contain;">`;
+                    hcAlert('Imagen subida a R2 exitosamente.', 'success');
+                } catch (err) {
+                    console.error(err);
+                    previewBox.innerHTML = '<span style="font-size:24px; color:var(--accent-red);">❌</span>';
+                    hcAlert('Error al subir imagen: ' + err.message, 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveProduct = async function () {
+            const id = document.getElementById('prod-id').value.trim() || 'prod_' + Math.random().toString(36).substring(2, 9);
+            const name = document.getElementById('prod-name').value.trim();
+            const price = Number(document.getElementById('prod-price').value);
+            const category = document.getElementById('prod-category').value;
+            const available = document.getElementById('prod-available').checked;
+            const isCombo = document.getElementById('prod-iscombo').checked;
+            const image = document.getElementById('prod-image-url').value.trim();
+
+            if (!name || isNaN(price) || price <= 0) {
+                hcAlert('Completa los campos con valores válidos.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-product');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            try {
+                await setDoc(doc(db, 'products', id), {
+                    id,
+                    name,
+                    price,
+                    category,
+                    available,
+                    isCombo,
+                    image,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                hcAlert('Producto guardado correctamente.', 'success');
+                closeProductFormModal();
+                loadProductsTab();
+            } catch (err) {
+                console.error("Failed to save product:", err);
+                hcAlert('Error al guardar producto: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Guardar Producto';
+            }
+        };
+
+        window.deleteProduct = async function () {
+            const id = document.getElementById('prod-id').value;
+            if (!id) return;
+
+            if (!await hcConfirm('¿Seguro que deseas eliminar este producto permanentemente del menú?')) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, 'products', id));
+                hcAlert('Producto eliminado.', 'success');
+                closeProductFormModal();
+                loadProductsTab();
+            } catch (err) {
+                console.error("Failed to delete product:", err);
+                hcAlert('Error al eliminar producto: ' + err.message, 'error');
+            }
+        };
+
+        // ==============================================
+        // MARKETING EMAIL COMPOSER LOGIC
+        // ==============================================
+        window.loadMarketingStats = async function () {
+            const countEl = document.getElementById('mkt-subscriber-count');
+            countEl.textContent = '...';
+
+            try {
+                const snap = await getDocs(query(collection(db, 'users'), where('marketingOptIn', '==', true)));
+                countEl.textContent = snap.size;
+            } catch (err) {
+                console.error("Failed to count subscribers:", err);
+                countEl.textContent = 'Error';
+            }
+        };
+
+        window.refreshMarketingPreview = function () {
+            const body = document.getElementById('mkt-body').value.trim();
+            const subject = document.getElementById('mkt-subject').value.trim() || '(Sin Asunto)';
+            const imageUrl = document.getElementById('mkt-image-url').value.trim();
+            const previewBox = document.getElementById('mkt-preview');
+
+            if (!body) {
+                previewBox.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:40px 0;">Escribe un cuerpo de mensaje para ver la previsualización.</div>';
+                return;
+            }
+
+            const imgTag = imageUrl ? `<img src="${imageUrl}" style="width:100%; max-width:100%; border-radius:12px; margin-top:12px; display:block;">` : '';
+            const cleanBody = body.replace(/\n/g, '<br>');
+
+            previewBox.innerHTML = `
+                <div style="background:#181818; border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden; font-family:'Outfit', Arial, sans-serif;">
+                    <div style="background:rgba(255,255,255,0.02); padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.07); font-size:12px; color:var(--text-muted);">
+                        <strong>Asunto:</strong> ${subject}
+                    </div>
+                    <div style="background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c); padding:20px; text-align:center;">
+                        <img src="https://happycorner.top/happyfavicon.png" width="36" height="36" alt="Logo" style="border-radius:8px;">
+                        <div style="font-weight:900; color:#fff; font-size:18px; margin-top:6px;">Happy Corner 🩷</div>
+                    </div>
+                    <div style="padding:24px; background:#141414; color:#ccc; line-height:1.6; font-size:13.5px;">
+                        ${imgTag}
+                        <div style="margin-top:12px;">${cleanBody}</div>
+                        <div style="margin-top:24px; text-align:center; border-top:1px solid rgba(255,255,255,0.07); padding-top:16px;">
+                            <a href="https://happycorner.top" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299); color:#fff; text-decoration:none; padding:10px 20px; border-radius:10px; font-weight:800; font-size:12px;">Visitar Happy Corner</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.sendMarketingCampaign = async function () {
+            const subject = document.getElementById('mkt-subject').value.trim();
+            const body = document.getElementById('mkt-body').value.trim();
+            const imageUrl = document.getElementById('mkt-image-url').value.trim();
+
+            if (!subject || !body) {
+                hcAlert('El asunto y cuerpo son obligatorios.', 'warning');
+                return;
+            }
+
+            const subscriberCount = document.getElementById('mkt-subscriber-count').textContent;
+            if (subscriberCount === '0' || subscriberCount === 'Error' || subscriberCount === '...') {
+                hcAlert('No hay suscriptores válidos para enviar.', 'warning');
+                return;
+            }
+
+            if (!await hcConfirm(`⚠️ ¿Estás seguro que deseas enviar esta campaña de correo a los ${subscriberCount} clientes suscritos?\n\nEsta acción no puede deshacerse.`)) {
+                return;
+            }
+
+            const btn = document.getElementById('mkt-send-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const imageUrls = imageUrl ? [imageUrl] : [];
+                const res = await fetch('/api/account?action=sendMarketingEmail', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ subject, body, imageUrls })
+                });
+
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed sending');
+
+                hcAlert(`✅ Campaña enviada con éxito. Se enviaron ${data.sent} correos.`, 'success');
+                document.getElementById('mkt-subject').value = '';
+                document.getElementById('mkt-body').value = '';
+                document.getElementById('mkt-image-url').value = '';
+                document.getElementById('mkt-preview').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:40px 0;">Presiona "Previsualizar" para ver el correo.</div>';
+            } catch (err) {
+                console.error(err);
+                hcAlert('Error al enviar campaña: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         };
 
@@ -2553,11 +3178,11 @@
             const desc = document.getElementById('adj-desc').value.trim();
 
             if (!amountInput || isNaN(amountInput)) {
-                alert('Escribe un monto numérico válido.');
+                hcAlert('Escribe un monto numérico válido.', 'warning');
                 return;
             }
             if (!desc) {
-                alert('Describe brevemente el motivo del ajuste.');
+                hcAlert('Describe brevemente el motivo del ajuste.', 'warning');
                 return;
             }
 
@@ -2570,11 +3195,11 @@
             try {
                 // Record the movement and execute the unified calculation
                 await applyLedgerMovement(selectedClientUid, type, amount, desc);
-                alert('Transacción registrada y balances actualizados con éxito.');
+                hcAlert('Transacción registrada y balances actualizados con éxito.', 'success');
                 openClientModal(selectedClientUid); // reload modal content
             } catch (err) {
                 console.error("Ledger transaction failed", err);
-                alert("Error al registrar movimiento: " + err.message);
+                hcAlert("Error al registrar movimiento: " + err.message, 'error');
             }
         };
 
@@ -2585,27 +3210,27 @@
             const reason = document.getElementById('manual-score-reason').value.trim();
 
             if (!manualScoreInput || isNaN(manualScoreInput)) {
-                alert('Escribe un HappyScore numérico (0-100).');
+                hcAlert('Escribe un HappyScore numérico (0-100).', 'warning');
                 return;
             }
             const score = Number(manualScoreInput);
             if (score < 0 || score > 100) {
-                alert('El HappyScore debe estar comprendido entre 0 y 100.');
+                hcAlert('El HappyScore debe estar comprendido entre 0 y 100.', 'warning');
                 return;
             }
             if (!reason) {
-                alert('El motivo del ajuste es obligatorio para auditoría.');
+                hcAlert('El motivo del ajuste es obligatorio para auditoría.', 'warning');
                 return;
             }
 
             try {
                 // Record score_adjustment as a movement and recalculate
                 await applyLedgerMovement(selectedClientUid, 'adjustment', 0, `Ajuste manual del score a ${score}: ${reason}`, score);
-                alert('HappyScore actualizado con éxito.');
+                hcAlert('HappyScore actualizado con éxito.', 'success');
                 openClientModal(selectedClientUid);
             } catch (err) {
                 console.error("Score adjustment failed", err);
-                alert("Error al ajustar HappyScore: " + err.message);
+                hcAlert("Error al ajustar HappyScore: " + err.message, 'error');
             }
         };
 
@@ -2833,7 +3458,7 @@
             
             container.style.display = 'none';
             
-            if (!confirm('¿Seguro que deseas generar un enlace de restablecimiento de contraseña para este cliente?')) return;
+            if (!await hcConfirm('¿Seguro que deseas generar un enlace de restablecimiento de contraseña para este cliente?')) return;
 
             try {
                 const token = await auth.currentUser.getIdToken();
@@ -2851,10 +3476,10 @@
 
                 input.value = data.resetLink;
                 container.style.display = 'block';
-                alert('¡Enlace de restablecimiento generado con éxito! Copia el enlace de abajo.');
+                hcAlert('¡Enlace de restablecimiento generado con éxito! Copia el enlace de abajo.', 'success');
             } catch (err) {
                 console.error(err);
-                alert('Error: ' + err.message);
+                hcAlert('Error: ' + err.message, 'error');
             }
         };
 
@@ -2864,11 +3489,11 @@
             if (!client) return;
 
             if (client.activeDebt && client.activeDebt > 0) {
-                alert('No se puede eliminar la cuenta porque el cliente tiene una deuda activa de $' + client.activeDebt.toLocaleString() + '.');
+                hcAlert('No se puede eliminar la cuenta porque el cliente tiene una deuda activa de $' + client.activeDebt.toLocaleString() + '.', 'error');
                 return;
             }
 
-            if (!confirm(`⚠️ ¡ALERTA CRÍTICA!\n\n¿Estás seguro que deseas eliminar permanentemente la cuenta de ${client.displayName || client.name || 'este usuario'}?\n\nEsta acción es irreversible y borrará su contrato, firma, score y puntos. Los pedidos se anonimizarán.`)) {
+            if (!await hcConfirm(`⚠️ ¡ALERTA CRÍTICA!\n\n¿Estás seguro que deseas eliminar permanentemente la cuenta de ${client.displayName || client.name || 'este usuario'}?\n\nEsta acción es irreversible y borrará su contrato, firma, score, puntos y todos sus pedidos.`)) {
                 return;
             }
 
@@ -2890,13 +3515,13 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error al eliminar cuenta');
 
-                alert('✅ Cuenta eliminada permanentemente.');
+                hcAlert('✅ Cuenta eliminada permanentemente.', 'success');
                 closeClientModal();
                 // refresh list
                 location.reload();
             } catch (err) {
                 console.error(err);
-                alert('Error al eliminar cuenta: ' + err.message);
+                hcAlert('Error al eliminar cuenta: ' + err.message, 'error');
                 btn.disabled = false;
                 btn.textContent = 'Eliminar Cuenta';
             }
@@ -3106,11 +3731,11 @@
             const password = accessType === 'manual' ? document.getElementById('create-password').value : '';
 
             if (!nombre || !email || !telefono) {
-                alert('Nombre, correo y teléfono son obligatorios.');
+                hcAlert('Nombre, correo y teléfono son obligatorios.', 'warning');
                 return;
             }
             if (accessType === 'manual' && password.length < 6) {
-                alert('La contraseña manual debe tener al menos 6 caracteres.');
+                hcAlert('La contraseña manual debe tener al menos 6 caracteres.', 'warning');
                 return;
             }
 
@@ -3148,24 +3773,24 @@
                 
             } catch (err) {
                 console.error(err);
-                alert('Error al crear cliente: ' + err.message);
+                hcAlert('Error al crear cliente: ' + err.message, 'error');
             }
         };
 
         window.submitCreateSignature = async function () {
             if (!createdUserUid) {
-                alert('No hay ningún cliente creado en esta sesión.');
+                hcAlert('No hay ningún cliente creado en esta sesión.', 'warning');
                 return;
             }
 
             const typedName = document.getElementById('sign-create-name').value.trim();
             if (!typedName) {
-                alert('Escribe el nombre completo del cliente para firmar.');
+                hcAlert('Escribe el nombre completo del cliente para firmar.', 'warning');
                 return;
             }
 
             if (!createSignatureData) {
-                alert('Por favor, haz que el cliente dibuje su firma en el canvas.');
+                hcAlert('Por favor, haz que el cliente dibuje su firma en el canvas.', 'warning');
                 return;
             }
 
@@ -3196,12 +3821,12 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Error firmando contrato');
 
-                alert('✅ ¡Cliente creado y acuerdo de responsabilidad firmado exitosamente!');
+                hcAlert('✅ ¡Cliente creado y acuerdo de responsabilidad firmado exitosamente!', 'success');
 
                 if (createdUserResetLink) {
-                    window.prompt("Copia el enlace de acceso / restablecimiento de contraseña para el cliente:", createdUserResetLink);
+                    await hcPrompt('Copia el enlace de acceso / restablecimiento de contraseña para el cliente:\n\n' + createdUserResetLink);
                 } else if (createdUserPassword) {
-                    alert(`Cuenta creada con la contraseña establecida: ${createdUserPassword}`);
+                    hcAlert(`Cuenta creada con la contraseña establecida: ${createdUserPassword}`, 'info');
                 }
 
                 closeCreateClientModal();
@@ -3209,7 +3834,7 @@
                 location.reload();
             } catch (err) {
                 console.error(err);
-                alert('Error al registrar firma del contrato: ' + err.message);
+                hcAlert('Error al registrar firma del contrato: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Firmar y Confirmar Contrato';

@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="/notifications.js"></script>
 
     <style>
         :root {
@@ -512,6 +513,8 @@
             <span class="header-title">POS Terminal</span>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
+            <a href="https://happycorner.top" target="_blank"
+                style="text-decoration:none; display:inline-flex; align-items:center; background:rgba(255,255,255,0.06); color:white; font-size:12px; font-weight:bold; padding:6px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); cursor:pointer;">🏠 happycorner.top</a>
             <a href="/admin-v2"
                 style="text-decoration:none; display:inline-flex; align-items:center; background:#8a2be2; color:white; font-size:12px; font-weight:bold; padding:6px 12px; border-radius:8px; border:none; cursor:pointer;">📊
                 Ir al Panel Admin</a>
@@ -619,22 +622,49 @@
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
         import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-        // Static Catalog matching site items
-        const PRODUCTS = [
-            { id: 'bubbaloo', name: 'Bubbaloo', price: 400, img: 'Gomitas.png', cat: 'dulces' },
-            { id: 'bubbaloo-sparkies', name: 'Bubbaloo Sparkies', price: 2000, img: 'sparkies.png', cat: 'dulces' },
-            { id: 'quipitos', name: 'Quipitos', price: 1000, img: 'quipitos.png', cat: 'dulces' },
-            { id: 'piazza', name: 'Piazza', price: 800, img: 'Piazza.png', cat: 'dulces' },
-            { id: 'choco-disk', name: 'Choco Disk', price: 1500, img: 'chocodisk.png', cat: 'dulces' },
-            { id: 'bombombum-tajin', name: 'Bombombum Tajín', price: 2500, img: 'bt.png', cat: 'dulces' },
-            { id: 'ring-pop', name: 'Ring Pop', price: 3500, img: 'ringpop.png', cat: 'dulces' },
-            { id: 'cookie-chips', name: 'Cookie Chips', price: 5000, img: 'galletachocolate.png', cat: 'reposteria' },
-            { id: 'galleta-red-velvet', name: 'Galleta Red Velvet', price: 6000, img: 'redvelvet.png', cat: 'reposteria' },
-            { id: 'brownie-avellana', name: 'Brownie Avellana', price: 5000, img: 'browniea.png', cat: 'reposteria' },
-            { id: 'brownie-arequipe', name: 'Brownie Arequipe', price: 5000, img: 'browniear.png', cat: 'reposteria' },
-            { id: 'gomitas-trululu', name: 'Gomitas Trululu', price: 3000, img: 'Gomitas.png', cat: 'dulces' },
-            { id: 'pizza-normal', name: 'Pizza', price: 11000, img: 'pizza.png', cat: 'combos' }
+        let PRODUCTS = [];
+
+        const DEFAULT_PRODUCTS = [
+            { id: 'bubbaloo', name: 'Bubbaloo', price: 400, img: 'bb.png', cat: 'dulces', available: true },
+            { id: 'bubbaloo-sparkies', name: 'Bubbaloo Sparkies', price: 2000, img: 'sparkies.png', cat: 'dulces', available: true },
+            { id: 'quipitos', name: 'Quipitos', price: 1000, img: 'quipitos.png', cat: 'dulces', available: true },
+            { id: 'piazza', name: 'Piazza', price: 800, img: 'Piazza.png', cat: 'dulces', available: true },
+            { id: 'choco-disk', name: 'Choco Disk', price: 1500, img: 'chocodisk.png', cat: 'dulces', available: true },
+            { id: 'bombombum-tajin', name: 'Bombombum Tajín', price: 2500, img: 'bt.png', cat: 'dulces', available: true },
+            { id: 'ring-pop', name: 'Ring Pop', price: 3500, img: 'ringpop.png', cat: 'dulces', available: true },
+            { id: 'cookie-chips', name: 'Cookie Chips', price: 5000, img: 'galletachocolate.png', cat: 'reposteria', available: true },
+            { id: 'galleta-red-velvet', name: 'Galleta Red Velvet', price: 6000, img: 'redvelvet.png', cat: 'reposteria', available: true },
+            { id: 'brownie-avellana', name: 'Brownie Avellana', price: 5000, img: 'browniea.png', cat: 'reposteria', available: true },
+            { id: 'brownie-arequipe', name: 'Brownie Arequipe', price: 5000, img: 'browniear.png', cat: 'reposteria', available: true },
+            { id: 'gomitas-trululu', name: 'Gomitas Trululu', price: 3000, img: 'Gomitas.png', cat: 'dulces', available: true },
+            { id: 'pizza-normal', name: 'Pizza', price: 11000, img: 'pizza.png', cat: 'combos', available: true }
         ];
+
+        async function checkAndSeedProducts() {
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                if (snap.empty) {
+                    console.log("POS: products collection is empty. Seeding defaults...");
+                    const batch = writeBatch(db);
+                    DEFAULT_PRODUCTS.forEach(p => {
+                        const ref = doc(db, 'products', p.id);
+                        batch.set(ref, {
+                            id: p.id,
+                            name: p.name,
+                            price: p.price,
+                            image: p.img,
+                            category: p.cat,
+                            available: p.available,
+                            isCombo: p.id === 'pizza-normal',
+                            createdAt: new Date().toISOString()
+                        });
+                    });
+                    await batch.commit();
+                }
+            } catch (err) {
+                console.error("POS: Seeding products failed", err);
+            }
+        }
 
         let adminUser = null;
         let allCustomers = [];
@@ -689,7 +719,30 @@
             }
         });
 
-        function initPOS() {
+        async function initPOS() {
+            await checkAndSeedProducts();
+
+            // Load from Firestore products
+            try {
+                const snap = await getDocs(collection(db, 'products'));
+                PRODUCTS = [];
+                snap.forEach(d => {
+                    const p = d.data();
+                    // only load available products
+                    if (p.available !== false) {
+                        PRODUCTS.push({
+                            id: d.id,
+                            name: p.name,
+                            price: p.price,
+                            img: p.image || 'pizza.png',
+                            cat: p.category || 'dulces'
+                        });
+                    }
+                });
+            } catch (err) {
+                console.error("POS: Failed to fetch products:", err);
+            }
+
             // Load products grid
             filterCategory('all');
 
@@ -755,8 +808,11 @@
                 const card = document.createElement('div');
                 card.className = 'pos-product-card';
                 card.onclick = () => addToCart(p);
+                
+                const imgSrc = p.img.startsWith('http') ? p.img : '/' + p.img;
+                
                 card.innerHTML = `
-                    <img class="pos-product-img" src="/${p.img}" alt="${p.name}">
+                    <img class="pos-product-img" src="${imgSrc}" alt="${p.name}">
                     <div class="pos-product-name">${p.name}</div>
                     <div class="pos-product-price">$${p.price.toLocaleString()}</div>
                 `;
@@ -795,7 +851,7 @@
         const ALL_PAY_METHODS = ['cash', 'nequi', 'bancolombia', 'tarjeta', 'credit'];
         window.setPaymentMethod = function (method) {
             if (method === 'credit' && !selectedCustomer) {
-                alert('⚠️ Debes asignar un cliente para poder seleccionar pago a Crédito.');
+                hcAlert('⚠️ Debes asignar un cliente para poder seleccionar pago a Crédito.', 'warning');
                 return;
             }
 
@@ -872,7 +928,7 @@
         // ==============================================
         window.submitCheckout = async function () {
             if (cart.length === 0) {
-                alert('El carrito está vacío.');
+                hcAlert('El carrito está vacío.', 'warning');
                 return;
             }
 
@@ -901,7 +957,7 @@
                     await applyPOSCashTransaction(selectedCustomer ? selectedCustomer.uid : null, total, pointsEarned, cart, paymentMethod);
                 }
 
-                alert(`🎉 ¡Venta procesada con éxito!\nTotal: $${total.toLocaleString()}\n${selectedCustomer ? `Puntos sumados: +${pointsEarned} pts` : ''}`);
+                hcAlert(`🎉 ¡Venta procesada con éxito! Total: $${total.toLocaleString()}${selectedCustomer ? ` · Puntos: +${pointsEarned} pts` : ''}`, 'success');
 
                 // Reset cart & view
                 cart = [];
@@ -911,7 +967,7 @@
 
             } catch (err) {
                 console.error("POS transaction failed", err);
-                alert("Error al procesar la venta: " + err.message);
+                hcAlert("Error al procesar la venta: " + err.message, 'error');
             } finally {
                 checkoutBtn.disabled = false;
                 checkoutBtn.textContent = 'Confirmar Venta';
