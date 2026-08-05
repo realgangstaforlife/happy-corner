@@ -1032,8 +1032,14 @@
                         <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Cuerpo del mensaje</label>
                         <textarea id="mkt-body" class="admin-input" rows="8" placeholder="Escribe el contenido del correo aquí. Puedes usar saltos de línea." style="resize:vertical; margin-bottom:16px; font-family:inherit;"></textarea>
 
-                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Imagen (opcional, URL pública)</label>
-                        <input type="text" id="mkt-image-url" class="admin-input" placeholder="https://..." style="margin-bottom:16px;">
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Imagen (opcional)</label>
+                        <div id="mkt-dropzone" style="border:2px dashed var(--border-color); border-radius:14px; padding:20px; text-align:center; margin-bottom:16px; cursor:pointer; transition:0.2s;"
+                             onclick="document.getElementById('mkt-image-file').click()">
+                            <div id="mkt-dropzone-text" style="color:var(--text-muted); font-size:13px;">📎 Arrastra una imagen aquí o hacé click para elegir</div>
+                            <img id="mkt-image-preview" style="max-width:100%; max-height:120px; border-radius:10px; display:none; margin-top:10px;">
+                        </div>
+                        <input type="file" id="mkt-image-file" accept="image/*" style="display:none;" onchange="handleMarketingImageSelect(this.files[0])">
+                        <input type="hidden" id="mkt-image-url">
 
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
                             <button class="admin-btn" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);" onclick="refreshMarketingPreview()">👁️ Previsualizar</button>
@@ -2690,6 +2696,52 @@
                 </div>
             `;
         };
+
+        window.handleMarketingImageSelect = function (file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                hcAlert ? hcAlert('El archivo debe ser una imagen.', 'error') : alert('El archivo debe ser una imagen.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dropzoneText = document.getElementById('mkt-dropzone-text');
+                dropzoneText.textContent = '⏳ Subiendo imagen...';
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    const resp = await fetch('/api/account?action=uploadMarketingImage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ imageData: e.target.result })
+                    });
+                    const data = await resp.json();
+                    if (!resp.ok) throw new Error(data.error || 'Error subiendo imagen');
+
+                    document.getElementById('mkt-image-url').value = data.url;
+                    const preview = document.getElementById('mkt-image-preview');
+                    preview.src = data.url;
+                    preview.style.display = 'block';
+                    dropzoneText.textContent = '✅ Imagen lista — click para cambiarla';
+                } catch (err) {
+                    dropzoneText.textContent = '❌ Error subiendo imagen, intenta de nuevo';
+                    console.error(err);
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Drag & drop
+        (function setupMarketingDropzone() {
+            const zone = document.getElementById('mkt-dropzone');
+            if (!zone) return;
+            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--hp-pink)'; });
+            zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border-color)'; });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.style.borderColor = 'var(--border-color)';
+                if (e.dataTransfer.files[0]) handleMarketingImageSelect(e.dataTransfer.files[0]);
+            });
+        })();
 
         window.sendMarketingCampaign = async function () {
             const subject = document.getElementById('mkt-subject').value.trim();

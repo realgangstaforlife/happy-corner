@@ -9,9 +9,14 @@ service cloud.firestore {
 
     // Helper to check if user is authenticated and has admin role
     // Uses JWT custom claim only — Firestore role field is NOT trusted here
-    function isAdmin() {
-      return request.auth != null && request.auth.token.role == 'admin';
-    }
+function isAdmin() {
+  return request.auth != null && 
+    (
+      request.auth.token.role == 'admin' ||
+      (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+    );
+}
 
     // Users collection rules
     match /users/{uid} {

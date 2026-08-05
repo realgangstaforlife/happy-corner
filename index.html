@@ -81,10 +81,10 @@
 
     <!-- Domain change banner -->
     <div class="domain-banner" id="domain-banner">
-        <span>🌐 ¡Ahora también en <a href="https://happycorner.top" target="_blank">happycorner.top</a>! Guarda el nuevo dominio.</span>
+        <span>Estas en el lugar correcto, ahora somos <a href="https://happycorner.top" target="_blank">happycorner.top</a>! happycorner.lol ya no funcionara.</span>
         <button class="domain-banner-close" onclick="dismissDomainBanner()" aria-label="Cerrar">✕</button>
     </div>
-    <script>(function(){if(localStorage.getItem('hc_domain_banner_v1')==='1'){var b=document.getElementById('domain-banner');if(b)b.style.display='none';}})();window.dismissDomainBanner=function(){localStorage.setItem('hc_domain_banner_v1','1');var b=document.getElementById('domain-banner');if(b)b.style.display='none';};</script>
+    <script>(function () { if (localStorage.getItem('hc_domain_banner_v1') === '1') { var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; } })(); window.dismissDomainBanner = function () { localStorage.setItem('hc_domain_banner_v1', '1'); var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; };</script>
 
     <div class="overlay" id="overlay"></div>
     <nav class="side-menu" id="sideMenu">
@@ -98,7 +98,6 @@
             style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
     </nav>
 
-    <p class="carousel-slogan">• SNACKS · DULCES · PIZZAS · FELICIDAD EN CADA PEDIDO •</p>
 
     <div class="carousel-container">
         <button class="arrow prev" onclick="moveSlide(-1)">❮</button>
@@ -113,7 +112,8 @@
     <!-- SECCIÓN PROPÓSITO APP — necesaria para verificación de marca Google OAuth -->
     <section class="app-purpose-section" id="about">
         <p class="app-purpose-eyebrow">¿QUÉ ES HAPPY CORNER?</p>
-        <p class="app-purpose-body">Pide snacks, dulces y combos en línea. Usa tu cuenta de Google para acumular puntos y rastrear tu pedido — tu info nunca se comparte con terceros.</p>
+        <p class="app-purpose-body">Pide snacks, dulces y combos en línea. Usa tu cuenta de Google para acumular puntos
+            y rastrear tu pedido — tu info nunca se comparte con terceros.</p>
         <div class="app-purpose-pills">
             <span class="purpose-pill">🍕 Pizzas</span>
             <span class="purpose-pill">🍬 Dulces & Snacks</span>
@@ -336,7 +336,7 @@
                         const card = document.createElement('div');
                         card.className = 'card';
                         card.id = docSnap.id;
-                        
+
                         const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
                         const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
 

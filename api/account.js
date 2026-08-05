@@ -1,7 +1,7 @@
 import { db, auth } from './_lib/firebaseAdmin.js';
 import { applyCors, json } from './_lib/http.js';
-import { s3Client, bucketName } from './_lib/r2Client.js';
-import { DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
+import { s3Client, bucketName, publicUrl } from './_lib/r2Client.js';
+import { DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import fetch from 'node-fetch';
 
 async function deleteR2Prefix(prefix) {
@@ -677,6 +677,40 @@ export default async function handler(req, res) {
             return json(res, 200, { ok: true, version: newVersion, usersNotified: usersSnap.size });
         }
 
+        // --- 6.5 ACCIÓN: uploadMarketingImage (SOLO ADMIN) ---
+        if (action === 'uploadMarketingImage') {
+            const callerSnap = await db.collection('users').doc(decoded.uid).get();
+            const callerData = callerSnap.data() || {};
+            if (callerData.role !== 'admin') {
+                return json(res, 403, { error: 'Acción permitida solo para administradores.' });
+            }
+
+            const { imageData } = req.body;
+            if (!imageData) return json(res, 400, { error: 'Falta la imagen.' });
+
+            const match = imageData.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
+            if (!match) return json(res, 400, { error: 'Formato de imagen no válido.' });
+
+            const imageBuffer = Buffer.from(match[2], 'base64');
+            if (imageBuffer.length > 5 * 1024 * 1024) {
+                return json(res, 400, { error: 'La imagen supera el límite de 5MB.' });
+            }
+
+            if (!s3Client) return json(res, 500, { error: 'R2 Storage no está configurado.' });
+
+            const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+            const fileName = `marketing/${Date.now()}.${ext}`;
+
+            await s3Client.send(new PutObjectCommand({
+                Bucket: bucketName,
+                Key: fileName,
+                Body: imageBuffer,
+                ContentType: `image/${match[1]}`
+            }));
+
+            return json(res, 200, { ok: true, url: `${publicUrl}/${fileName}` });
+        }
+
         // --- 7. ACCIÓN: sendMarketingEmail (SOLO ADMIN) ---
         if (action === 'sendMarketingEmail') {
             const { subject, body, imageUrls } = req.body || {};
@@ -759,4 +793,3 @@ export default async function handler(req, res) {
         return json(res, 500, { error: 'Error interno del servidor.' });
     }
 }
-
