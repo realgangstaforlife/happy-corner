@@ -52,7 +52,7 @@
     <audio id="clinkSound" src="https://www.soundjay.com/buttons/sounds/button-37a.mp3" preload="auto"></audio>
 
     <header>
-        <a href="/index" class="logo">
+        <a href="/" class="logo">
             <img src="loguito.png" alt="HappyCorner" class="logo-img">
         </a>
         <nav class="nav-desktop">
@@ -319,45 +319,71 @@
     <script src="/footer.js"></script>
     <script type="module">
         import { initPromise, db } from './firebase-auth.js';
-        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { doc, getDoc, collection, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         async function initIndex() {
             await initPromise;
             const grid = document.getElementById('index-products-grid');
             grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">Cargando catálogo...</div>';
             try {
-                const snap = await getDocs(collection(db, 'products'));
-                grid.innerHTML = '';
-                let count = 0;
-                snap.forEach(docSnap => {
-                    const p = docSnap.data();
-                    if (p.available !== false && count < 8) {
-                        count++;
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.id = docSnap.id;
-
-                        const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
-                        const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
-
-                        card.innerHTML = `
-                            ${badgeHtml}
-                            <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
-                            <div class="product-name">${p.name}</div>
-                            <div class="price">$${p.price.toLocaleString('es-CO')}</div>
-                            <div class="qty-row">
-                                <button class="qty-btn" onclick="qty('${docSnap.id}',-1)">-</button>
-                                <span class="qty-num">1</span>
-                                <button class="qty-btn" onclick="qty('${docSnap.id}',1)">+</button>
-                            </div>
-                            <button class="btn-add" onclick="add('${docSnap.id}', event)">Añadir a Carrito</button>
-                        `;
-                        grid.appendChild(card);
-                    }
-                });
-                if (count === 0) {
-                    grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">No hay productos disponibles.</div>';
+                // Fetch top 3 product IDs from config
+                const configSnap = await getDoc(doc(db, 'config', 'topProducts'));
+                let productIdsToFetch = [];
+                if (configSnap.exists()) {
+                    productIdsToFetch = configSnap.data().productIds || [];
                 }
+                
+                let productsToRender = [];
+                if (productIdsToFetch.length > 0) {
+                    for (const id of productIdsToFetch) {
+                        const pSnap = await getDoc(doc(db, 'products', id));
+                        if (pSnap.exists()) {
+                            productsToRender.push({ id: pSnap.id, data: pSnap.data() });
+                        }
+                    }
+                } else {
+                    // Fallback to exactly 3 random if not found
+                    const snap = await getDocs(collection(db, 'products'));
+                    let allProducts = [];
+                    snap.forEach(docSnap => {
+                        if (docSnap.data().available !== false) {
+                            allProducts.push({ id: docSnap.id, data: docSnap.data() });
+                        }
+                    });
+                    productsToRender = allProducts.sort(() => 0.5 - Math.random()).slice(0, 3);
+                }
+
+                grid.innerHTML = '';
+                if (productsToRender.length === 0) {
+                    grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">No hay productos disponibles.</div>';
+                    return;
+                }
+
+                productsToRender.forEach(pObj => {
+                    const docId = pObj.id;
+                    const p = pObj.data;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.id = docId;
+
+                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                    const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
+
+                    card.innerHTML = `
+                        ${badgeHtml}
+                        <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                        <div class="product-name">${p.name}</div>
+                        <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                        <div class="qty-row">
+                            <button class="qty-btn" onclick="qty('${docId}',-1)">-</button>
+                            <span class="qty-num">1</span>
+                            <button class="qty-btn" onclick="qty('${docId}',1)">+</button>
+                        </div>
+                        <button class="btn-add" onclick="add('${docId}', event)">Añadir a Carrito</button>
+                    `;
+                    grid.appendChild(card);
+                });
             } catch (err) {
                 console.error("Failed to load index products:", err);
                 grid.innerHTML = '<div style="color:var(--accent-red); font-size:13px; text-align:center; width:100%; padding:20px 0;">Error al cargar catálogo.</div>';

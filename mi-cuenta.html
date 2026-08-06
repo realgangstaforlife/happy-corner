@@ -63,6 +63,16 @@
                 scrollbar-width: none;
             }
 
+            .mc-hero {
+                padding: 20px;
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .mc-modal {
+                padding: 20px;
+            }
+
             .mc-sidebar::-webkit-scrollbar {
                 display: none;
             }
@@ -1230,6 +1240,10 @@
                 <p style="font-size:11px; color: var(--text-muted, #888); margin-top:4px; padding-left:2px;">📧 El
                     correo está vinculado a tu cuenta y no se puede cambiar aquí.</p>
             </div>
+            <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="edit-marketing" style="width: 18px; height: 18px; accent-color: var(--hp-pink);">
+                <label for="edit-marketing" style="font-size: 13.5px; color: var(--text-color); cursor: pointer;">Deseo recibir correos de marketing y ofertas</label>
+            </div>
             <button class="mc-btn-primary" id="save-profile-btn" onclick="saveProfile()">Guardar Cambios</button>
         </div>
     </div>
@@ -1945,6 +1959,7 @@
                 document.getElementById('edit-nombre').value = currentUserData.displayName || currentUserData.name || '';
                 document.getElementById('edit-telefono').value = currentUserData.phone || '';
                 document.getElementById('edit-curso').value = currentUserData.grade || '';
+                document.getElementById('edit-marketing').checked = currentUserData.marketingOptIn !== false;
             }
             // Always show the auth email as read-only, unless it is empty
             const authEmail = currentUser?.email || currentUserData?.email || '';
@@ -1972,12 +1987,14 @@
                 const telefono = document.getElementById('edit-telefono').value.trim();
                 const curso = document.getElementById('edit-curso').value.trim();
                 const email = document.getElementById('edit-email-display').value.trim();
+                const marketingOptIn = document.getElementById('edit-marketing').checked;
 
                 const updatePayload = {
                     displayName: nombre,
                     name: nombre,
                     phone: telefono,
                     grade: curso,
+                    marketingOptIn: marketingOptIn,
                     updatedAt: new Date().toISOString()
                 };
 

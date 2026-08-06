@@ -427,6 +427,24 @@ export default async function handler(req, res) {
             // 8. Eliminar en Firebase Auth
             await auth.deleteUser(targetUid);
 
+            if (isCallerAdmin && targetData.email) {
+                const resendKey = process.env.RESEND_API_KEY;
+                if (resendKey) {
+                    try {
+                        const { Resend } = await import('resend');
+                        const resend = new Resend(resendKey);
+                        await resend.emails.send({
+                            from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                            to: [targetData.email],
+                            subject: 'Cuenta eliminada',
+                            html: '<p>Tu cuenta ha sido eliminada.</p>'
+                        });
+                    } catch (err) {
+                        console.error("Error sending delete notification email:", err.message);
+                    }
+                }
+            }
+
             return json(res, 200, { ok: true });
         }
 

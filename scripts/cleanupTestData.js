@@ -14,6 +14,7 @@
  * ADVERTENCIA: esto es irreversible. Correr solo una vez, con cuidado.
  */
 
+import 'dotenv/config';
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import readline from 'readline';

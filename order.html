@@ -473,48 +473,7 @@
             btn.innerText = "Verificando...";
             btn.disabled = true;
 
-            // ===== WALL OF SHAME (CHECK DEUDAS) =====
-            try {
-                if (auth.currentUser) {
-                    const token = await auth.currentUser.getIdToken();
-                    const checkRes = await fetch(`/api/checkDeuda`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    const checkData = await checkRes.json();
-
-                    if (checkData.hasDeuda) {
-                        const result = await Swal.fire({
-                            title: '⚠️ Aviso del Sistema',
-                            html: `Hemos detectado un registro con un nombre parecido.<br><br><b>¿Eres ${checkData.deudorData.nombre}?</b>`,
-                            icon: 'question',
-                            showCancelButton: true,
-                            confirmButtonText: 'Sí, soy yo',
-                            cancelButtonText: 'No, soy otra persona',
-                            confirmButtonColor: '#e74c3c',
-                            background: 'var(--surface-color)',
-                            color: 'var(--text-color)'
-                        });
-
-                        if (result.isConfirmed) {
-                            Swal.fire({
-                                title: '⛔ Acceso Restringido',
-                                html: `No puedes hacer compras en HappyCorner.<br><br>Estás en una deuda activa de <b style="color:red;">$${checkData.deudorData.monto}</b> por comprar: <b>${checkData.deudorData.detalle}</b>.<br><br>Por favor liquida tu deuda con el administrador primero.`,
-                                icon: 'error',
-                                confirmButtonColor: 'var(--hp-pink)',
-                                background: 'var(--surface-color)',
-                                color: 'var(--text-color)'
-                            });
-                            btn.innerText = originalText;
-                            btn.disabled = false;
-                            return; // Bloquear ejecución
-                        }
-                    }
-                }
-            } catch (e) {
-                console.log("Error verificando deudas: ", e);
-            }
+            // Deuda check removed for privacy reasons.
 
             btn.innerText = "Enviando...";
 

@@ -1099,6 +1099,16 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Top 3 Productos del Index -->
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px; margin-top:24px;">
+                    <div style="font-size:16px; font-weight:800; margin-bottom:6px;">🏆 Top 3 Productos del Inicio</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Recalcula cuáles son los 3 productos más vendidos y los pone en la página principal. Si no hay compras, se eligen 3 al azar.</div>
+                    <div id="top3-status" style="font-size:12px; color:var(--text-muted); margin-bottom:14px;"></div>
+                    <button class="admin-btn" style="background:var(--hp-gradient);" id="update-top3-btn" onclick="updateTopProducts()">
+                        🔄 Actualizar Top 3 Productos
+                    </button>
+                </div>
             </div>
 
         </main>
@@ -2791,6 +2801,38 @@
             } catch (err) {
                 console.error(err);
                 hcAlert('Error al enviar campaña: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+
+        window.updateTopProducts = async function () {
+            const btn = document.getElementById('update-top3-btn');
+            const statusEl = document.getElementById('top3-status');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Calculando...';
+            statusEl.textContent = '';
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const res = await fetch('/api/config?action=updateTopProducts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Error al actualizar');
+                const ids = data.top3 || [];
+                statusEl.innerHTML = `✅ Top 3 actualizado: <code style="font-size:11px;">${ids.join(', ')}</code>`;
+                hcAlert('✅ Top 3 productos actualizados en el inicio.', 'success');
+            } catch (err) {
+                console.error(err);
+                statusEl.textContent = '❌ Error: ' + err.message;
+                hcAlert('Error al actualizar top 3: ' + err.message, 'error');
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
