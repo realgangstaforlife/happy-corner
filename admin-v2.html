@@ -2816,7 +2816,7 @@
             statusEl.textContent = '';
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('/api/config?action=updateTopProducts', {
+                const res = await fetch('/api/getConfig?action=updateTopProducts', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
