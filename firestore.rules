@@ -86,9 +86,10 @@ allow create: if request.auth != null && request.auth.uid == uid &&
       allow write: if false;
     }
 
-    // config collection rules (server-only write, no client reads/writes)
+    // config collection rules - topProducts is publicly readable; all other config is admin-only
     match /config/{documentId} {
-      allow read, write: if false;
+      allow read: if documentId == 'topProducts' || isAdmin();
+      allow write: if false; // only Admin SDK can write
     }
 
     // products collection rules (public read, admin write)
