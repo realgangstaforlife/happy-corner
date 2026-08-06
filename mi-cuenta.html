@@ -2110,7 +2110,8 @@
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
-                        }
+                        },
+                        body: JSON.stringify({ uid: currentUser.uid })
                     });
                     const pinData = await pinResp.json();
                     if (!pinResp.ok) throw new Error(pinData.error || 'Error enviando PIN');
