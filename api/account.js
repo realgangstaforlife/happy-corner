@@ -4,6 +4,20 @@ import { s3Client, bucketName, publicUrl } from './_lib/r2Client.js';
 import { DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import fetch from 'node-fetch';
 
+// Rate limiting
+const requestCounts = new Map();
+function checkRateLimit(ip, limit = 10, windowMs = 60000) {
+    const now = Date.now();
+    if (!requestCounts.has(ip)) {
+        requestCounts.set(ip, []);
+    }
+    const requests = requestCounts.get(ip);
+    const recentRequests = requests.filter(t => now - t < windowMs);
+    if (recentRequests.length >= limit) return false;
+    recentRequests.push(now);
+    requestCounts.set(ip, recentRequests);
+    return true;
+}
 async function deleteR2Prefix(prefix) {
     if (!s3Client || !bucketName) return;
     try {
@@ -31,169 +45,181 @@ async function deleteR2Prefix(prefix) {
 
 export default async function handler(req, res) {
     if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
+    export default async function handler(req, res) {
+        if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
 
-    if (req.method !== 'POST') {
-        return json(res, 405, { error: 'Method not allowed' });
-    }
-
-    try {
-        const { action } = req.query;
-        if (!action) {
-            return json(res, 400, { error: 'Falta el parámetro action' });
+        // Rate limit check
+        const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0];
+        if (!checkRateLimit(ip, 20, 60000)) {
+            return json(res, 429, { error: 'Demasiadas solicitudes. Intenta en 1 minuto.' });
         }
 
-        // --- 1. ACCIÓN: logLogin (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
-        if (action === 'logLogin') {
-            const idToken = (req.headers.authorization || '').replace('Bearer ', '');
-            if (!idToken) return json(res, 401, { error: 'No autenticado.' });
-
-            let decoded;
-            try {
-                decoded = await auth.verifyIdToken(idToken);
-            } catch {
-                return json(res, 401, { error: 'Token inválido.' });
-            }
-
-            const forwarded = req.headers['x-forwarded-for'];
-            const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
-
-            let location = 'Red local / Desconocido';
-            try {
-                if (ip && ip !== 'unknown' && !ip.startsWith('127.') && !ip.startsWith('::1') && !ip.startsWith('192.168.')) {
-                    const ipRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp`);
-                    const ipData = await ipRes.json();
-                    const parts = [ipData.city, ipData.regionName, ipData.country].filter(Boolean);
-                    location = parts.join(', ') + (ipData.isp ? ` (${ipData.isp})` : '');
-                }
-            } catch (err) {
-                console.error("Error fetching location from IP:", err.message);
-            }
-
-            await db.collection('loginHistory').add({
-                uid: decoded.uid,
-                ip,
-                userAgent: req.headers['user-agent'] || 'unknown',
-                timestamp: new Date().toISOString(),
-                location
-            });
-
-            return json(res, 200, { ok: true });
+        if (req.method !== 'POST') {
+            return json(res, 405, { error: 'Method not allowed' });
         }
 
-        // --- 2. ACCIÓN: verifyOnboardingCode (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
-        if (action === 'verifyOnboardingCode') {
-            const idToken = (req.headers.authorization || '').replace('Bearer ', '');
-            if (!idToken) return json(res, 401, { error: 'No autenticado.' });
+        if (req.method !== 'POST') {
+            return json(res, 405, { error: 'Method not allowed' });
+        }
 
-            let decoded;
-            try {
-                decoded = await auth.verifyIdToken(idToken);
-            } catch {
-                return json(res, 401, { error: 'Token inválido.' });
+        try {
+            const { action } = req.query;
+            if (!action) {
+                return json(res, 400, { error: 'Falta el parámetro action' });
             }
 
-            const { customerUID, customerCode } = req.body;
-            if (!customerUID || !customerCode) {
-                return json(res, 400, { error: 'Falta customerUID o customerCode' });
-            }
+            // --- 1. ACCIÓN: logLogin (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
+            if (action === 'logLogin') {
+                const idToken = (req.headers.authorization || '').replace('Bearer ', '');
+                if (!idToken) return json(res, 401, { error: 'No autenticado.' });
 
-            if (decoded.uid !== customerUID) {
-                return json(res, 403, { error: 'No autorizado para esta cuenta.' });
-            }
-
-            const cleanCode = customerCode.trim().toUpperCase();
-
-            // Rate limit check
-            const limitRef = db.collection('rateLimits').doc(`onboarding_${customerUID}`);
-            const limitSnap = await limitRef.get();
-            if (limitSnap.exists) {
-                const limitData = limitSnap.data();
-                if (limitData.attempts >= 10 && (Date.now() - limitData.lastAttempt < 60 * 60 * 1000)) {
-                    return json(res, 429, { error: 'Demasiados intentos. Por favor espera 1 hora.' });
-                }
-            }
-            await limitRef.set({
-                attempts: limitSnap.exists && (Date.now() - limitSnap.data().lastAttempt < 60 * 60 * 1000) ? limitSnap.data().attempts + 1 : 1,
-                lastAttempt: Date.now()
-            }, { merge: true });
-
-            const codeRegex = /^HC[A-Z0-9]{4,6}$/;
-            if (!codeRegex.test(cleanCode)) {
-                return json(res, 400, { error: 'Formato de código inválido. Debe empezar con "HC" seguido de 4 a 6 caracteres alfanuméricos.' });
-            }
-
-            const lookupRef = db.collection('customerCodes').doc(cleanCode);
-            const userRef = db.collection('users').doc(customerUID);
-
-            const result = await db.runTransaction(async (transaction) => {
-                const lookupSnap = await transaction.get(lookupRef);
-                if (lookupSnap.exists) {
-                    return { ok: false, error: 'code_taken' };
+                let decoded;
+                try {
+                    decoded = await auth.verifyIdToken(idToken);
+                } catch {
+                    return json(res, 401, { error: 'Token inválido.' });
                 }
 
-                const userSnap = await transaction.get(userRef);
-                if (!userSnap.exists) {
-                    return { ok: false, error: 'user_not_found' };
+                const forwarded = req.headers['x-forwarded-for'];
+                const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
+
+                let location = 'Red local / Desconocido';
+                try {
+                    if (ip && ip !== 'unknown' && !ip.startsWith('127.') && !ip.startsWith('::1') && !ip.startsWith('192.168.')) {
+                        const ipRes = await fetch(`http://ip-api.com/json/${ip}?fields=city,regionName,country,isp`);
+                        const ipData = await ipRes.json();
+                        const parts = [ipData.city, ipData.regionName, ipData.country].filter(Boolean);
+                        location = parts.join(', ') + (ipData.isp ? ` (${ipData.isp})` : '');
+                    }
+                } catch (err) {
+                    console.error("Error fetching location from IP:", err.message);
                 }
 
-                const userData = userSnap.data();
-                if (userData.customerCode) {
-                    return { ok: false, error: 'already_has_code' };
-                }
-
-                transaction.set(lookupRef, { uid: customerUID });
-                transaction.update(userRef, {
-                    customerCode: cleanCode,
-                    updatedAt: new Date().toISOString()
+                await db.collection('loginHistory').add({
+                    uid: decoded.uid,
+                    ip,
+                    userAgent: req.headers['user-agent'] || 'unknown',
+                    timestamp: new Date().toISOString(),
+                    location
                 });
 
-                return { ok: true };
-            });
-
-            if (!result.ok) {
-                if (result.error === 'code_taken') {
-                    return json(res, 400, { error: 'Ese código ya existe, prueba otro.' });
-                }
-                if (result.error === 'user_not_found') {
-                    return json(res, 404, { error: 'El usuario no existe.' });
-                }
-                if (result.error === 'already_has_code') {
-                    return json(res, 400, { error: 'Este usuario ya tiene un código asignado.' });
-                }
+                return json(res, 200, { ok: true });
             }
 
-            return json(res, 200, { ok: true });
-        }
+            // --- 2. ACCIÓN: verifyOnboardingCode (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
+            if (action === 'verifyOnboardingCode') {
+                const idToken = (req.headers.authorization || '').replace('Bearer ', '');
+                if (!idToken) return json(res, 401, { error: 'No autenticado.' });
 
-        // --- 6. ACCIÓN: sendPasswordReset (PÚBLICA — no requiere estar autenticado) ---
-        if (action === 'sendPasswordReset') {
-            const { email } = req.body || {};
-            if (!email || !email.includes('@')) {
-                return json(res, 400, { error: 'Correo electrónico no válido.' });
-            }
-
-            const cleanEmail = email.trim().toLowerCase();
-
-            try {
-                const userRecord = await auth.getUserByEmail(cleanEmail);
-                const providers = userRecord.providerData.map(p => p.providerId);
-
-                if (providers.includes('google.com') && !providers.includes('password')) {
-                    return json(res, 200, { ok: true, isGoogleOnly: true });
+                let decoded;
+                try {
+                    decoded = await auth.verifyIdToken(idToken);
+                } catch {
+                    return json(res, 401, { error: 'Token inválido.' });
                 }
 
-                const actionCodeSettings = {
-                    url: 'https://happycorner.top/auth/action'
-                };
-                const resetLink = await auth.generatePasswordResetLink(cleanEmail, actionCodeSettings);
+                const { customerUID, customerCode } = req.body;
+                if (!customerUID || !customerCode) {
+                    return json(res, 400, { error: 'Falta customerUID o customerCode' });
+                }
 
-                // Send custom branded email via Resend
-                const resendKey = process.env.RESEND_API_KEY;
-                if (resendKey) {
-                    const { Resend } = await import('resend');
-                    const resend = new Resend(resendKey);
+                if (decoded.uid !== customerUID) {
+                    return json(res, 403, { error: 'No autorizado para esta cuenta.' });
+                }
 
-                    const emailHtml = `
+                const cleanCode = customerCode.trim().toUpperCase();
+
+                // Rate limit check
+                const limitRef = db.collection('rateLimits').doc(`onboarding_${customerUID}`);
+                const limitSnap = await limitRef.get();
+                if (limitSnap.exists) {
+                    const limitData = limitSnap.data();
+                    if (limitData.attempts >= 10 && (Date.now() - limitData.lastAttempt < 60 * 60 * 1000)) {
+                        return json(res, 429, { error: 'Demasiados intentos. Por favor espera 1 hora.' });
+                    }
+                }
+                await limitRef.set({
+                    attempts: limitSnap.exists && (Date.now() - limitSnap.data().lastAttempt < 60 * 60 * 1000) ? limitSnap.data().attempts + 1 : 1,
+                    lastAttempt: Date.now()
+                }, { merge: true });
+
+                const codeRegex = /^HC[A-Z0-9]{4,6}$/;
+                if (!codeRegex.test(cleanCode)) {
+                    return json(res, 400, { error: 'Formato de código inválido. Debe empezar con "HC" seguido de 4 a 6 caracteres alfanuméricos.' });
+                }
+
+                const lookupRef = db.collection('customerCodes').doc(cleanCode);
+                const userRef = db.collection('users').doc(customerUID);
+
+                const result = await db.runTransaction(async (transaction) => {
+                    const lookupSnap = await transaction.get(lookupRef);
+                    if (lookupSnap.exists) {
+                        return { ok: false, error: 'code_taken' };
+                    }
+
+                    const userSnap = await transaction.get(userRef);
+                    if (!userSnap.exists) {
+                        return { ok: false, error: 'user_not_found' };
+                    }
+
+                    const userData = userSnap.data();
+                    if (userData.customerCode) {
+                        return { ok: false, error: 'already_has_code' };
+                    }
+
+                    transaction.set(lookupRef, { uid: customerUID });
+                    transaction.update(userRef, {
+                        customerCode: cleanCode,
+                        updatedAt: new Date().toISOString()
+                    });
+
+                    return { ok: true };
+                });
+
+                if (!result.ok) {
+                    if (result.error === 'code_taken') {
+                        return json(res, 400, { error: 'Ese código ya existe, prueba otro.' });
+                    }
+                    if (result.error === 'user_not_found') {
+                        return json(res, 404, { error: 'El usuario no existe.' });
+                    }
+                    if (result.error === 'already_has_code') {
+                        return json(res, 400, { error: 'Este usuario ya tiene un código asignado.' });
+                    }
+                }
+
+                return json(res, 200, { ok: true });
+            }
+
+            // --- 6. ACCIÓN: sendPasswordReset (PÚBLICA — no requiere estar autenticado) ---
+            if (action === 'sendPasswordReset') {
+                const { email } = req.body || {};
+                if (!email || !email.includes('@')) {
+                    return json(res, 400, { error: 'Correo electrónico no válido.' });
+                }
+
+                const cleanEmail = email.trim().toLowerCase();
+
+                try {
+                    const userRecord = await auth.getUserByEmail(cleanEmail);
+                    const providers = userRecord.providerData.map(p => p.providerId);
+
+                    if (providers.includes('google.com') && !providers.includes('password')) {
+                        return json(res, 200, { ok: true, isGoogleOnly: true });
+                    }
+
+                    const actionCodeSettings = {
+                        url: 'https://happycorner.top/auth/action'
+                    };
+                    const resetLink = await auth.generatePasswordResetLink(cleanEmail, actionCodeSettings);
+
+                    // Send custom branded email via Resend
+                    const resendKey = process.env.RESEND_API_KEY;
+                    if (resendKey) {
+                        const { Resend } = await import('resend');
+                        const resend = new Resend(resendKey);
+
+                        const emailHtml = `
                     <!DOCTYPE html>
                     <html>
                     <head><meta charset="utf-8"></head>
@@ -221,84 +247,84 @@ export default async function handler(req, res) {
                     </html>
                     `;
 
-                    await resend.emails.send({
-                        from: 'Seguridad Happy Corner <seguridad@alertas.happycorner.top>',
-                        to: [cleanEmail],
-                        subject: '🔒 Restablecer tu contraseña en Happy Corner',
-                        html: emailHtml
-                    });
+                        await resend.emails.send({
+                            from: 'Seguridad Happy Corner <seguridad@alertas.happycorner.top>',
+                            to: [cleanEmail],
+                            subject: '🔒 Restablecer tu contraseña en Happy Corner',
+                            html: emailHtml
+                        });
+                    }
+
+                    return json(res, 200, { ok: true, isGoogleOnly: false });
+                } catch (err) {
+                    console.log("sendPasswordReset handled silently or user not found:", err.message);
+                    return json(res, 200, { ok: true, isGoogleOnly: false });
+                }
+            }
+
+            // --- ACCIONES REQUERIDAS DE AUTENTICACIÓN PARA OTROS CASOS ---
+            const idToken = (req.headers.authorization || '').replace('Bearer ', '');
+            if (!idToken) return json(res, 401, { error: 'No autenticado.' });
+
+            let decoded;
+            try {
+                decoded = await auth.verifyIdToken(idToken);
+            } catch {
+                return json(res, 401, { error: 'Token inválido.' });
+            }
+
+            // Obtener datos del llamador (solo para email bodies donde se necesite el nombre)
+            const callerSnap = await db.collection('users').doc(decoded.uid).get();
+            const callerData = callerSnap.data() || {};
+            // Admin check consultando el rol del documento de Firestore
+            const isCallerAdmin = callerData.role === 'admin';
+
+            // --- 2.5. ACCIÓN: sendDeletePin (ACCESIBLE POR EL PROPIO USUARIO) ---
+            if (action === 'sendDeletePin') {
+                const { uid } = req.body;
+                if (!uid) return json(res, 400, { error: 'Falta el uid.' });
+                if (uid !== decoded.uid) {
+                    return json(res, 403, { error: 'No autorizado para solicitar PIN de esta cuenta.' });
                 }
 
-                return json(res, 200, { ok: true, isGoogleOnly: false });
-            } catch (err) {
-                console.log("sendPasswordReset handled silently or user not found:", err.message);
-                return json(res, 200, { ok: true, isGoogleOnly: false });
-            }
-        }
+                const targetUserSnap = await db.collection('users').doc(uid).get();
+                if (!targetUserSnap.exists) {
+                    return json(res, 404, { error: 'El usuario no existe.' });
+                }
+                const userData = targetUserSnap.data();
+                const email = userData.email;
+                if (!email) return json(res, 400, { error: 'La cuenta no tiene correo registrado.' });
 
-        // --- ACCIONES REQUERIDAS DE AUTENTICACIÓN PARA OTROS CASOS ---
-        const idToken = (req.headers.authorization || '').replace('Bearer ', '');
-        if (!idToken) return json(res, 401, { error: 'No autenticado.' });
+                const resendKey = process.env.RESEND_API_KEY;
+                if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
 
-        let decoded;
-        try {
-            decoded = await auth.verifyIdToken(idToken);
-        } catch {
-            return json(res, 401, { error: 'Token inválido.' });
-        }
-
-        // Obtener datos del llamador (solo para email bodies donde se necesite el nombre)
-        const callerSnap = await db.collection('users').doc(decoded.uid).get();
-        const callerData = callerSnap.data() || {};
-        // Admin check consultando el rol del documento de Firestore
-        const isCallerAdmin = callerData.role === 'admin';
-
-        // --- 2.5. ACCIÓN: sendDeletePin (ACCESIBLE POR EL PROPIO USUARIO) ---
-        if (action === 'sendDeletePin') {
-            const { uid } = req.body;
-            if (!uid) return json(res, 400, { error: 'Falta el uid.' });
-            if (uid !== decoded.uid) {
-                return json(res, 403, { error: 'No autorizado para solicitar PIN de esta cuenta.' });
-            }
-
-            const targetUserSnap = await db.collection('users').doc(uid).get();
-            if (!targetUserSnap.exists) {
-                return json(res, 404, { error: 'El usuario no existe.' });
-            }
-            const userData = targetUserSnap.data();
-            const email = userData.email;
-            if (!email) return json(res, 400, { error: 'La cuenta no tiene correo registrado.' });
-
-            const resendKey = process.env.RESEND_API_KEY;
-            if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
-
-            // check rate limit of 3 minutes
-            const pinRef = db.collection('verificationPins').doc(`delete_${uid}`);
-            const existingPin = await pinRef.get();
-            if (existingPin.exists) {
-                const data = existingPin.data();
-                if (data.createdAt) {
-                    const createdTime = new Date(data.createdAt).getTime();
-                    if (Date.now() - createdTime < 3 * 60 * 1000) {
-                        return json(res, 429, { error: 'Por favor espera 3 minutos antes de solicitar un nuevo PIN.' });
+                // check rate limit of 3 minutes
+                const pinRef = db.collection('verificationPins').doc(`delete_${uid}`);
+                const existingPin = await pinRef.get();
+                if (existingPin.exists) {
+                    const data = existingPin.data();
+                    if (data.createdAt) {
+                        const createdTime = new Date(data.createdAt).getTime();
+                        if (Date.now() - createdTime < 3 * 60 * 1000) {
+                            return json(res, 429, { error: 'Por favor espera 3 minutos antes de solicitar un nuevo PIN.' });
+                        }
                     }
                 }
-            }
 
-            const { Resend } = await import('resend');
-            const resend = new Resend(resendKey);
-            const pin = Math.floor(100000 + Math.random() * 900000).toString();
-            const crypto = await import('crypto');
-            const hashedPin = crypto.createHash('sha256').update(pin).digest('hex');
-            const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
+                const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                const crypto = await import('crypto');
+                const hashedPin = crypto.createHash('sha256').update(pin).digest('hex');
+                const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-            await pinRef.set({ hashedPin, expiresAt, attempts: 0, createdAt: new Date().toISOString() });
+                await pinRef.set({ hashedPin, expiresAt, attempts: 0, createdAt: new Date().toISOString() });
 
-            await resend.emails.send({
-                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
-                to: [email],
-                subject: '⚠️ PIN para eliminar tu cuenta en Happy Corner',
-                html: `
+                await resend.emails.send({
+                    from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                    to: [email],
+                    subject: '⚠️ PIN para eliminar tu cuenta en Happy Corner',
+                    html: `
 <!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"></head>
@@ -329,116 +355,116 @@ export default async function handler(req, res) {
   </table>
 </body>
 </html>`
-            });
+                });
 
-            return json(res, 200, { success: true });
-        }
-
-        // --- 3. ACCIÓN: deleteAccount (ACCESIBLE POR EL PROPIO USUARIO O POR ADMIN) ---
-        if (action === 'deleteAccount') {
-            const { uid, pin } = req.body;
-            const targetUid = uid || decoded.uid;
-
-            // Si intenta borrar a otro usuario, debe ser admin
-            if (targetUid !== decoded.uid && !isCallerAdmin) {
-                return json(res, 403, { error: 'No autorizado.' });
+                return json(res, 200, { success: true });
             }
 
-            // Si no es admin (el usuario se está borrando a sí mismo), verificar PIN
-            if (!isCallerAdmin) {
-                if (!pin) return json(res, 400, { error: 'Se requiere el PIN de verificación.' });
-                
-                const pinRef = db.collection('verificationPins').doc(`delete_${targetUid}`);
-                const pinSnap = await pinRef.get();
-                if (!pinSnap.exists) {
-                    return json(res, 400, { error: 'No se ha solicitado ningún PIN o ya expiró.' });
+            // --- 3. ACCIÓN: deleteAccount (ACCESIBLE POR EL PROPIO USUARIO O POR ADMIN) ---
+            if (action === 'deleteAccount') {
+                const { uid, pin } = req.body;
+                const targetUid = uid || decoded.uid;
+
+                // Si intenta borrar a otro usuario, debe ser admin
+                if (targetUid !== decoded.uid && !isCallerAdmin) {
+                    return json(res, 403, { error: 'No autorizado.' });
                 }
 
-                const pinData = pinSnap.data();
-                if (new Date(pinData.expiresAt) < new Date()) {
+                // Si no es admin (el usuario se está borrando a sí mismo), verificar PIN
+                if (!isCallerAdmin) {
+                    if (!pin) return json(res, 400, { error: 'Se requiere el PIN de verificación.' });
+
+                    const pinRef = db.collection('verificationPins').doc(`delete_${targetUid}`);
+                    const pinSnap = await pinRef.get();
+                    if (!pinSnap.exists) {
+                        return json(res, 400, { error: 'No se ha solicitado ningún PIN o ya expiró.' });
+                    }
+
+                    const pinData = pinSnap.data();
+                    if (new Date(pinData.expiresAt) < new Date()) {
+                        await pinRef.delete();
+                        return json(res, 400, { error: 'El PIN ha expirado. Solicita uno nuevo.' });
+                    }
+
+                    if (pinData.attempts >= 5) {
+                        await pinRef.delete();
+                        return json(res, 400, { error: 'Has excedido el número máximo de intentos. Solicita un nuevo PIN.' });
+                    }
+
+                    const crypto = await import('crypto');
+                    const incomingHashed = crypto.createHash('sha256').update(pin.trim()).digest('hex');
+                    if (incomingHashed !== pinData.hashedPin) {
+                        await pinRef.update({ attempts: pinData.attempts + 1 });
+                        return json(res, 401, { error: `PIN incorrecto. Intento ${pinData.attempts + 1} de 5.` });
+                    }
+
+                    // Delete PIN code
                     await pinRef.delete();
-                    return json(res, 400, { error: 'El PIN ha expirado. Solicita uno nuevo.' });
                 }
 
-                if (pinData.attempts >= 5) {
-                    await pinRef.delete();
-                    return json(res, 400, { error: 'Has excedido el número máximo de intentos. Solicita un nuevo PIN.' });
+                // Consultar datos del usuario objetivo
+                const targetUserRef = db.collection('users').doc(targetUid);
+                const targetUserSnap = await targetUserRef.get();
+                if (!targetUserSnap.exists) {
+                    return json(res, 404, { error: 'El usuario no existe.' });
                 }
 
-                const crypto = await import('crypto');
-                const incomingHashed = crypto.createHash('sha256').update(pin.trim()).digest('hex');
-                if (incomingHashed !== pinData.hashedPin) {
-                    await pinRef.update({ attempts: pinData.attempts + 1 });
-                    return json(res, 401, { error: `PIN incorrecto. Intento ${pinData.attempts + 1} de 5.` });
+                const targetData = targetUserSnap.data();
+
+                // Bloquear si tiene deudas activas
+                if (targetData.activeDebt && targetData.activeDebt > 0) {
+                    return json(res, 400, { error: 'No puedes eliminar la cuenta mientras tengas una deuda activa. Contacta al administrador.' });
                 }
 
-                // Delete PIN code
-                await pinRef.delete();
-            }
+                // 1. Eliminar HappyCódigo si existe
+                if (targetData.customerCode) {
+                    await db.collection('customerCodes').doc(targetData.customerCode).delete();
+                }
 
-            // Consultar datos del usuario objetivo
-            const targetUserRef = db.collection('users').doc(targetUid);
-            const targetUserSnap = await targetUserRef.get();
-            if (!targetUserSnap.exists) {
-                return json(res, 404, { error: 'El usuario no existe.' });
-            }
+                // 2. Eliminar Contrato en Firestore
+                await db.collection('debtContracts').doc(targetUid).delete();
 
-            const targetData = targetUserSnap.data();
+                // 3. Eliminar Score Crediticio
+                await db.collection('creditScores').doc(targetUid).delete();
 
-            // Bloquear si tiene deudas activas
-            if (targetData.activeDebt && targetData.activeDebt > 0) {
-                return json(res, 400, { error: 'No puedes eliminar la cuenta mientras tengas una deuda activa. Contacta al administrador.' });
-            }
+                // 4. Eliminar Movimientos
+                const movementsSnap = await db.collection('movements').where('customerUID', '==', targetUid).get();
+                const movementsBatch = db.batch();
+                movementsSnap.forEach(doc => {
+                    movementsBatch.delete(doc.ref);
+                });
+                await movementsBatch.commit();
 
-            // 1. Eliminar HappyCódigo si existe
-            if (targetData.customerCode) {
-                await db.collection('customerCodes').doc(targetData.customerCode).delete();
-            }
+                // 5. Eliminar Pedidos (completamente, como se aprobó en el plan)
+                const ordersSnap = await db.collection('orders').where('customerUID', '==', targetUid).get();
+                const ordersBatch = db.batch();
+                ordersSnap.forEach(doc => {
+                    ordersBatch.delete(doc.ref);
+                });
+                await ordersBatch.commit();
 
-            // 2. Eliminar Contrato en Firestore
-            await db.collection('debtContracts').doc(targetUid).delete();
+                // 6. Eliminar firma y PDF de R2 usando borrado de carpetas por prefijo
+                await deleteR2Prefix(`signatures/${targetUid}/`);
+                await deleteR2Prefix(`contracts/${targetUid}/`);
 
-            // 3. Eliminar Score Crediticio
-            await db.collection('creditScores').doc(targetUid).delete();
+                // 7. Eliminar en Firestore
+                await targetUserRef.delete();
 
-            // 4. Eliminar Movimientos
-            const movementsSnap = await db.collection('movements').where('customerUID', '==', targetUid).get();
-            const movementsBatch = db.batch();
-            movementsSnap.forEach(doc => {
-                movementsBatch.delete(doc.ref);
-            });
-            await movementsBatch.commit();
+                // 8. Eliminar en Firebase Auth
+                await auth.deleteUser(targetUid);
 
-            // 5. Eliminar Pedidos (completamente, como se aprobó en el plan)
-            const ordersSnap = await db.collection('orders').where('customerUID', '==', targetUid).get();
-            const ordersBatch = db.batch();
-            ordersSnap.forEach(doc => {
-                ordersBatch.delete(doc.ref);
-            });
-            await ordersBatch.commit();
-
-            // 6. Eliminar firma y PDF de R2 usando borrado de carpetas por prefijo
-            await deleteR2Prefix(`signatures/${targetUid}/`);
-            await deleteR2Prefix(`contracts/${targetUid}/`);
-
-            // 7. Eliminar en Firestore
-            await targetUserRef.delete();
-
-            // 8. Eliminar en Firebase Auth
-            await auth.deleteUser(targetUid);
-
-            if (isCallerAdmin && targetData.email) {
-                const resendKey = process.env.RESEND_API_KEY;
-                if (resendKey) {
-                    try {
-                        const { Resend } = await import('resend');
-                        const resend = new Resend(resendKey);
-                        const userName = targetData.name || targetData.displayName || 'Cliente';
-                        await resend.emails.send({
-                            from: 'Happy Corner <no-reply@alertas.happycorner.top>',
-                            to: [targetData.email],
-                            subject: 'Tu cuenta en Happy Corner ha sido eliminada',
-                            html: `<!DOCTYPE html>
+                if (isCallerAdmin && targetData.email) {
+                    const resendKey = process.env.RESEND_API_KEY;
+                    if (resendKey) {
+                        try {
+                            const { Resend } = await import('resend');
+                            const resend = new Resend(resendKey);
+                            const userName = targetData.name || targetData.displayName || 'Cliente';
+                            await resend.emails.send({
+                                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                                to: [targetData.email],
+                                subject: 'Tu cuenta en Happy Corner ha sido eliminada',
+                                html: `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
@@ -484,212 +510,212 @@ export default async function handler(req, res) {
   </table>
 </body>
 </html>`
-                        });
-                    } catch (err) {
-                        console.error("Error sending delete notification email:", err.message);
+                            });
+                        } catch (err) {
+                            console.error("Error sending delete notification email:", err.message);
+                        }
                     }
                 }
+
+                return json(res, 200, { ok: true });
             }
 
-            return json(res, 200, { ok: true });
-        }
-
-        // --- ACCIONES EXCLUSIVAS DE ADMINISTRADOR ---
-        if (!isCallerAdmin) {
-            return json(res, 403, { error: 'Acción permitida solo para administradores.' });
-        }
-
-        // --- 4. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
-        if (action === 'adminCreateClient') {
-            const { nombre, email, telefono, customerCode, password } = req.body;
-            if (!nombre || !email || !telefono) {
-                return json(res, 400, { error: 'Nombre, correo y teléfono son obligatorios.' });
+            // --- ACCIONES EXCLUSIVAS DE ADMINISTRADOR ---
+            if (!isCallerAdmin) {
+                return json(res, 403, { error: 'Acción permitida solo para administradores.' });
             }
 
-            const cleanEmail = email.trim().toLowerCase();
-            const cleanPhone = telefono.replace(/\D/g, '');
-            const cleanCode = customerCode ? customerCode.trim().toUpperCase() : null;
-
-            // Validar código si se provee
-            if (cleanCode) {
-                const codeRegex = /^HC[A-Z0-9]{4,6}$/;
-                if (!codeRegex.test(cleanCode)) {
-                    return json(res, 400, { error: 'Formato de código inválido. Debe empezar con "HC" seguido de 4 a 6 caracteres alfanuméricos.' });
+            // --- 4. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
+            if (action === 'adminCreateClient') {
+                const { nombre, email, telefono, customerCode, password } = req.body;
+                if (!nombre || !email || !telefono) {
+                    return json(res, 400, { error: 'Nombre, correo y teléfono son obligatorios.' });
                 }
-                const lookupSnap = await db.collection('customerCodes').doc(cleanCode).get();
-                if (lookupSnap.exists) {
-                    return json(res, 400, { error: 'Ese HappyCódigo ya está tomado.' });
-                }
-            }
 
-            // Crear en Firebase Auth
-            const userParams = {
-                email: cleanEmail,
-                displayName: nombre
-            };
+                const cleanEmail = email.trim().toLowerCase();
+                const cleanPhone = telefono.replace(/\D/g, '');
+                const cleanCode = customerCode ? customerCode.trim().toUpperCase() : null;
 
-            const isManualPassword = !!password;
-            if (isManualPassword) {
-                userParams.password = password;
-            } else {
-                userParams.password = Math.random().toString(36).substring(2, 10) + 'Ab1!';
-            }
-
-            let userRecord;
-            try {
-                userRecord = await auth.createUser(userParams);
-            } catch (err) {
-                console.error("Error al crear usuario en Firebase Auth:", err.message);
-                return json(res, 400, { error: 'Error al registrar en Auth: ' + err.message });
-            }
-
-            const uid = userRecord.uid;
-
-            // Guardar en Firestore
-            try {
+                // Validar código si se provee
                 if (cleanCode) {
-                    await db.collection('customerCodes').doc(cleanCode).set({ uid });
+                    const codeRegex = /^HC[A-Z0-9]{4,6}$/;
+                    if (!codeRegex.test(cleanCode)) {
+                        return json(res, 400, { error: 'Formato de código inválido. Debe empezar con "HC" seguido de 4 a 6 caracteres alfanuméricos.' });
+                    }
+                    const lookupSnap = await db.collection('customerCodes').doc(cleanCode).get();
+                    if (lookupSnap.exists) {
+                        return json(res, 400, { error: 'Ese HappyCódigo ya está tomado.' });
+                    }
                 }
 
-                await db.collection('users').doc(uid).set({
-                    uid,
-                    name: nombre,
+                // Crear en Firebase Auth
+                const userParams = {
                     email: cleanEmail,
-                    phone: cleanPhone,
-                    role: 'user',
-                    activeDebt: 0,
-                    happyPoints: 0,
-                    customerCode: cleanCode || null,
-                    createdInPerson: true,
-                    createdBy: decoded.uid,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                });
-            } catch (err) {
-                console.error("Error al inicializar Firestore del usuario:", err.message);
-                // Intento de rollback en Auth
-                await auth.deleteUser(uid);
-                return json(res, 500, { error: 'Error al guardar datos de usuario.' });
+                    displayName: nombre
+                };
+
+                const isManualPassword = !!password;
+                if (isManualPassword) {
+                    userParams.password = password;
+                } else {
+                    userParams.password = Math.random().toString(36).substring(2, 10) + 'Ab1!';
+                }
+
+                let userRecord;
+                try {
+                    userRecord = await auth.createUser(userParams);
+                } catch (err) {
+                    console.error("Error al crear usuario en Firebase Auth:", err.message);
+                    return json(res, 400, { error: 'Error al registrar en Auth: ' + err.message });
+                }
+
+                const uid = userRecord.uid;
+
+                // Guardar en Firestore
+                try {
+                    if (cleanCode) {
+                        await db.collection('customerCodes').doc(cleanCode).set({ uid });
+                    }
+
+                    await db.collection('users').doc(uid).set({
+                        uid,
+                        name: nombre,
+                        email: cleanEmail,
+                        phone: cleanPhone,
+                        role: 'user',
+                        activeDebt: 0,
+                        happyPoints: 0,
+                        customerCode: cleanCode || null,
+                        createdInPerson: true,
+                        createdBy: decoded.uid,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    });
+                } catch (err) {
+                    console.error("Error al inicializar Firestore del usuario:", err.message);
+                    // Intento de rollback en Auth
+                    await auth.deleteUser(uid);
+                    return json(res, 500, { error: 'Error al guardar datos de usuario.' });
+                }
+
+                // Obtener link de restablecimiento si se elige esa opción
+                let resetLink = null;
+                if (!isManualPassword) {
+                    try {
+                        resetLink = await auth.generatePasswordResetLink(cleanEmail);
+                    } catch (err) {
+                        console.error("Error generando reset link:", err.message);
+                    }
+                }
+
+                return json(res, 200, { ok: true, uid, resetLink });
             }
 
-            // Obtener link de restablecimiento si se elige esa opción
-            let resetLink = null;
-            if (!isManualPassword) {
+            // --- 5. ACCIÓN: adminSendPasswordReset (SOLO ADMIN) ---
+            if (action === 'adminSendPasswordReset') {
+                const { uid } = req.body;
+                if (!uid) return json(res, 400, { error: 'Falta el uid del cliente.' });
+
+                const targetUserSnap = await db.collection('users').doc(uid).get();
+                if (!targetUserSnap.exists) {
+                    return json(res, 404, { error: 'El usuario no existe.' });
+                }
+
+                const email = targetUserSnap.data().email;
+                if (!email) {
+                    return json(res, 400, { error: 'El usuario no tiene correo registrado.' });
+                }
+
+                let resetLink = null;
                 try {
-                    resetLink = await auth.generatePasswordResetLink(cleanEmail);
+                    resetLink = await auth.generatePasswordResetLink(email);
                 } catch (err) {
                     console.error("Error generando reset link:", err.message);
+                    return json(res, 500, { error: 'Error generando el link de restablecimiento: ' + err.message });
                 }
+
+                return json(res, 200, { ok: true, resetLink });
             }
 
-            return json(res, 200, { ok: true, uid, resetLink });
-        }
-
-        // --- 5. ACCIÓN: adminSendPasswordReset (SOLO ADMIN) ---
-        if (action === 'adminSendPasswordReset') {
-            const { uid } = req.body;
-            if (!uid) return json(res, 400, { error: 'Falta el uid del cliente.' });
-
-            const targetUserSnap = await db.collection('users').doc(uid).get();
-            if (!targetUserSnap.exists) {
-                return json(res, 404, { error: 'El usuario no existe.' });
-            }
-
-            const email = targetUserSnap.data().email;
-            if (!email) {
-                return json(res, 400, { error: 'El usuario no tiene correo registrado.' });
-            }
-
-            let resetLink = null;
-            try {
-                resetLink = await auth.generatePasswordResetLink(email);
-            } catch (err) {
-                console.error("Error generando reset link:", err.message);
-                return json(res, 500, { error: 'Error generando el link de restablecimiento: ' + err.message });
-            }
-
-            return json(res, 200, { ok: true, resetLink });
-        }
-
-        // --- 6. ACCIÓN: updateContractText (SOLO ADMIN) ---
-        if (action === 'updateContractText') {
-            const { articles } = req.body || {};
-            if (!Array.isArray(articles) || articles.length === 0) {
-                return json(res, 400, { error: 'Falta el contenido del contrato (articles).' });
-            }
-            for (const art of articles) {
-                if (!art.title || !art.body) {
-                    return json(res, 400, { error: 'Todos los artículos deben tener título y cuerpo.' });
+            // --- 6. ACCIÓN: updateContractText (SOLO ADMIN) ---
+            if (action === 'updateContractText') {
+                const { articles } = req.body || {};
+                if (!Array.isArray(articles) || articles.length === 0) {
+                    return json(res, 400, { error: 'Falta el contenido del contrato (articles).' });
                 }
-            }
+                for (const art of articles) {
+                    if (!art.title || !art.body) {
+                        return json(res, 400, { error: 'Todos los artículos deben tener título y cuerpo.' });
+                    }
+                }
 
-            const docRef = db.collection('config').doc('contractText');
-            const docSnap = await docRef.get();
-            let oldVersion = 1;
-            let oldData = null;
-            if (docSnap.exists) {
-                oldData = docSnap.data();
-                oldVersion = oldData.version || 1;
-            }
+                const docRef = db.collection('config').doc('contractText');
+                const docSnap = await docRef.get();
+                let oldVersion = 1;
+                let oldData = null;
+                if (docSnap.exists) {
+                    oldData = docSnap.data();
+                    oldVersion = oldData.version || 1;
+                }
 
-            const newVersion = oldVersion + 1;
-            const now = new Date();
-            const timestamp = now.toISOString();
+                const newVersion = oldVersion + 1;
+                const now = new Date();
+                const timestamp = now.toISOString();
 
-            // Guardar versión anterior en historial
-            if (oldData) {
-                await docRef.collection('history').doc(`v${oldVersion}`).set({
-                    ...oldData,
-                    archivedAt: timestamp
-                });
-            }
-
-            // Guardar nueva versión
-            const newContractData = {
-                articles,
-                version: newVersion,
-                lastUpdated: timestamp,
-                updatedBy: decoded.uid
-            };
-            await docRef.set(newContractData);
-
-            // Consultar todos los usuarios con contractSigned: true
-            const usersSnap = await db.collection('users').where('contractSigned', '==', true).get();
-            const deadlineDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            const deadlineIso = deadlineDate.toISOString();
-            const deadlineFormatted = deadlineDate.toLocaleDateString('es-CO', {
-                timeZone: 'America/Bogota',
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-
-            const batch = db.batch();
-            const emailPromises = [];
-            const resendKey = process.env.RESEND_API_KEY;
-
-            if (resendKey) {
-                const { Resend } = await import('resend');
-                usersSnap.forEach(userDoc => {
-                    const userData = userDoc.data();
-                    const userRef = db.collection('users').doc(userDoc.id);
-
-                    batch.update(userRef, {
-                        contractNeedsResign: true,
-                        contractResignDeadline: deadlineIso
+                // Guardar versión anterior en historial
+                if (oldData) {
+                    await docRef.collection('history').doc(`v${oldVersion}`).set({
+                        ...oldData,
+                        archivedAt: timestamp
                     });
+                }
 
-                    if (userData.email) {
-                        const cleanEmail = userData.email.trim().toLowerCase();
-                        const userName = userData.name || userData.displayName || 'Cliente';
-                        
-                        const resend = new Resend(resendKey);
-                        const emailPromise = resend.emails.send({
-                            from: 'Happy Corner <no-reply@alertas.happycorner.top>',
-                            to: [cleanEmail],
-                            subject: '⚠️ Actualización Obligatoria: Acuerdo de Responsabilidad',
-                            html: `
+                // Guardar nueva versión
+                const newContractData = {
+                    articles,
+                    version: newVersion,
+                    lastUpdated: timestamp,
+                    updatedBy: decoded.uid
+                };
+                await docRef.set(newContractData);
+
+                // Consultar todos los usuarios con contractSigned: true
+                const usersSnap = await db.collection('users').where('contractSigned', '==', true).get();
+                const deadlineDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                const deadlineIso = deadlineDate.toISOString();
+                const deadlineFormatted = deadlineDate.toLocaleDateString('es-CO', {
+                    timeZone: 'America/Bogota',
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                const batch = db.batch();
+                const emailPromises = [];
+                const resendKey = process.env.RESEND_API_KEY;
+
+                if (resendKey) {
+                    const { Resend } = await import('resend');
+                    usersSnap.forEach(userDoc => {
+                        const userData = userDoc.data();
+                        const userRef = db.collection('users').doc(userDoc.id);
+
+                        batch.update(userRef, {
+                            contractNeedsResign: true,
+                            contractResignDeadline: deadlineIso
+                        });
+
+                        if (userData.email) {
+                            const cleanEmail = userData.email.trim().toLowerCase();
+                            const userName = userData.name || userData.displayName || 'Cliente';
+
+                            const resend = new Resend(resendKey);
+                            const emailPromise = resend.emails.send({
+                                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                                to: [cleanEmail],
+                                subject: '⚠️ Actualización Obligatoria: Acuerdo de Responsabilidad',
+                                html: `
                             <!DOCTYPE html>
                             <html>
                             <head><meta charset="utf-8"></head>
@@ -717,86 +743,86 @@ export default async function handler(req, res) {
                             </body>
                             </html>
                             `
-                        }).catch(err => {
-                            console.error(`Error enviando correo a ${cleanEmail}:`, err.message);
-                        });
-                        emailPromises.push(emailPromise);
-                    }
-                });
-            } else {
-                usersSnap.forEach(userDoc => {
-                    const userRef = db.collection('users').doc(userDoc.id);
-                    batch.update(userRef, {
-                        contractNeedsResign: true,
-                        contractResignDeadline: deadlineIso
+                            }).catch(err => {
+                                console.error(`Error enviando correo a ${cleanEmail}:`, err.message);
+                            });
+                            emailPromises.push(emailPromise);
+                        }
                     });
-                });
+                } else {
+                    usersSnap.forEach(userDoc => {
+                        const userRef = db.collection('users').doc(userDoc.id);
+                        batch.update(userRef, {
+                            contractNeedsResign: true,
+                            contractResignDeadline: deadlineIso
+                        });
+                    });
+                }
+
+                await batch.commit();
+                if (emailPromises.length > 0) {
+                    await Promise.all(emailPromises);
+                }
+
+                return json(res, 200, { ok: true, version: newVersion, usersNotified: usersSnap.size });
             }
 
-            await batch.commit();
-            if (emailPromises.length > 0) {
-                await Promise.all(emailPromises);
+            // --- 6.5 ACCIÓN: uploadMarketingImage (SOLO ADMIN) ---
+            if (action === 'uploadMarketingImage') {
+                const callerSnap = await db.collection('users').doc(decoded.uid).get();
+                const callerData = callerSnap.data() || {};
+                if (callerData.role !== 'admin') {
+                    return json(res, 403, { error: 'Acción permitida solo para administradores.' });
+                }
+
+                const { imageData } = req.body;
+                if (!imageData) return json(res, 400, { error: 'Falta la imagen.' });
+
+                const match = imageData.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
+                if (!match) return json(res, 400, { error: 'Formato de imagen no válido.' });
+
+                const imageBuffer = Buffer.from(match[2], 'base64');
+                if (imageBuffer.length > 5 * 1024 * 1024) {
+                    return json(res, 400, { error: 'La imagen supera el límite de 5MB.' });
+                }
+
+                if (!s3Client) return json(res, 500, { error: 'R2 Storage no está configurado.' });
+
+                const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+                const fileName = `marketing/${Date.now()}.${ext}`;
+
+                await s3Client.send(new PutObjectCommand({
+                    Bucket: bucketName,
+                    Key: fileName,
+                    Body: imageBuffer,
+                    ContentType: `image/${match[1]}`
+                }));
+
+                return json(res, 200, { ok: true, url: `${publicUrl}/${fileName}` });
             }
 
-            return json(res, 200, { ok: true, version: newVersion, usersNotified: usersSnap.size });
-        }
+            // --- 7. ACCIÓN: sendMarketingEmail (SOLO ADMIN) ---
+            if (action === 'sendMarketingEmail') {
+                const { subject, body, imageUrls } = req.body || {};
+                if (!subject || !body) return json(res, 400, { error: 'Falta el asunto o el cuerpo.' });
 
-        // --- 6.5 ACCIÓN: uploadMarketingImage (SOLO ADMIN) ---
-        if (action === 'uploadMarketingImage') {
-            const callerSnap = await db.collection('users').doc(decoded.uid).get();
-            const callerData = callerSnap.data() || {};
-            if (callerData.role !== 'admin') {
-                return json(res, 403, { error: 'Acción permitida solo para administradores.' });
-            }
+                const resendKey = process.env.RESEND_API_KEY;
+                if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
 
-            const { imageData } = req.body;
-            if (!imageData) return json(res, 400, { error: 'Falta la imagen.' });
+                // Get all marketing opt-in users
+                const usersSnap = await db.collection('users').where('marketingOptIn', '==', true).get();
+                if (usersSnap.empty) return json(res, 200, { ok: true, sent: 0 });
 
-            const match = imageData.match(/^data:image\/(png|jpeg|jpg|gif|webp);base64,(.+)$/);
-            if (!match) return json(res, 400, { error: 'Formato de imagen no válido.' });
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
 
-            const imageBuffer = Buffer.from(match[2], 'base64');
-            if (imageBuffer.length > 5 * 1024 * 1024) {
-                return json(res, 400, { error: 'La imagen supera el límite de 5MB.' });
-            }
+                const imagesHtml = (imageUrls && imageUrls.length > 0)
+                    ? imageUrls.map(url => `<img src="${url}" alt="" style="width:100%;max-width:460px;border-radius:12px;margin:12px 0;display:block;">`).join('')
+                    : '';
 
-            if (!s3Client) return json(res, 500, { error: 'R2 Storage no está configurado.' });
+                const bodyHtml = body.replace(/\n/g, '<br>');
 
-            const ext = match[1] === 'jpeg' ? 'jpg' : match[1];
-            const fileName = `marketing/${Date.now()}.${ext}`;
-
-            await s3Client.send(new PutObjectCommand({
-                Bucket: bucketName,
-                Key: fileName,
-                Body: imageBuffer,
-                ContentType: `image/${match[1]}`
-            }));
-
-            return json(res, 200, { ok: true, url: `${publicUrl}/${fileName}` });
-        }
-
-        // --- 7. ACCIÓN: sendMarketingEmail (SOLO ADMIN) ---
-        if (action === 'sendMarketingEmail') {
-            const { subject, body, imageUrls } = req.body || {};
-            if (!subject || !body) return json(res, 400, { error: 'Falta el asunto o el cuerpo.' });
-
-            const resendKey = process.env.RESEND_API_KEY;
-            if (!resendKey) return json(res, 500, { error: 'El servicio de correos no está configurado.' });
-
-            // Get all marketing opt-in users
-            const usersSnap = await db.collection('users').where('marketingOptIn', '==', true).get();
-            if (usersSnap.empty) return json(res, 200, { ok: true, sent: 0 });
-
-            const { Resend } = await import('resend');
-            const resend = new Resend(resendKey);
-
-            const imagesHtml = (imageUrls && imageUrls.length > 0)
-                ? imageUrls.map(url => `<img src="${url}" alt="" style="width:100%;max-width:460px;border-radius:12px;margin:12px 0;display:block;">`).join('')
-                : '';
-
-            const bodyHtml = body.replace(/\n/g, '<br>');
-
-            const htmlTemplate = `<!DOCTYPE html>
+                const htmlTemplate = `<!DOCTYPE html>
 <html lang="es">
 <head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
@@ -829,31 +855,31 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-            // Send in batches of 50 (Resend limit per call is 1 recipient per call but we fire concurrent promises in groups)
-            const emails = [];
-            usersSnap.forEach(userDoc => {
-                const userData = userDoc.data();
-                if (userData.email) emails.push(userData.email.trim().toLowerCase());
-            });
+                // Send in batches of 50 (Resend limit per call is 1 recipient per call but we fire concurrent promises in groups)
+                const emails = [];
+                usersSnap.forEach(userDoc => {
+                    const userData = userDoc.data();
+                    if (userData.email) emails.push(userData.email.trim().toLowerCase());
+                });
 
-            const BATCH_SIZE = 10;
-            let sent = 0;
-            for (let i = 0; i < emails.length; i += BATCH_SIZE) {
-                const batch = emails.slice(i, i + BATCH_SIZE);
-                await Promise.all(batch.map(to =>
-                    resend.emails.send({ from: 'Happy Corner <no-reply@alertas.happycorner.top>', to: [to], subject, html: htmlTemplate })
-                        .catch(err => console.error(`Error sending to ${to}:`, err.message))
-                ));
-                sent += batch.length;
+                const BATCH_SIZE = 10;
+                let sent = 0;
+                for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+                    const batch = emails.slice(i, i + BATCH_SIZE);
+                    await Promise.all(batch.map(to =>
+                        resend.emails.send({ from: 'Happy Corner <no-reply@alertas.happycorner.top>', to: [to], subject, html: htmlTemplate })
+                            .catch(err => console.error(`Error sending to ${to}:`, err.message))
+                    ));
+                    sent += batch.length;
+                }
+
+                return json(res, 200, { ok: true, sent, total: emails.length });
             }
 
-            return json(res, 200, { ok: true, sent, total: emails.length });
+            return json(res, 400, { error: 'Acción no válida' });
+
+        } catch (e) {
+            console.error("Error en handler de cuenta:", e.message);
+            return json(res, 500, { error: 'Error interno del servidor.' });
         }
-
-        return json(res, 400, { error: 'Acción no válida' });
-
-    } catch (e) {
-        console.error("Error en handler de cuenta:", e.message);
-        return json(res, 500, { error: 'Error interno del servidor.' });
     }
-}
