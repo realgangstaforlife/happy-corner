@@ -1004,10 +1004,16 @@
                             <span class="profile-field-label">Curso</span>
                             <span class="profile-field-value" id="pf-curso">—</span>
                         </div>
-                        <div class="profile-field">
+                        <div class="profile-field" style="align-items:center;">
                             <span class="profile-field-label">HappyCódigo</span>
-                            <span class="profile-field-value" id="pf-codigo"
-                                style="font-family:monospace; color:var(--hp-pink);">—</span>
+                            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                <span class="profile-field-value" id="pf-codigo"
+                                    style="font-family:monospace; color:var(--hp-pink);">—</span>
+                                <button id="btn-request-happycode" onclick="openHappyCodeModal()"
+                                    style="font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid var(--hp-pink);background:transparent;color:var(--hp-pink);cursor:pointer;font-weight:700;transition:0.2s;"
+                                    onmouseover="this.style.background='var(--hp-pink)';this.style.color='#fff';"
+                                    onmouseout="this.style.background='transparent';this.style.color='var(--hp-pink)';">✏️ Cambiar</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2152,9 +2158,72 @@
             };
         }
 
+        // ── HappyCode Change Request ──────────────────────────────────────────
+        window.openHappyCodeModal = function () {
+            document.getElementById('modal-happycode').style.display = 'flex';
+            document.getElementById('new-happycode-input').value = '';
+            document.getElementById('happycode-modal-error').textContent = '';
+            document.getElementById('new-happycode-input').focus();
+        };
+        window.closeHappyCodeModal = function () {
+            document.getElementById('modal-happycode').style.display = 'none';
+        };
+        window.submitHappyCodeRequest = async function () {
+            const newCode = document.getElementById('new-happycode-input').value.trim().toUpperCase();
+            const errEl = document.getElementById('happycode-modal-error');
+            const btn = document.getElementById('btn-submit-happycode');
+            errEl.textContent = '';
+            if (!newCode || newCode.length < 4 || newCode.length > 12) {
+                errEl.textContent = 'El código debe tener entre 4 y 12 caracteres.';
+                return;
+            }
+            if (!/^[A-Z0-9_-]+$/.test(newCode)) {
+                errEl.textContent = 'Solo letras mayúsculas, números, - y _';
+                return;
+            }
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            try {
+                const token = await currentUser.getIdToken();
+                const resp = await fetch('/api/happycode/request-change', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ newCode })
+                });
+                const data = await parseJsonResponse(resp);
+                closeHappyCodeModal();
+                hcAlert('📧 Solicitud enviada. Recibirás un email cuando Evan la revise.', 'success');
+            } catch (err) {
+                errEl.textContent = err.message || 'Error al enviar la solicitud.';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enviar Solicitud';
+            }
+        };
+
     </script>
     <script src="/credit-gauge.js"></script>
     <script src="/footer.js"></script>
+    <!-- HappyCode Change Request Modal -->
+    <div id="modal-happycode" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:var(--surface-color,#1a0a1a);border:1px solid var(--border-color,#2a1a2a);border-radius:20px;padding:32px;max-width:420px;width:100%;position:relative;">
+            <button onclick="closeHappyCodeModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:var(--text-muted,#888);font-size:20px;cursor:pointer;">✕</button>
+            <h3 style="margin:0 0 6px;font-size:18px;font-weight:900;">✏️ Cambiar HappyCódigo</h3>
+            <p style="color:var(--text-muted,#888);font-size:13px;margin:0 0 20px;">Ingresa el código que quieres usar. Evan lo revisará y recibirás un email con la respuesta.</p>
+            <label style="display:block;font-size:12px;font-weight:700;text-transform:uppercase;color:var(--text-muted,#888);margin-bottom:6px;">Nuevo código (4-12 caracteres)</label>
+            <input id="new-happycode-input" type="text" maxlength="12"
+                style="width:100%;box-sizing:border-box;padding:12px 16px;border-radius:12px;border:1px solid var(--border-color,#2a1a2a);background:var(--surface-card,#2a1a2a);color:var(--text-color,#fff);font-size:15px;font-family:monospace;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;"
+                placeholder="EJ: JUAN99"
+                oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_-]/g,'')">
+            <p id="happycode-modal-error" style="color:#ff5252;font-size:12px;min-height:18px;margin:0 0 16px;"></p>
+            <p style="font-size:12px;color:var(--text-muted,#888);margin:0 0 20px;">Solo letras mayúsculas, números, - y _ · El código debe ser único.</p>
+            <div style="display:flex;gap:10px;">
+                <button onclick="closeHappyCodeModal()"
+                    style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border-color,#444);background:transparent;color:var(--text-muted,#888);cursor:pointer;font-weight:700;">Cancelar</button>
+                <button id="btn-submit-happycode" onclick="submitHappyCodeRequest()"
+                    style="flex:2;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#ff6b9d,#ff9d5c);color:#fff;cursor:pointer;font-weight:800;font-size:14px;">Enviar Solicitud</button>
+            </div>
+        </div>
+    </div>
 </body>
-
 </html>

@@ -320,6 +320,14 @@
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 });
+                // Fire-and-forget welcome email (non-critical)
+                if (email) {
+                    fetch('/api/email/send-welcome', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, name: displayName })
+                    }).catch(err => console.warn('Welcome email skipped:', err));
+                }
                 logLoginSession(user);
                 window.location.href = '/onboarding';
             } else {

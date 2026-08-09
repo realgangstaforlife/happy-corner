@@ -83,55 +83,11 @@
         <div class="section-tag" id="tag-reposteria">Galletas y Brownies 🍪</div>
         <div class="grid" id="cat-reposteria"></div>
 
-        <div class="section-tag">Robux 🟢</div>
-        <div class="grid">
-            <div class="card" id="robux-40">
-                <div class="img-container"><img src="Robux_icon.png" alt="40 Robux"></div>
-                <div class="product-name">40 Robux</div>
-                <div class="price">$4.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('robux-40',-1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('robux-40',1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('robux-40', event)">Añadir a Carrito</button>
-            </div>
-            <!-- Otros robux -->
-            <div class="card" id="robux-80">
-                <div class="img-container"><img src="Robux_icon.png" alt="80 Robux"></div>
-                <div class="product-name">80 Robux</div>
-                <div class="price">$7.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('robux-80',-1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('robux-80',1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('robux-80', event)">Añadir a Carrito</button>
-            </div>
-            
-            <div class="card" id="robux-400">
-                <div class="img-container"><img src="Robux_icon.png" alt="400 Robux"></div>
-                <div class="product-name">200 Robux</div>
-                <div class="price">$16.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('robux-400',-1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('robux-400',1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('robux-400', event)">Añadir a Carrito</button>
-            </div>
+        <div class="section-tag" id="tag-robux">Robux 🟢</div>
+        <div class="grid" id="cat-robux"></div>
 
-            <div class="card" id="robux-800">
-                <div class="img-container"><img src="Robux_icon.png" alt="800 Robux"></div>
-                <div class="product-name">1000 Robux</div>
-                <div class="price">$40.000</div>
-                <div class="qty-row">
-                    <button class="qty-btn" onclick="changeQty('robux-800',-1)">-</button>
-                    <span class="qty-num">1</span>
-                    <button class="qty-btn" onclick="changeQty('robux-800',1)">+</button>
-                </div>
-                <button class="btn-add" onclick="addToCart('robux-800', event)">Añadir a Carrito</button>
-            </div>
+        <!-- Custom Robux card always visible below Firestore cards -->
+        <div class="grid" id="cat-robux-custom-row">
             <div class="card" id="robux-custom">
                 <div class="img-container"><img src="Robux_icon.png" alt="Robux Personalizado"></div>
                 <div class="product-name">Robux Personalizado</div>
@@ -319,58 +275,63 @@
         async function initCatalog() {
             await initPromise;
             const containers = {
-                combos: document.getElementById('cat-combos'),
-                dulces: document.getElementById('cat-dulces'),
+                combos:     document.getElementById('cat-combos'),
+                dulces:     document.getElementById('cat-dulces'),
                 reposteria: document.getElementById('cat-reposteria'),
-                bebidas: document.getElementById('cat-reposteria') // fallback or append if any
+                bebidas:    document.getElementById('cat-dulces'), // fallback
+                robux:      document.getElementById('cat-robux')
             };
 
-            // Loading state
-            Object.values(containers).forEach(c => {
-                if (c) c.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:20px 0; width:100%; text-align:center;">Cargando...</div>';
+            // Loading states
+            ['combos','dulces','reposteria','robux'].forEach(cat => {
+                const el = containers[cat];
+                if (el) el.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:20px 0; width:100%; text-align:center;">Cargando...</div>';
             });
 
             try {
                 const snap = await getDocs(collection(db, 'products'));
-                // Clear loading state
-                Object.values(containers).forEach(c => {
-                    if (c) c.innerHTML = '';
+
+                // Clear loading states
+                ['combos','dulces','reposteria','robux'].forEach(cat => {
+                    const el = containers[cat];
+                    if (el) el.innerHTML = '';
                 });
 
-                let counts = { combos: 0, dulces: 0, reposteria: 0 };
+                let counts = { combos: 0, dulces: 0, reposteria: 0, robux: 0 };
 
                 snap.forEach(docSnap => {
                     const p = docSnap.data();
-                    if (p.available !== false) {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        card.id = docSnap.id;
+                    if (p.available === false) return;
 
-                        const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
-                        const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.id = docSnap.id;
 
-                        card.innerHTML = `
-                            ${badgeHtml}
-                            <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
-                            <div class="product-name">${p.name}</div>
-                            <div class="price">$${p.price.toLocaleString('es-CO')}</div>
-                            <div class="qty-row">
-                                <button class="qty-btn" onclick="changeQty('${docSnap.id}', -1)">-</button>
-                                <span class="qty-num">1</span>
-                                <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
-                            </div>
-                            <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
-                        `;
+                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                    const imgSrc = (p.image || 'Robux_icon.png').startsWith('http')
+                        ? (p.image || 'Robux_icon.png')
+                        : '/' + (p.image || 'Robux_icon.png');
 
-                        // Decide where to put it
-                        let cat = p.category || 'dulces';
-                        if (cat === 'bebidas') cat = 'dulces'; // combine or put in dulces for now
+                    card.innerHTML = `
+                        ${badgeHtml}
+                        <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                        <div class="product-name">${p.name}</div>
+                        <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                        <div class="qty-row">
+                            <button class="qty-btn" onclick="changeQty('${docSnap.id}', -1)">-</button>
+                            <span class="qty-num">1</span>
+                            <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
+                        </div>
+                        <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
+                    `;
 
-                        const targetGrid = containers[cat];
-                        if (targetGrid) {
-                            targetGrid.appendChild(card);
-                            counts[cat]++;
-                        }
+                    let cat = p.category || 'dulces';
+                    if (cat === 'bebidas') cat = 'dulces';
+
+                    const targetGrid = containers[cat];
+                    if (targetGrid) {
+                        targetGrid.appendChild(card);
+                        if (counts[cat] !== undefined) counts[cat]++;
                     }
                 });
 
@@ -387,11 +348,16 @@
                     document.getElementById('tag-reposteria').style.display = 'none';
                     containers.reposteria.style.display = 'none';
                 }
+                if (counts.robux === 0) {
+                    document.getElementById('tag-robux').style.display = 'none';
+                    containers.robux.style.display = 'none';
+                }
 
             } catch (err) {
-                console.error("Failed to load catalog products:", err);
-                Object.values(containers).forEach(c => {
-                    if (c) c.innerHTML = '<div style="color:var(--accent-red); font-size:13px; padding:20px 0; width:100%; text-align:center;">Error al cargar.</div>';
+                console.error('Failed to load catalog products:', err);
+                ['combos','dulces','reposteria','robux'].forEach(cat => {
+                    const el = containers[cat];
+                    if (el) el.innerHTML = '<div style="color:var(--accent-red); font-size:13px; padding:20px 0; width:100%; text-align:center;">Error al cargar.</div>';
                 });
             }
         }

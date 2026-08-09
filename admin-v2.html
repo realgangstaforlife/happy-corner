@@ -696,6 +696,7 @@
             <button class="sidebar-item" id="snav-products" onclick="switchSidebar('products'); loadProductsTab();"><span class="s-icon">🛍️</span> Productos</button>
             <button class="sidebar-item" id="snav-marketing" onclick="switchSidebar('marketing'); loadMarketingStats();"><span class="s-icon">📧</span> Marketing</button>
 
+            <button class="sidebar-item" id="snav-happycode" onclick="switchSidebar('happycode'); loadHappyCodeRequests();"><span class="s-icon">🎫</span> HappyCódigos</button>
             <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
             <div class="sidebar-footer">
                 <span style="font-size:11px; color:var(--text-muted);">Happy Corner Admin v2</span>
@@ -1046,44 +1047,95 @@
             <!-- TAB: MARKETING -->
             <div id="tab-marketing" class="tab-content">
                 <h2 style="font-weight:900; margin-bottom:8px;">📧 Campañas de Marketing</h2>
-                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Compone y envía correos a todos los clientes que optaron por recibir novedades.</p>
+                <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Compone y envía correos a tus clientes filtrados por segmentos o seleccionados manualmente.</p>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px; max-width:1000px;">
+                <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:24px; max-width:1100px; align-items: start;">
                     <!-- Form -->
                     <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px;">
                         <div style="font-weight:800; font-size:15px; margin-bottom:16px;">✏️ Composer</div>
 
-                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Asunto del correo</label>
-                        <input type="text" id="mkt-subject" class="admin-input" placeholder="Ej: ¡Nuevas galletas esta semana! 🍪" style="margin-bottom:16px;">
+                        <!-- Recipient selection -->
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Destinatarios</label>
+                        <select id="email-recipients-filter" class="admin-input" style="margin-bottom:16px;" onchange="handleRecipientFilterChange(this.value)">
+                            <option value="all">Todos los clientes</option>
+                            <option value="active">Solo activos (último mes)</option>
+                            <option value="robux-users">Compradores de Robux</option>
+                            <option value="high-score">HappyScore > 100</option>
+                            <option value="custom">Seleccionar manualmente...</option>
+                        </select>
 
-                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Cuerpo del mensaje</label>
-                        <textarea id="mkt-body" class="admin-input" rows="8" placeholder="Escribe el contenido del correo aquí. Puedes usar saltos de línea." style="resize:vertical; margin-bottom:16px; font-family:inherit;"></textarea>
-
-                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Imagen (opcional)</label>
-                        <div id="mkt-dropzone" style="border:2px dashed var(--border-color); border-radius:14px; padding:20px; text-align:center; margin-bottom:16px; cursor:pointer; transition:0.2s;"
-                             onclick="document.getElementById('mkt-image-file').click()">
-                            <div id="mkt-dropzone-text" style="color:var(--text-muted); font-size:13px;">📎 Arrastra una imagen aquí o hacé click para elegir</div>
-                            <img id="mkt-image-preview" style="max-width:100%; max-height:120px; border-radius:10px; display:none; margin-top:10px;">
+                        <!-- Custom manual recipient list (hidden by default) -->
+                        <div id="custom-recipients-container" style="display:none; margin-bottom:16px;">
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Buscar clientes</label>
+                            <input type="text" id="recipient-search-input" class="admin-input" placeholder="Buscar por nombre o email..." style="margin-bottom:8px;" oninput="filterManualRecipientList(this.value)">
+                            <div id="recipient-checkbox-list" style="max-height:160px; overflow-y:auto; border:1px solid var(--border-color); padding:10px; border-radius:8px; background:rgba(0,0,0,0.2);">
+                                <!-- Checkboxes will load dynamically -->
+                            </div>
                         </div>
-                        <input type="file" id="mkt-image-file" accept="image/*" style="display:none;" onchange="handleMarketingImageSelect(this.files[0])">
-                        <input type="hidden" id="mkt-image-url">
 
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button class="admin-btn" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);" onclick="refreshMarketingPreview()">👁️ Previsualizar</button>
+                        <!-- Template selection -->
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Plantilla</label>
+                        <select id="email-template-select" class="admin-input" style="margin-bottom:16px;" onchange="loadEmailTemplate(this.value)">
+                            <option value="custom">Personalizado / Vacío</option>
+                            <option value="promotion">Promoción / Oferta especial 🎁</option>
+                            <option value="announcement">Anuncio / Novedades 📢</option>
+                            <option value="reminder">Recordatorio de compra ⏰</option>
+                        </select>
+
+                        <!-- Subject -->
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Asunto del correo</label>
+                        <input type="text" id="mkt-subject" class="admin-input" placeholder="Ej: ¡Nuevas galletas esta semana! 🍪" style="margin-bottom:16px;" oninput="updateLiveEmailPreview()">
+
+                        <!-- Body -->
+                        <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Cuerpo del mensaje</label>
+                        <textarea id="mkt-body" class="admin-input" rows="8" placeholder="Escribe el contenido aquí. Variables: {name}, {email}, {happyscore}" style="resize:vertical; margin-bottom:16px; font-family:inherit;" oninput="updateLiveEmailPreview()"></textarea>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span id="email-count-display" style="font-size:13px; font-weight:700; color:var(--hp-pink);">📬 ... destinatarios</span>
                             <button class="admin-btn" style="background:var(--hp-gradient);" onclick="sendMarketingCampaign()" id="mkt-send-btn">
-                                📤 Enviar a <span id="mkt-subscriber-count">—</span> suscritos
+                                📤 Enviar Campaña
                             </button>
                         </div>
                     </div>
 
                     <!-- Preview -->
-                    <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; overflow:auto; max-height:600px;">
-                        <div style="font-weight:800; font-size:15px; margin-bottom:16px;">📨 Vista previa</div>
-                        <div id="mkt-preview" style="font-size:13px; color:var(--text-muted); text-align:center; padding:40px 0;">Presiona "Previsualizar" para ver el correo.</div>
+                    <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; position:sticky; top:20px;">
+                        <div style="font-weight:800; font-size:15px; margin-bottom:16px;">📨 Vista previa en vivo</div>
+                        <div id="mkt-preview" style="border:1px solid var(--border-color); border-radius:12px; padding:16px; min-height:300px; background:#fff; color:#333; overflow-y:auto; font-size:13px;">
+                            <!-- Live email preview renders here -->
+                        </div>
                     </div>
                 </div>
             </div>
 
+
+            <!-- TAB: HAPPYCODE REQUESTS -->
+            <div id="tab-happycode" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 style="font-weight:900; margin-bottom:4px;">🎫 Solicitudes de HappyCódigo</h2>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;">Revisa y gestiona las solicitudes de cambio de código enviadas por los clientes.</p>
+                    </div>
+                    <button class="admin-btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--border-color);" onclick="loadHappyCodeRequests()">🔄 Actualizar</button>
+                </div>
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; overflow:hidden;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted); text-transform:uppercase; font-size:11px;">
+                                <th style="padding:14px 16px;">Cliente</th>
+                                <th style="padding:14px 8px;">Código Actual</th>
+                                <th style="padding:14px 8px;">Código Solicitado</th>
+                                <th style="padding:14px 8px;">Fecha</th>
+                                <th style="padding:14px 8px;">Estado</th>
+                                <th style="padding:14px 16px; text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="happycode-requests-tbody">
+                            <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">Cargando solicitudes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
             <!-- TAB: CONFIG -->
             <div id="tab-config" class="tab-content">
@@ -2706,6 +2758,104 @@
             }
         };
 
+        // ── HAPPYCODE REQUESTS LOGIC ─────────────────────────────────────────
+        window.loadHappyCodeRequests = async function () {
+            const tbody = document.getElementById('happycode-requests-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">Cargando solicitudes...</td></tr>';
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const resp = await fetch('/api/happycode/list', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await parseJsonResponse(resp);
+                tbody.innerHTML = '';
+                if (!data.requests || data.requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">No hay solicitudes pendientes.</td></tr>';
+                    return;
+                }
+                data.requests.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid var(--border-color)';
+                    
+                    const dateStr = new Date(r.createdAt).toLocaleDateString('es-CO', {
+                        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                    });
+
+                    let statusBadge = '';
+                    if (r.status === 'pending') {
+                        statusBadge = '<span style="background:rgba(255,165,0,0.15); color:orange; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:700;">Pendiente</span>';
+                    } else if (r.status === 'approved') {
+                        statusBadge = '<span style="background:rgba(46,204,113,0.15); color:#2ecc71; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:700;">Aprobado</span>';
+                    } else {
+                        statusBadge = `<span style="background:rgba(231,76,60,0.15); color:#e74c3c; padding:4px 8px; border-radius:12px; font-size:11px; font-weight:700;" title="${r.rejectedReason || ''}">Rechazado</span>`;
+                    }
+
+                    let actionsHtml = '';
+                    if (r.status === 'pending') {
+                        actionsHtml = `
+                            <button class="admin-btn" style="padding:6px 12px; font-size:11px; background:#2ecc71;" onclick="approveHappyCodeRequest('${r.id}')">Aprobar</button>
+                            <button class="admin-btn" style="padding:6px 12px; font-size:11px; background:#e74c3c; margin-left:6px;" onclick="rejectHappyCodeRequest('${r.id}')">Rechazar</button>
+                        `;
+                    } else {
+                        actionsHtml = '<span style="color:var(--text-muted); font-size:12px;">—</span>';
+                    }
+
+                    tr.innerHTML = `
+                        <td style="padding:14px 16px;">
+                            <div style="font-weight:700;">${r.userName}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">${r.userEmail}</div>
+                        </td>
+                        <td style="padding:14px 8px; font-family:monospace; font-weight:700;">${r.currentCode}</td>
+                        <td style="padding:14px 8px; font-family:monospace; font-weight:700; color:var(--hp-pink);">${r.newCode}</td>
+                        <td style="padding:14px 8px; color:var(--text-muted);">${dateStr}</td>
+                        <td style="padding:14px 8px;">${statusBadge}</td>
+                        <td style="padding:14px 16px; text-align:right;">${actionsHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Failed to load HappyCode requests:", err);
+                tbody.innerHTML = '<tr><td colspan="6" style="padding:32px; text-align:center; color:#ff5252;">Error al cargar las solicitudes.</td></tr>';
+            }
+        };
+
+        window.approveHappyCodeRequest = async function (requestId) {
+            if (!confirm('¿Estás seguro de que deseas aprobar este cambio de HappyCódigo?')) return;
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const resp = await fetch('/api/happycode/approve', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ requestId })
+                });
+                await parseJsonResponse(resp);
+                hcAlert('Solicitud aprobada correctamente.', 'success');
+                loadHappyCodeRequests();
+            } catch (err) {
+                console.error('Approve HappyCode request error:', err);
+                hcAlert('Error al aprobar solicitud: ' + err.message, 'error');
+            }
+        };
+
+        window.rejectHappyCodeRequest = async function (requestId) {
+            const reason = prompt('Por favor, ingresa el motivo del rechazo:');
+            if (reason === null) return; // User cancelled prompt
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const resp = await fetch('/api/happycode/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ requestId, reason })
+                });
+                await parseJsonResponse(resp);
+                hcAlert('Solicitud rechazada correctamente.', 'success');
+                loadHappyCodeRequests();
+            } catch (err) {
+                console.error('Reject HappyCode request error:', err);
+                hcAlert('Error al rechazar solicitud: ' + err.message, 'error');
+            }
+        };
+
         window.toggleRobuxPanel = function () {
             const panel = document.getElementById('robux-panel-container');
             const isShowing = panel.style.display !== 'none';
@@ -2854,116 +3004,168 @@
 
         // MARKETING EMAIL COMPOSER LOGIC
         // ==============================================
-        window.loadMarketingStats = async function () {
-            const countEl = document.getElementById('mkt-subscriber-count');
-            countEl.textContent = '...';
+        let selectedRecipients = [];
+        let allUsersList = [];
 
-            try {
-                const snap = await getDocs(query(collection(db, 'users'), where('marketingOptIn', '==', true)));
-                countEl.textContent = snap.size;
-            } catch (err) {
-                console.error("Failed to count subscribers:", err);
-                countEl.textContent = 'Error';
+        window.loadMarketingStats = async function () {
+            // Default to 'all' segment when loading the tab
+            const filterEl = document.getElementById('email-recipients-filter');
+            if (filterEl) {
+                filterEl.value = 'all';
+                window.handleRecipientFilterChange('all');
             }
         };
 
-        window.refreshMarketingPreview = function () {
-            const body = document.getElementById('mkt-body').value.trim();
-            const subject = document.getElementById('mkt-subject').value.trim() || '(Sin Asunto)';
-            const imageUrl = document.getElementById('mkt-image-url').value.trim();
-            const previewBox = document.getElementById('mkt-preview');
+        window.handleRecipientFilterChange = async function (filter) {
+            const customContainer = document.getElementById('custom-recipients-container');
+            const countEl = document.getElementById('email-count-display');
+            countEl.textContent = '📬 Cargando destinatarios...';
 
-            if (!body) {
-                previewBox.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:40px 0;">Escribe un cuerpo de mensaje para ver la previsualización.</div>';
+            if (filter === 'custom') {
+                customContainer.style.display = 'block';
+                await loadUsersForSelection();
+            } else {
+                customContainer.style.display = 'none';
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    const resp = await fetch(`/api/email/recipients?filter=${filter}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const data = await parseJsonResponse(resp);
+                    selectedRecipients = data.users || [];
+                    updateRecipientCount();
+                    updateLiveEmailPreview();
+                } catch (err) {
+                    console.error('Error fetching recipients:', err);
+                    countEl.textContent = '❌ Error al cargar destinatarios';
+                }
+            }
+        };
+
+        async function loadUsersForSelection() {
+            const listDiv = document.getElementById('recipient-checkbox-list');
+            listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:10px;">Cargando clientes...</div>';
+            try {
+                const token = await auth.currentUser.getIdToken();
+                const resp = await fetch('/api/email/users-list', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await parseJsonResponse(resp);
+                allUsersList = data.users || [];
+                renderManualCheckboxList(allUsersList);
+            } catch (err) {
+                console.error('Error loading users for selection:', err);
+                listDiv.innerHTML = '<div style="color:#ff5252; font-size:11px; padding:10px;">Error al cargar.</div>';
+            }
+        }
+
+        function renderManualCheckboxList(users) {
+            const listDiv = document.getElementById('recipient-checkbox-list');
+            if (users.length === 0) {
+                listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:10px;">Sin resultados.</div>';
                 return;
             }
+            listDiv.innerHTML = users.map(u => `
+                <label style="display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; cursor: pointer; color: var(--text-color);">
+                    <input type="checkbox" class="mkt-user-checkbox" data-uid="${u.uid}" data-email="${u.email}" data-name="${u.name}" onchange="updateSelectedRecipientsFromCheckboxes()">
+                    <span style="font-weight: 700;">${u.name}</span> <span style="color: var(--text-muted); font-size: 11px;">(${u.email})</span>
+                </label>
+            `).join('');
+        }
 
-            const imgTag = imageUrl ? `<img src="${imageUrl}" style="width:100%; max-width:100%; border-radius:12px; margin-top:12px; display:block;">` : '';
-            const cleanBody = body.replace(/\n/g, '<br>');
+        window.filterManualRecipientList = function (val) {
+            const cleanVal = val.toLowerCase().trim();
+            const filtered = allUsersList.filter(u => 
+                (u.name && u.name.toLowerCase().includes(cleanVal)) || 
+                (u.email && u.email.toLowerCase().includes(cleanVal))
+            );
+            renderManualCheckboxList(filtered);
+            // Re-check currently selected items if they are displayed
+            const checkedUids = new Set(selectedRecipients.map(r => r.uid));
+            document.querySelectorAll('.mkt-user-checkbox').forEach(cb => {
+                if (checkedUids.has(cb.dataset.uid)) cb.checked = true;
+            });
+        };
 
-            previewBox.innerHTML = `
-                <div style="background:#181818; border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden; font-family:'Outfit', Arial, sans-serif;">
-                    <div style="background:rgba(255,255,255,0.02); padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.07); font-size:12px; color:var(--text-muted);">
+        window.updateSelectedRecipientsFromCheckboxes = function () {
+            selectedRecipients = Array.from(document.querySelectorAll('.mkt-user-checkbox:checked'))
+                .map(cb => ({
+                    uid: cb.dataset.uid,
+                    email: cb.dataset.email,
+                    name: cb.dataset.name,
+                    happyscore: 0
+                }));
+            updateRecipientCount();
+            updateLiveEmailPreview();
+        };
+
+        function updateRecipientCount() {
+            document.getElementById('email-count-display').textContent = `📬 ${selectedRecipients.length} destinatario(s)`;
+        }
+
+        window.loadEmailTemplate = function (templateName) {
+            const templates = {
+                promotion: {
+                    subject: '¡Oferta especial en Happy Corner! 🎁',
+                    body: `Hola {name},\n\n¡Tenemos una oferta increíble para ti esta semana!\n\nPor ser un cliente especial con nosotros, recibe beneficios exclusivos en tu próximo pedido.\n\n¡Gracias por preferirnos!\n\nHappy Corner Cali`
+                },
+                announcement: {
+                    subject: '📢 Nuevos lanzamientos en Happy Corner',
+                    body: `Hola {name},\n\n¡Tenemos nuevas delicias en el menú!\n\nVen a probar nuestras nuevas opciones calientes y frescas directo en tu colegio.\n\n¡Te esperamos!\n\nHappy Corner Cali`
+                },
+                reminder: {
+                    subject: '¿Qué tal un snack hoy? ⏰',
+                    body: `Hola {name},\n\nHace unos días que no te vemos en Happy Corner. Tu HappyScore es de {happyscore} puntos.\n\n¡Ven a visitarnos o haz tu preorder hoy mismo!\n\nHappy Corner Cali`
+                }
+            };
+
+            const t = templates[templateName];
+            if (t) {
+                document.getElementById('mkt-subject').value = t.subject;
+                document.getElementById('mkt-body').value = t.body;
+            } else {
+                document.getElementById('mkt-subject').value = '';
+                document.getElementById('mkt-body').value = '';
+            }
+            updateLiveEmailPreview();
+        };
+
+        window.updateLiveEmailPreview = function () {
+            const subject = document.getElementById('mkt-subject').value || '(Sin Asunto)';
+            const body = document.getElementById('mkt-body').value || 'Escribe tu mensaje...';
+            
+            const replaced = body
+                .replace(/{name}/g, '<strong>Juan Pérez</strong>')
+                .replace(/{email}/g, 'juan.perez@example.com')
+                .replace(/{happyscore}/g, '<strong>120</strong>')
+                .replace(/\n/g, '<br>');
+
+            document.getElementById('mkt-preview').innerHTML = `
+                <div style="font-family:'Arial',sans-serif;">
+                    <div style="border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:12px; font-size:12px; color:#888;">
                         <strong>Asunto:</strong> ${subject}
                     </div>
-                    <div style="background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c); padding:20px; text-align:center;">
-                        <img src="https://happycorner.top/happyfavicon.png" width="36" height="36" alt="Logo" style="border-radius:8px;">
-                        <div style="font-weight:900; color:#fff; font-size:18px; margin-top:6px;">Happy Corner 🩷</div>
-                    </div>
-                    <div style="padding:24px; background:#141414; color:#ccc; line-height:1.6; font-size:13.5px;">
-                        ${imgTag}
-                        <div style="margin-top:12px;">${cleanBody}</div>
-                        <div style="margin-top:24px; text-align:center; border-top:1px solid rgba(255,255,255,0.07); padding-top:16px;">
-                            <a href="https://happycorner.top" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299); color:#fff; text-decoration:none; padding:10px 20px; border-radius:10px; font-weight:800; font-size:12px;">Visitar Happy Corner</a>
-                        </div>
+                    <div>
+                        ${replaced}
                     </div>
                 </div>
             `;
         };
 
-        window.handleMarketingImageSelect = function (file) {
-            if (!file) return;
-            if (!file.type.startsWith('image/')) {
-                hcAlert ? hcAlert('El archivo debe ser una imagen.', 'error') : alert('El archivo debe ser una imagen.');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                const dropzoneText = document.getElementById('mkt-dropzone-text');
-                dropzoneText.textContent = '⏳ Subiendo imagen...';
-                try {
-                    const token = await auth.currentUser.getIdToken();
-                    const resp = await fetch('/api/account?action=uploadMarketingImage', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ imageData: e.target.result })
-                    });
-                    const data = await parseJsonResponse(resp);
-                    if (!resp.ok) throw new Error(data.error || 'Error subiendo imagen');
-
-                    document.getElementById('mkt-image-url').value = data.url;
-                    const preview = document.getElementById('mkt-image-preview');
-                    preview.src = data.url;
-                    preview.style.display = 'block';
-                    dropzoneText.textContent = '✅ Imagen lista — click para cambiarla';
-                } catch (err) {
-                    dropzoneText.textContent = '❌ Error subiendo imagen, intenta de nuevo';
-                    console.error(err);
-                }
-            };
-            reader.readAsDataURL(file);
-        };
-
-        // Drag & drop
-        (function setupMarketingDropzone() {
-            const zone = document.getElementById('mkt-dropzone');
-            if (!zone) return;
-            zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--hp-pink)'; });
-            zone.addEventListener('dragleave', () => { zone.style.borderColor = 'var(--border-color)'; });
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.style.borderColor = 'var(--border-color)';
-                if (e.dataTransfer.files[0]) handleMarketingImageSelect(e.dataTransfer.files[0]);
-            });
-        })();
-
         window.sendMarketingCampaign = async function () {
             const subject = document.getElementById('mkt-subject').value.trim();
             const body = document.getElementById('mkt-body').value.trim();
-            const imageUrl = document.getElementById('mkt-image-url').value.trim();
 
+            if (selectedRecipients.length === 0) {
+                hcAlert('Selecciona al menos un destinatario.', 'warning');
+                return;
+            }
             if (!subject || !body) {
                 hcAlert('El asunto y cuerpo son obligatorios.', 'warning');
                 return;
             }
 
-            const subscriberCount = document.getElementById('mkt-subscriber-count').textContent;
-            if (subscriberCount === '0' || subscriberCount === 'Error' || subscriberCount === '...') {
-                hcAlert('No hay suscriptores válidos para enviar.', 'warning');
-                return;
-            }
-
-            if (!await hcConfirm(`⚠️ ¿Estás seguro que deseas enviar esta campaña de correo a los ${subscriberCount} clientes suscritos?\n\nEsta acción no puede deshacerse.`)) {
+            if (!await hcConfirm(`⚠️ ¿Estás seguro que deseas enviar esta campaña de correo a los ${selectedRecipients.length} clientes seleccionados?\n\nEsta acción no puede deshacerse.`)) {
                 return;
             }
 
@@ -2974,24 +3176,22 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const imageUrls = imageUrl ? [imageUrl] : [];
-                const res = await fetch('/api/account?action=sendMarketingEmail', {
+                const res = await fetch('/api/email/send-bulk', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ subject, body, imageUrls })
+                    body: JSON.stringify({ recipients: selectedRecipients, subject, body })
                 });
 
                 const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Failed sending');
 
-                hcAlert(`✅ Campaña enviada con éxito. Se enviaron ${data.sent} correos.`, 'success');
+                hcAlert(`✅ Campaña enviada con éxito. Se enviaron ${data.sent} de ${data.total} correos.`, 'success');
                 document.getElementById('mkt-subject').value = '';
                 document.getElementById('mkt-body').value = '';
-                document.getElementById('mkt-image-url').value = '';
-                document.getElementById('mkt-preview').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:40px 0;">Presiona "Previsualizar" para ver el correo.</div>';
+                loadEmailTemplate('custom');
             } catch (err) {
                 console.error(err);
                 hcAlert('Error al enviar campaña: ' + err.message, 'error');
