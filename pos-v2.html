@@ -534,6 +534,7 @@
                     <button class="category-btn" onclick="filterCategory('dulces')">Dulces &amp; Snacks 🍭</button>
                     <button class="category-btn" onclick="filterCategory('reposteria')">Repostería 🍪</button>
                     <button class="category-btn" onclick="filterCategory('combos')">Combos &amp; Favoritos 🍕</button>
+                    <button class="category-btn" onclick="filterCategory('robux')">Robux 🟢</button>
                 </div>
 
                 <div class="products-grid" id="pos-products-list">
@@ -557,17 +558,34 @@
 
             <!-- CUSTOMER SELECTOR -->
             <div class="customer-selector-box">
-                <label
-                    style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Asignar
-                    Cliente</label>
-                <input type="text" id="cust-search" class="admin-input"
-                    style="width:100%; margin-top:6px; padding:10px;" placeholder="Escribe Nombre o HappyCódigo..."
-                    autocomplete="off">
-                <div class="autocomplete-results" id="autocomplete-box">
-                    <!-- Populated dynamically -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Asignar Cliente</label>
+                    <button id="customer-mode-toggle" onclick="toggleCustomerMode()"
+                        style="font-size:11px; font-weight:700; padding:4px 10px; border-radius:8px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-muted); cursor:pointer;">
+                        ✍️ Nombre manual
+                    </button>
                 </div>
 
-                <!-- Display selected customer -->
+                <!-- Registered customer search (default mode) -->
+                <div id="registered-customer-section">
+                    <input type="text" id="cust-search" class="admin-input"
+                        style="width:100%; padding:10px;" placeholder="Escribe Nombre o HappyCódigo..."
+                        autocomplete="off">
+                    <div class="autocomplete-results" id="autocomplete-box">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Manual customer name entry (alt mode) -->
+                <div id="manual-customer-section" style="display:none;">
+                    <input type="text" id="manual-customer-name" class="admin-input"
+                        style="width:100%; padding:10px;"
+                        placeholder="Ej: Juan Pérez"
+                        oninput="onManualNameInput()">
+                    <div id="manual-name-display" style="display:none; font-size:12px; color:var(--accent-green); margin-top:6px; font-weight:700;"></div>
+                </div>
+
+                <!-- Display selected registered customer -->
                 <div class="selected-customer-card" id="selected-cust-card" style="display:none;">
                     <div>
                         <div id="sel-cust-name" style="font-weight:700; font-size:14px;">Cliente no asignado</div>
@@ -668,9 +686,50 @@
 
         let adminUser = null;
         let allCustomers = [];
-        let selectedCustomer = null;
+        let selectedCustomer = null;   // registered customer object
+        let manualCustomerName = '';   // manual name string
+        let isManualMode = false;      // toggle mode flag
         let cart = [];
         let paymentMethod = 'cash'; // 'cash' | 'credit'
+
+        // Toggle between registered and manual customer entry
+        window.toggleCustomerMode = function () {
+            isManualMode = !isManualMode;
+            const btn = document.getElementById('customer-mode-toggle');
+            const regSection = document.getElementById('registered-customer-section');
+            const manSection = document.getElementById('manual-customer-section');
+            const selCard = document.getElementById('selected-cust-card');
+
+            if (isManualMode) {
+                btn.textContent = '👤 Cliente registrado';
+                regSection.style.display = 'none';
+                manSection.style.display = 'block';
+                selCard.style.display = 'none';
+                selectedCustomer = null;
+                // If credit payment, switch to cash
+                if (paymentMethod === 'credit') setPaymentMethod('cash');
+            } else {
+                btn.textContent = '✍️ Nombre manual';
+                regSection.style.display = 'block';
+                manSection.style.display = 'none';
+                manualCustomerName = '';
+                document.getElementById('manual-customer-name').value = '';
+                document.getElementById('manual-name-display').style.display = 'none';
+            }
+        };
+
+        // Update manual name display as user types
+        window.onManualNameInput = function () {
+            const val = document.getElementById('manual-customer-name').value.trim();
+            manualCustomerName = val;
+            const display = document.getElementById('manual-name-display');
+            if (val) {
+                display.textContent = `✅ Nombre: ${val}`;
+                display.style.display = 'block';
+            } else {
+                display.style.display = 'none';
+            }
+        };
 
         // Gate Elements
         const gateOverlay = document.getElementById('auth-gate-overlay');
@@ -837,8 +896,10 @@
         // Remove client
         window.unassignCustomer = function () {
             selectedCustomer = null;
-            document.getElementById('cust-search').value = '';
-            document.getElementById('cust-search').style.display = 'block';
+            if (!isManualMode) {
+                document.getElementById('cust-search').value = '';
+                document.getElementById('cust-search').style.display = 'block';
+            }
             document.getElementById('selected-cust-card').style.display = 'none';
 
             // If credit payment toggled, force switch to cash
@@ -942,7 +1003,7 @@
 
             try {
                 if (paymentMethod === 'credit') {
-                    if (!selectedCustomer) throw new Error('Cliente no asignado.');
+                    if (!selectedCustomer) throw new Error('Cliente no asignado. El crédito requiere cliente registrado.');
 
                     // Verify if contract is signed
                     const contractSnap = await getDoc(doc(db, 'debtContracts', selectedCustomer.uid));
@@ -954,7 +1015,14 @@
                     await applyPOSLedgerTransaction(selectedCustomer.uid, total, pointsEarned, cart);
                 } else {
                     // Cash / digital payment: record order with actual method
-                    await applyPOSCashTransaction(selectedCustomer ? selectedCustomer.uid : null, total, pointsEarned, cart, paymentMethod);
+                    // Determine customer info (registered or manual)
+                    const clientUid = selectedCustomer ? selectedCustomer.uid : null;
+                    const clientName = selectedCustomer
+                        ? (selectedCustomer.displayName || selectedCustomer.name || '')
+                        : (isManualMode ? manualCustomerName : '');
+                    const clientPhone = selectedCustomer ? (selectedCustomer.phone || '') : '';
+                    const clientEmail = selectedCustomer ? (selectedCustomer.email || '') : '';
+                    await applyPOSCashTransaction(clientUid, clientName, clientPhone, clientEmail, total, pointsEarned, cart, paymentMethod, isManualMode && !selectedCustomer);
                 }
 
                 hcAlert(`🎉 ¡Venta procesada con éxito! Total: $${total.toLocaleString()}${selectedCustomer ? ` · Puntos: +${pointsEarned} pts` : ''}`, 'success');
@@ -1140,7 +1208,7 @@
          * Apply Cash Transaction
          * Simple order submission. If user is assigned, records points movement.
          */
-        async function applyPOSCashTransaction(clientUid, total, points, cartItems, method = 'cash') {
+        async function applyPOSCashTransaction(clientUid, clientName, clientPhone, clientEmail, total, points, cartItems, method = 'cash', isManualEntry = false) {
             const orderRef = doc(collection(db, 'orders'));
             const now = new Date().toISOString();
 
@@ -1149,6 +1217,7 @@
                 total,
                 status: 'completed',
                 items: cartItems,
+                resumen: cartItems.map(i => `${i.name} (${i.qty}x)`).join(', '),
                 paymentMethod: method,
                 createdAt: now,
                 completedAt: now
@@ -1156,7 +1225,13 @@
 
             if (clientUid) {
                 orderData.customerUID = clientUid;
+            } else {
+                orderData.customerUID = null;
             }
+            if (clientName) orderData.customerName = clientName;
+            if (clientPhone) orderData.customerPhone = clientPhone;
+            if (clientEmail) orderData.customerEmail = clientEmail;
+            if (isManualEntry) orderData.isManualEntry = true;
 
             const batch = writeBatch(db);
             batch.set(orderRef, orderData);

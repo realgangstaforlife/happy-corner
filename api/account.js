@@ -45,22 +45,17 @@ async function deleteR2Prefix(prefix) {
 
 export default async function handler(req, res) {
     if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
-    export default async function handler(req, res) {
-        if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
 
-        // Rate limit check
-        const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0];
-        if (!checkRateLimit(ip, 20, 60000)) {
-            return json(res, 429, { error: 'Demasiadas solicitudes. Intenta en 1 minuto.' });
-        }
+    // Rate limit check
+    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0];
+    if (!checkRateLimit(ip, 20, 60000)) {
+        return json(res, 429, { error: 'Demasiadas solicitudes. Intenta en 1 minuto.' });
+    }
 
-        if (req.method !== 'POST') {
-            return json(res, 405, { error: 'Method not allowed' });
-        }
+    if (req.method !== 'POST') {
+        return json(res, 405, { error: 'Method not allowed' });
+    }
 
-        if (req.method !== 'POST') {
-            return json(res, 405, { error: 'Method not allowed' });
-        }
 
         try {
             const { action } = req.query;

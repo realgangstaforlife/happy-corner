@@ -2,340 +2,556 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Factura | Happy Corner</title>
-  <link rel="icon" type="image/png" href="/happyfavicon.png">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    .page {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 26px 16px 60px;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Factura de Pedido | Happy Corner</title>
+    <link rel="icon" type="image/png" href="/happyfavicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f1f3f6;
+            --receipt-bg: #ffffff;
+            --text-color: #2d3436;
+            --text-muted: #7f8c8d;
+            --border-color: #dcdde1;
+            --pink-accent: #ff5299;
+        }
 
-    .invoice {
-      background: white;
-      border-radius: 25px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      border: 1px solid rgba(0, 0, 0, 0.06);
-    }
+        [data-theme="dark"] {
+            --bg-color: #0b0c10;
+            --receipt-bg: #1a1b24;
+            --text-color: #ffffff;
+            --text-muted: #a0a5b5;
+            --border-color: #2f3640;
+        }
 
-    .invoice-header {
-      background: var(--hp-gradient);
-      color: white;
-      padding: 18px 20px;
-      display: flex;
-      justify-content: space-between;
-      gap: 18px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-    .invoice-header h1 {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
+        /* Thermal Receipt Style Container */
+        .receipt-card {
+            background-color: var(--receipt-bg);
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
 
-    .invoice-meta {
-      font-size: 12px;
-      opacity: 0.95;
-      text-align: right;
-    }
+        /* Monospace for Receipt Data */
+        .thermal-font {
+            font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
 
-    .invoice-body {
-      padding: 18px 20px 22px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed var(--border-color);
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+        }
 
-    .cardish {
-      border: 2px solid #f1f3f8;
-      border-radius: 18px;
-      padding: 14px;
-    }
+        .receipt-header h1 {
+            font-size: 20px;
+            font-weight: 900;
+            margin: 8px 0 4px;
+            color: var(--pink-accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-    .cardish h2 {
-      margin: 0 0 10px;
-      font-size: 14px;
-      font-weight: 800;
-    }
+        .receipt-header p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0;
+        }
 
-    .kv {
-      display: grid;
-      grid-template-columns: 140px 1fr;
-      gap: 8px 10px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
+        .receipt-logo {
+            width: 48px;
+            height: auto;
+        }
 
-    .kv b {
-      font-weight: 800;
-    }
+        .dotted-line {
+            border-top: 1px dashed var(--border-color);
+            margin: 12px 0;
+        }
 
-    .items {
-      grid-column: 1 / -1;
-    }
+        .double-dotted-line {
+            border-top: 3px double var(--border-color);
+            margin: 12px 0;
+        }
 
-    .items pre {
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: inherit;
-      font-size: 13px;
-    }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
 
-    .totalRow {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 2px dashed #eee;
-    }
+        .info-label {
+            color: var(--text-muted);
+        }
 
-    .totalRow .label {
-      font-weight: 800;
-    }
+        .info-value {
+            font-weight: 700;
+            text-align: right;
+        }
 
-    .totalRow .value {
-      font-weight: 900;
-      font-size: 18px;
-      color: #ff5299;
-    }
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
 
-    .actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      padding: 16px 20px 20px;
-      border-top: 1px solid rgba(0, 0, 0, 0.06);
-      background: #fff9f5;
-      justify-content: space-between;
-    }
+        .items-table th {
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+        }
 
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      text-decoration: none;
-      padding: 12px 16px;
-      border-radius: 14px;
-      font-weight: 800;
-      border: 2px solid #eee;
-      background: white;
-      color: #111;
-      cursor: pointer;
-    }
+        .items-table td {
+            padding: 8px 0;
+            vertical-align: top;
+        }
 
-    .action-btn.primary {
-      background: #ff5299;
-      border-color: #ff5299;
-      color: white;
-    }
+        .item-name {
+            font-weight: 700;
+        }
 
-    @media (max-width: 820px) {
-      .invoice-body {
-        grid-template-columns: 1fr;
-      }
+        .item-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
 
-      .invoice-meta {
-        text-align: left;
-      }
+        .item-total {
+            text-align: right;
+            font-weight: 700;
+        }
 
-      .kv {
-        grid-template-columns: 120px 1fr;
-      }
+        .total-section {
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
 
-      .actions {
-        justify-content: center;
-      }
-    }
+        .total-amount {
+            color: var(--pink-accent);
+            font-weight: 900;
+            font-size: 18px;
+        }
 
-    @media print {
+        .qr-section {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px dashed var(--border-color);
+        }
 
-      header,
-      .actions {
-        display: none !important;
-      }
+        .qr-container {
+            display: inline-block;
+            background: #fff;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
 
-      body {
-        background: white;
-      }
+        .qr-help {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-      .page {
-        padding: 0;
-      }
+        /* Actions panel */
+        .action-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: space-between;
+        }
 
-      .invoice {
-        box-shadow: none;
-        border: none;
-      }
-    }
-  </style>
+        .btn-action {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--receipt-bg);
+            color: var(--text-color);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: var(--pink-accent);
+            color: #ffffff;
+            border-color: var(--pink-accent);
+        }
+
+        /* Loader */
+        .loading-screen {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+
+            .receipt-card {
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+            }
+
+            .action-container {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 
-<body onload="loadInvoice()">
-  <header>
-    <a href="/index" class="logo">
-      <img src="loguito.png" alt="HappyCorner" class="logo-img">
-    </a>
-    <nav class="nav-desktop">
-      <a href="/index">Inicio</a>
-      <a href="/catalogo">Catálogo</a>
-      <a href="/order">HappyOrder</a>
-      <a href="/track">Rastrear Pedido</a>
-    </nav>
-    <div style="display:flex; align-items:center; gap:10px;">
-      <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
-        <span id="theme-icon">🌙</span>
-      </button>
-      <a href="/login.html" id="auth-icon-desktop"
-        style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </a>
-      <div class="menu-btn" id="menuBtn">
-        <span></span><span></span><span></span>
-      </div>
+<body>
+
+    <div class="receipt-card" id="receipt-to-print">
+        <div id="loader" class="loading-screen">
+            ⏳ Cargando datos del recibo...
+        </div>
+
+        <div id="receipt-content" style="display: none;">
+            <div class="receipt-header">
+                <img src="/loguito.png" alt="Happy Corner Logo" class="receipt-logo" onerror="this.style.display='none'">
+                <h1>Happy Corner</h1>
+                <p>Nit: 123456789-0</p>
+                <p>Colegio Happy Corner - Envigado</p>
+                <p>¡El sabor de tus recreos!</p>
+            </div>
+
+            <div class="thermal-font">
+                <div class="info-row">
+                    <span class="info-label">Factura No:</span>
+                    <span class="info-value" id="inv-no">HC-XXXX</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Fecha:</span>
+                    <span class="info-value" id="inv-date">N/A</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Entrega:</span>
+                    <span class="info-value" id="inv-delivery">N/A</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Método Pago:</span>
+                    <span class="info-value" id="inv-payment">N/A</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Estado:</span>
+                    <span class="info-value" id="inv-status">N/A</span>
+                </div>
+
+                <div class="dotted-line"></div>
+
+                <div style="font-weight: 700; margin-bottom: 6px;">CLIENTE</div>
+                <div class="info-row">
+                    <span class="info-label">Nombre:</span>
+                    <span class="info-value" id="c-name">N/A</span>
+                </div>
+                <div id="c-contact-container">
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value" id="c-email">N/A</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Teléfono:</span>
+                        <span class="info-value" id="c-phone">N/A</span>
+                    </div>
+                </div>
+                <div id="c-restricted-msg" style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 4px; display: none;">
+                    * Inicia sesión para ver datos completos.
+                </div>
+
+                <div class="dotted-line"></div>
+
+                <table class="items-table thermal-font">
+                    <thead>
+                        <tr>
+                            <th>Detalle</th>
+                            <th style="text-align: right;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-tbody">
+                        <!-- Filled dynamically -->
+                    </tbody>
+                </table>
+
+                <div class="double-dotted-line"></div>
+
+                <div class="total-section">
+                    <span>TOTAL:</span>
+                    <span class="total-amount" id="inv-total">$0</span>
+                </div>
+
+                <div class="qr-section">
+                    <div class="qr-container" id="qrcode"></div>
+                    <div class="qr-help">Escanear para verificar compra legítima</div>
+                </div>
+            </div>
+        </div>
     </div>
-  </header>
 
-  <div class="overlay" id="overlay"></div>
-  <nav class="side-menu" id="sideMenu">
-    <a href="/index">Inicio</a>
-    <a href="/catalogo">Catálogo</a>
-    <a href="/order">HappyOrder</a>
-    <a href="/track">Rastrear Pedido</a>
-    <a href="/terminos">Términos</a>
-    <a href="/wallet">Happy Passes</a>
-    <a href="/login.html" class="login-mobile-link"
-      style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
-  </nav>
-
-  <div class="page">
-    <div class="invoice" id="invoice">
-      <div class="invoice-header">
-        <div>
-          <h1>Factura Happy Corner</h1>
-          <div style="font-size:12px; opacity:0.95;">Documento generado desde tu confirmación</div>
-        </div>
-        <div class="invoice-meta">
-          <div><b id="inv-number">HC-HO-XXXXXX</b></div>
-          <div id="inv-date">Fecha: —</div>
-        </div>
-      </div>
-
-      <div class="invoice-body">
-        <div class="cardish">
-          <h2>Cliente</h2>
-          <div class="kv">
-            <b>Nombre</b><span id="c-name">—</span>
-            <b>Email</b><span id="c-email">—</span>
-            <b>WhatsApp</b><span id="c-wa">—</span>
-          </div>
-        </div>
-
-        <div class="cardish">
-          <h2>Orden</h2>
-          <div class="kv">
-            <b>Código</b><span id="o-code">—</span>
-            <b>Entrega</b><span id="o-delivery">—</span>
-            <b>Pago</b><span id="o-pay">—</span>
-          </div>
-          <div class="totalRow">
-            <div class="label">Total</div>
-            <div class="value" id="o-total">$0</div>
-          </div>
-        </div>
-
-        <div class="cardish items">
-          <h2>Items</h2>
-          <pre id="o-items">—</pre>
-        </div>
-      </div>
-
-      <div class="actions">
-        <a class="action-btn" href="/confirmed">Volver a confirmación</a>
-        <button class="action-btn primary" onclick="window.print()">Imprimir / Guardar PDF</button>
-      </div>
-      <div style="text-align: center; margin: 20px 0;">
-        <div id="qrcode" style="display: inline-block;"></div>
-        <div style="font-size: 11px; color: #666; margin-top: 5px;">Escanea para verificar</div>
-      </div>
+    <div class="action-container" id="actions-panel" style="display: none;">
+        <button class="btn-action" onclick="window.print()">
+            🖨️ Imprimir
+        </button>
+        <button class="btn-action btn-primary" onclick="downloadPDF()">
+            📥 Guardar PDF
+        </button>
     </div>
-  </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script>
-    function toggleMenu(force) {
-      const menu = document.getElementById('sideMenu');
-      const overlay = document.getElementById('overlay');
-      const next = typeof force === 'boolean' ? force : !menu.classList.contains('active');
-      menu.classList.toggle('active', next);
-      overlay.classList.toggle('active', next);
-    }
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    function fmtDate(iso) {
-      try {
-        const d = iso ? new Date(iso) : new Date();
-        return d.toLocaleString('es-CO', { timeZone: 'America/Bogota' });
-      } catch { return '—'; }
-    }
+    <script type="module">
+        import { initPromise, db, doc, getDoc, auth, onAuthStateChanged } from './firebase-auth.js';
 
-    function loadInvoice() {
-      const raw = localStorage.getItem('lastHappyOrder');
-      if (!raw) {
-        document.getElementById('invoice').innerHTML = `
-          <div class="invoice-header"><h1 style="margin:0;">No hay datos</h1></div>
-          <div class="invoice-body"><div class="cardish" style="grid-column:1/-1;">
-            No encontramos tu última orden en este dispositivo.
-          </div></div>
-          <div class="actions"><a class="action-btn primary" href="/catalogo">Volver al catálogo</a></div>
-        `;
-        return;
-      }
+        // Automatic night theme
+        const hour = new Date().getHours();
+        if (hour >= 18 || hour < 6) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
 
-      const data = JSON.parse(raw);
-      const paymentMap = { nequi: 'Nequi', pse: 'PSE', tarjeta: 'Tarjeta', efectivo: 'Efectivo' };
-      const deliveryMap = { colegio: 'Colegio', virtual: 'Virtual' };
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            const orderId = params.get('orderId') || params.get('order') || params.get('id');
 
-      const code = data.happyCode || 'HO-XXXXXX';
-      const num = `HC-${code}`;
+            let orderData = null;
 
-      document.getElementById('inv-number').textContent = num;
-      document.getElementById('inv-date').textContent = `Fecha: ${fmtDate(data.createdAt)}`;
+            if (orderId) {
+                // Fetch from Firestore
+                try {
+                    const docRef = doc(db, 'orders', orderId);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        orderData = docSnap.data();
+                    } else {
+                        showError("La factura solicitada no existe.");
+                        return;
+                    }
+                } catch (err) {
+                    console.error("Error fetching order:", err);
+                    showError("Error al cargar la factura desde el servidor.");
+                    return;
+                }
+            } else {
+                // Fallback to local storage
+                const raw = localStorage.getItem('lastHappyOrder');
+                if (raw) {
+                    try {
+                        orderData = JSON.parse(raw);
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+            }
 
-      document.getElementById('c-name').textContent = data.customer?.nombre || '—';
-      document.getElementById('c-email').textContent = data.customer?.email || '—';
-      document.getElementById('c-wa').textContent = data.customer?.whatsapp || '—';
+            if (!orderData) {
+                showError("No hay ninguna factura activa para visualizar.");
+                return;
+            }
 
-      document.getElementById('o-code').textContent = code;
-      document.getElementById('o-delivery').textContent = deliveryMap[data.deliveryType] || data.deliveryType || '—';
-      document.getElementById('o-pay').textContent = paymentMap[data.paymentMethod] || data.paymentMethod || '—';
-      document.getElementById('o-total').textContent = data.total || '$0';
-      document.getElementById('o-items').textContent = data.itemsSummary || '—';
+            // Check authentication state for client details privacy
+            let currentUser = null;
+            let userRole = 'user';
 
-      // Generar código QR de verificación
-      new QRCode(document.getElementById("qrcode"), {
-        text: `https://happycorner.top/verificar-pedido?order=${code}`,
-        width: 100,
-        height: 100,
-        colorDark: "#2d3436",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
-      });
-    }
-  </script>
+            try {
+                currentUser = await new Promise((resolve) => {
+                    const unsub = onAuthStateChanged(auth, (user) => {
+                        unsub();
+                        resolve(user || null);
+                    });
+                });
+
+                if (currentUser) {
+                    const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                    if (userSnap.exists()) {
+                        userRole = userSnap.data().role || 'user';
+                    }
+                }
+            } catch (err) {
+                console.error("Auth state check failed:", err);
+            }
+
+            renderInvoice(orderData, currentUser, userRole);
+        }
+
+        function renderInvoice(data, currentUser, userRole) {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('receipt-content').style.display = 'block';
+            document.getElementById('actions-panel').style.display = 'flex';
+
+            const orderId = data.orderId || data.happyCode || 'HC-TEMP';
+
+            // Translations
+            const paymentMap = {
+                nequi: 'Nequi',
+                pse: 'PSE',
+                tarjeta: 'Tarjeta',
+                efectivo: 'Efectivo',
+                cash: 'Efectivo',
+                credit: 'Crédito'
+            };
+
+            const statusMap = {
+                'pending':   '⏳ Pendiente',
+                'preparing': '👨‍🍳 Preparando',
+                'paid':      '✅ Pagado',
+                'cancelled': '❌ Cancelado',
+                'ready':     '🛍️ Listo para entregar',
+                'delivered': '🏁 Entregado',
+                'completed': '✅ Completado'
+            };
+
+            const deliveryMap = {
+                colegio: 'Colegio (Físico)',
+                virtual: 'Entrega Virtual'
+            };
+
+            // Formatting
+            const dateStr = data.createdAt ? new Date(data.createdAt).toLocaleString('es-CO') : 'N/A';
+            const totalStr = (data.total || 0).toLocaleString('es-CO');
+
+            document.getElementById('inv-no').textContent = `#${orderId.substring(0, 8).toUpperCase()}`;
+            document.getElementById('inv-date').textContent = dateStr;
+            document.getElementById('inv-delivery').textContent = deliveryMap[data.deliveryType] || data.deliveryType || 'Físico';
+            document.getElementById('inv-payment').textContent = paymentMap[data.paymentMethod] || data.paymentMethod || 'Efectivo';
+            document.getElementById('inv-status').textContent = statusMap[data.status] || data.status || 'Completado';
+
+            // Privacy Logic: owner or admin can see full name, phone, email
+            const isOwner = currentUser && (data.customerUID === currentUser.uid);
+            const isAdmin = userRole === 'admin';
+            const canSeeDetails = isOwner || isAdmin || !data.customerUID; // if no customerUID, it is POS manual name sale, default allow full visibility
+
+            const rawName = data.customerName || (data.customer?.nombre) || 'Público General';
+            if (canSeeDetails) {
+                document.getElementById('c-name').textContent = rawName;
+                document.getElementById('c-email').textContent = data.customerEmail || (data.customer?.email) || 'N/A';
+                document.getElementById('c-phone').textContent = data.customerPhone || (data.customer?.whatsapp) || 'N/A';
+                document.getElementById('c-contact-container').style.display = 'block';
+                document.getElementById('c-restricted-msg').style.display = 'none';
+            } else {
+                // Truncate name
+                const truncatedName = rawName.substring(0, 3).toUpperCase() + '...';
+                document.getElementById('c-name').textContent = truncatedName;
+                document.getElementById('c-contact-container').style.display = 'none';
+                document.getElementById('c-restricted-msg').style.display = 'block';
+            }
+
+            // Items List
+            const tbody = document.getElementById('items-tbody');
+            tbody.innerHTML = '';
+
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    const row = document.createElement('tr');
+                    const qty = item.qty || 1;
+                    const price = item.price || 0;
+                    const subtotal = qty * price;
+
+                    row.innerHTML = `
+                        <td>
+                            <div class="item-name">${item.name || 'Producto'}</div>
+                            <div class="item-meta">${qty} x $${price.toLocaleString('es-CO')}</div>
+                        </td>
+                        <td class="item-total">$${subtotal.toLocaleString('es-CO')}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                // Fallback to text summary
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="item-name">${data.itemsSummary || data.resumen || 'Consumo general'}</div>
+                    </td>
+                    <td class="item-total">$${totalStr}</td>
+                `;
+                tbody.appendChild(row);
+            }
+
+            document.getElementById('inv-total').textContent = `$${totalStr}`;
+
+            // Verification QR
+            new QRCode(document.getElementById("qrcode"), {
+                text: `https://happycorner.top/verificar-pedido?order=${orderId}`,
+                width: 120,
+                height: 120,
+                colorDark: "#2d3436",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Expose download function globally
+            window.downloadPDF = function () {
+                const element = document.getElementById('receipt-to-print');
+                const opt = {
+                    margin: 10,
+                    filename: `Factura-${orderId.substring(0, 8)}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a5', orientation: 'portrait' }
+                };
+                html2pdf().from(element).set(opt).save();
+            };
+        }
+
+        function showError(message) {
+            document.getElementById('loader').innerHTML = `
+                <div style="font-size: 32px; margin-bottom: 12px;">❌</div>
+                <div style="color: var(--pink-accent); font-weight: 700; font-size: 16px; margin-bottom: 8px;">Error</div>
+                <div>${message}</div>
+                <a href="/index" class="btn-action btn-primary" style="margin-top: 20px; display: inline-flex;">Volver al inicio</a>
+            `;
+        }
+
+        initPromise.then(init);
+    </script>
 </body>
 
 </html>

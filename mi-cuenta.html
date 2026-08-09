@@ -1252,7 +1252,7 @@
     <div class="mc-toast" id="mc-toast"></div>
 
     <script type="module">
-        import { initPromise, auth, db, onAuthStateChanged, signOut, sendPasswordResetEmail } from './firebase-auth.js';
+        import { initPromise, auth, db, onAuthStateChanged, signOut, sendPasswordResetEmail, parseJsonResponse } from './firebase-auth.js';
         import {
             doc, getDoc, updateDoc, collection, query, where,
             orderBy, limit, onSnapshot, addDoc, serverTimestamp
@@ -1596,7 +1596,7 @@
                     body: JSON.stringify({ action: 'getContractText' })
                 });
                 if (resp.ok) {
-                    const data = await resp.json();
+                    const data = await parseJsonResponse(resp);
                     loadedContractText = data;
                     renderContractTextHtml(data.articles);
                 } else {
@@ -1878,7 +1878,7 @@
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
                     body: JSON.stringify({ action: 'sendPin', uid: currentUser.uid, email: email })
                 });
-                const data = await resp.json();
+                const data = await parseJsonResponse(resp);
                 if (!resp.ok) throw new Error(data.error || 'Error enviando PIN');
 
                 document.getElementById('pin-subtitle').textContent = `Ingresa el PIN enviado a ${email}. Expira en 10 minutos.`;
@@ -1933,7 +1933,7 @@
                         language: navigator.language
                     })
                 });
-                const data = await resp.json();
+                const data = await parseJsonResponse(resp);
                 if (!resp.ok) throw new Error(data.error || 'Error firmando contrato');
 
                 showToast('✅ ¡Contrato firmado!');
@@ -2042,7 +2042,7 @@
                     });
 
 
-                    const data = await res.json();
+                    const data = await parseJsonResponse(res);
                     if (!res.ok) throw new Error(data.error || 'Error del servidor');
 
                     const downloadURL = data.url;
@@ -2113,7 +2113,7 @@
                         },
                         body: JSON.stringify({ uid: currentUser.uid })
                     });
-                    const pinData = await pinResp.json();
+                    const pinData = await parseJsonResponse(pinResp);
                     if (!pinResp.ok) throw new Error(pinData.error || 'Error enviando PIN');
 
                     // Step 3: ask for the PIN
@@ -2137,7 +2137,7 @@
                         },
                         body: JSON.stringify({ pin: pin.trim() })
                     });
-                    const data = await resp.json();
+                    const data = await parseJsonResponse(resp);
                     if (!resp.ok) throw new Error(data.error || 'Error eliminando cuenta');
 
                     hcAlert('✅ Cuenta eliminada. ¡Hasta luego!', 'success');

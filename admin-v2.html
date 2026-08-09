@@ -694,6 +694,7 @@
             <button class="sidebar-item" id="snav-analytics" onclick="switchSidebar('analytics'); refreshAnalytics();"><span class="s-icon">📈</span> Analíticas</button>
             <div class="sidebar-section-label" style="margin-top:12px;">SISTEMA</div>
             <button class="sidebar-item" id="snav-products" onclick="switchSidebar('products'); loadProductsTab();"><span class="s-icon">🛍️</span> Productos</button>
+            <button class="sidebar-item" id="snav-robux" onclick="switchSidebar('robux'); loadRobuxTab();"><span class="s-icon">🎮</span> Robux Panel</button>
             <button class="sidebar-item" id="snav-marketing" onclick="switchSidebar('marketing'); loadMarketingStats();"><span class="s-icon">📧</span> Marketing</button>
             <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
             <div class="sidebar-footer">
@@ -1057,8 +1058,37 @@
                 </div>
             </div>
 
+            <!-- TAB: ROBUX -->
+            <div id="tab-robux" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 style="font-weight:900; margin-bottom:4px;">🎮 Panel de Robux</h2>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;">Controla la disponibilidad, precios y SKUs de las recargas de Robux.</p>
+                    </div>
+                    <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openAddRobuxModal()">➕ Agregar Robux</button>
+                </div>
+                
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:20px; overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted); text-transform:uppercase; font-size:11px;">
+                                <th style="padding:12px 8px;">SKU (ID)</th>
+                                <th style="padding:12px 8px;">Denominación</th>
+                                <th style="padding:12px 8px; width:150px;">Precio (COP)</th>
+                                <th style="padding:12px 8px; width:160px;">Proveedor (Estado)</th>
+                                <th style="padding:12px 8px; text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="robux-table-body">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- TAB: CONFIG -->
             <div id="tab-config" class="tab-content">
+
                 <h2 style="font-weight:900; margin-bottom:8px;">⚙️ Configuración del Sistema</h2>
                 <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Ajustes generales y parámetros operativos.</p>
                 <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px;">
@@ -1436,6 +1466,7 @@
                         <option value="reposteria">Repostería 🍪</option>
                         <option value="combos">Combos 🍕</option>
                         <option value="bebidas">Bebidas 🥤</option>
+                        <option value="robux">Robux 🟢</option>
                     </select>
                 </div>
                 
@@ -1470,13 +1501,32 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL: ADD ROBUX -->
+    <!-- ============================================== -->
+    <div class="admin-modal-overlay" id="add-robux-modal">
+        <div class="admin-modal" style="max-width:400px;">
+            <button class="modal-close" onclick="closeAddRobuxModal()">✕</button>
+            <h2 style="font-weight:900; margin-bottom:20px;">➕ Agregar Recarga Robux</h2>
+            
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Denominación (Ej: 400 Robux)</label>
+            <input type="text" id="new-robux-name" class="admin-input" placeholder="400 Robux" style="margin-bottom:16px; width:100%;">
+            
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Precio en COP (Ej: 25000)</label>
+            <input type="number" id="new-robux-price" class="admin-input" placeholder="25000" style="margin-bottom:20px; width:100%;">
+            
+            <button class="admin-btn" style="background:var(--hp-gradient); width:100%;" onclick="saveNewRobux()">Confirmar Creación</button>
+        </div>
+    </div>
 
     <!-- ============================================== -->
     <!-- DATABASE & FIREBASE CONFIGURATION -->
     <!-- ============================================== -->
     <script src="/credit-gauge.js"></script>
     <script type="module">
-        import { initPromise, db, auth } from './firebase-auth.js';
+        import { initPromise, db, auth, parseJsonResponse } from './firebase-auth.js';
         import { onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
         import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction, onSnapshot, orderBy, limit, addDoc, deleteDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
@@ -1587,7 +1637,7 @@
                     body: JSON.stringify({ action: 'getContractText' })
                 });
                 if (resp.ok) {
-                    const data = await resp.json();
+                    const data = await parseJsonResponse(resp);
                     editorArticles = data.articles || [];
                     renderEditorArticles();
                     updateEditorPreview();
@@ -1717,7 +1767,7 @@
                     body: JSON.stringify({ articles: editorArticles })
                 });
 
-                const data = await resp.json();
+                const data = await parseJsonResponse(resp);
                 if (!resp.ok) throw new Error(data.error || 'Error al guardar el contrato.');
 
                 hcAlert(`✅ Contrato actualizado con éxito.\nNueva versión guardada. Se ha notificado a ${data.usersNotified} clientes para re-firmar.`, 'success');
@@ -2580,7 +2630,7 @@
                             imageData: base64Data
                         })
                     });
-                    const data = await res.json();
+                    const data = await parseJsonResponse(res);
                     if (!res.ok) throw new Error(data.error || 'Failed upload');
 
                     currentUploadedImageUrl = data.url;
@@ -2658,6 +2708,145 @@
         };
 
         // ==============================================
+        // ROBUX PANEL CONTROLLER LOGIC
+        // ==============================================
+        window.loadRobuxTab = async function () {
+            const tbody = document.getElementById('robux-table-body');
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 8px; color:var(--text-muted);">Cargando recargas de Robux...</td></tr>';
+
+            try {
+                // Query Firestore products for category == 'robux'
+                const q = query(collection(db, 'products'), where('category', '==', 'robux'));
+                const snap = await getDocs(q);
+                tbody.innerHTML = '';
+
+                if (snap.empty) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 8px; color:var(--text-muted); text-align:center;">No hay recargas de Robux configuradas.</td></tr>';
+                    return;
+                }
+
+                snap.forEach(docSnap => {
+                    const p = docSnap.data();
+                    const id = docSnap.id;
+                    const tr = document.createElement('tr');
+                    tr.style.borderBottom = '1px solid var(--border-color)';
+                    
+                    tr.innerHTML = `
+                        <td style="padding:12px 8px; font-weight:700; color:var(--text-muted);">${id}</td>
+                        <td style="padding:12px 8px; font-weight:700;">
+                            <input type="text" id="robux-name-${id}" class="admin-input" style="padding:6px; font-size:12px; width:120px;" value="${p.name || ''}">
+                        </td>
+                        <td style="padding:12px 8px;">
+                            <input type="number" id="robux-price-${id}" class="admin-input" style="padding:6px; font-size:12px; width:100px;" value="${p.price || 0}">
+                        </td>
+                        <td style="padding:12px 8px;">
+                            <select id="robux-avail-${id}" class="admin-input" style="padding:6px; font-size:12px; width:110px; background:#141414; color:#fff;">
+                                <option value="true" ${p.available !== false ? 'selected' : ''}>🟢 Activo</option>
+                                <option value="false" ${p.available === false ? 'selected' : ''}>🔴 Inactivo</option>
+                            </select>
+                        </td>
+                        <td style="padding:12px 8px; text-align:right; display:flex; gap:8px; justify-content:flex-end;">
+                            <button class="admin-btn" style="padding:6px 12px; font-size:11px; background:var(--accent-green);" onclick="saveRobuxInline('${id}')">💾 Guardar</button>
+                            <button class="admin-btn" style="padding:6px 12px; font-size:11px; background:var(--accent-red);" onclick="deleteRobuxInline('${id}')">🗑️ Eliminar</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Error loading Robux products:", err);
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:20px 8px; color:var(--accent-red);">Error: ${err.message}</td></tr>`;
+            }
+        };
+
+        window.openAddRobuxModal = function () {
+            document.getElementById('new-robux-name').value = '';
+            document.getElementById('new-robux-price').value = '';
+            document.getElementById('add-robux-modal').classList.add('active');
+        };
+
+        window.closeAddRobuxModal = function () {
+            document.getElementById('add-robux-modal').classList.remove('active');
+        };
+
+        window.saveNewRobux = async function () {
+            const name = document.getElementById('new-robux-name').value.trim();
+            const priceVal = document.getElementById('new-robux-price').value;
+            const price = Number(priceVal);
+
+            if (!name || isNaN(price) || price <= 0) {
+                hcAlert('Completa los campos con valores válidos.', 'warning');
+                return;
+            }
+
+            // Generate clean SKU/ID, e.g., robux_400
+            const sanitized = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+            const sku = sanitized.startsWith('robux_') ? sanitized : `robux_${sanitized}`;
+
+            try {
+                await setDoc(doc(db, 'products', sku), {
+                    id: sku,
+                    name: name,
+                    price: price,
+                    category: 'robux',
+                    available: true,
+                    isCombo: false,
+                    image: '/robux.png',
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                hcAlert('Recarga de Robux agregada con éxito.', 'success');
+                closeAddRobuxModal();
+                loadRobuxTab();
+            } catch (err) {
+                console.error("Failed to add Robux denomination:", err);
+                hcAlert('Error al crear recarga: ' + err.message, 'error');
+            }
+        };
+
+        window.saveRobuxInline = async function (id) {
+            const name = document.getElementById(`robux-name-${id}`).value.trim();
+            const priceVal = document.getElementById(`robux-price-${id}`).value;
+            const price = Number(priceVal);
+            const available = document.getElementById(`robux-avail-${id}`).value === 'true';
+
+            if (!name || isNaN(price) || price <= 0) {
+                hcAlert('Completa los campos con valores válidos.', 'warning');
+                return;
+            }
+
+            try {
+                await setDoc(doc(db, 'products', id), {
+                    name,
+                    price,
+                    available,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
+
+                hcAlert('Recarga actualizada correctamente.', 'success');
+                loadRobuxTab();
+            } catch (err) {
+                console.error("Failed to update Robux:", err);
+                hcAlert('Error al actualizar: ' + err.message, 'error');
+            }
+        };
+
+        window.deleteRobuxInline = async function (id) {
+            if (!await hcConfirm(`¿Seguro que deseas eliminar la recarga "${id}" del catálogo?`)) {
+                return;
+            }
+
+            try {
+                await deleteDoc(doc(db, 'products', id));
+                hcAlert('Recarga eliminada.', 'success');
+                loadRobuxTab();
+            } catch (err) {
+                console.error("Failed to delete Robux:", err);
+                hcAlert('Error al eliminar: ' + err.message, 'error');
+            }
+        };
+
+        // ==============================================
+
         // MARKETING EMAIL COMPOSER LOGIC
         // ==============================================
         window.loadMarketingStats = async function () {
@@ -2724,7 +2913,7 @@
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ imageData: e.target.result })
                     });
-                    const data = await resp.json();
+                    const data = await parseJsonResponse(resp);
                     if (!resp.ok) throw new Error(data.error || 'Error subiendo imagen');
 
                     document.getElementById('mkt-image-url').value = data.url;
@@ -2790,7 +2979,7 @@
                     body: JSON.stringify({ subject, body, imageUrls })
                 });
 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Failed sending');
 
                 hcAlert(`✅ Campaña enviada con éxito. Se enviaron ${data.sent} correos.`, 'success');
@@ -2824,7 +3013,7 @@
                     },
                     body: JSON.stringify({})
                 });
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Error al actualizar');
                 const ids = data.top3 || [];
                 statusEl.innerHTML = `✅ Top 3 actualizado: <code style="font-size:11px;">${ids.join(', ')}</code>`;
@@ -3565,7 +3754,7 @@
                     body: JSON.stringify({ uid: selectedClientUid })
                 });
                 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Error al generar enlace');
 
                 input.value = data.resetLink;
@@ -3606,7 +3795,7 @@
                     body: JSON.stringify({ uid: selectedClientUid })
                 });
 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Error al eliminar cuenta');
 
                 hcAlert('✅ Cuenta eliminada permanentemente.', 'success');
@@ -3652,7 +3841,7 @@
                     body: JSON.stringify({ action: 'getContractText' })
                 });
                 if (resp.ok) {
-                    const data = await resp.json();
+                    const data = await parseJsonResponse(resp);
                     renderAdminContractTextHtml(data.articles);
                 } else {
                     throw new Error('No se pudo cargar el contrato');
@@ -3844,7 +4033,7 @@
                     body: JSON.stringify({ nombre, email, telefono, customerCode, password })
                 });
 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Error creando cliente');
 
                 // Save created user info for signature phase
@@ -3912,7 +4101,7 @@
                     })
                 });
 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 if (!res.ok) throw new Error(data.error || 'Error firmando contrato');
 
                 hcAlert('✅ ¡Cliente creado y acuerdo de responsabilidad firmado exitosamente!', 'success');

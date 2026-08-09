@@ -247,7 +247,7 @@
 
     <!-- Script de autenticación -->
     <script type="module">
-        import { initPromise, auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, db, doc, getDoc, setDoc } from './firebase-auth.js';
+        import { initPromise, auth, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, db, doc, getDoc, setDoc, parseJsonResponse } from './firebase-auth.js';
 
 
         const loginBtn = document.getElementById('googleLoginBtn');
@@ -360,7 +360,7 @@
                     body: JSON.stringify({ email })
                 });
 
-                const data = await res.json();
+                const data = await parseJsonResponse(res);
                 hideLoading();
 
                 if (res.ok && data.ok) {
