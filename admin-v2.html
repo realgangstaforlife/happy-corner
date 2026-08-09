@@ -694,8 +694,8 @@
             <button class="sidebar-item" id="snav-analytics" onclick="switchSidebar('analytics'); refreshAnalytics();"><span class="s-icon">📈</span> Analíticas</button>
             <div class="sidebar-section-label" style="margin-top:12px;">SISTEMA</div>
             <button class="sidebar-item" id="snav-products" onclick="switchSidebar('products'); loadProductsTab();"><span class="s-icon">🛍️</span> Productos</button>
-            <button class="sidebar-item" id="snav-robux" onclick="switchSidebar('robux'); loadRobuxTab();"><span class="s-icon">🎮</span> Robux Panel</button>
             <button class="sidebar-item" id="snav-marketing" onclick="switchSidebar('marketing'); loadMarketingStats();"><span class="s-icon">📧</span> Marketing</button>
+
             <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
             <div class="sidebar-footer">
                 <span style="font-size:11px; color:var(--text-muted);">Happy Corner Admin v2</span>
@@ -1001,8 +1001,6 @@
         </div>
 
             <!-- ============================================== -->
-            <!-- TAB: CONFIG                                   -->
-            <!-- ============================================== -->
             <!-- TAB: PRODUCTOS -->
             <div id="tab-products" class="tab-content">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
@@ -1010,8 +1008,36 @@
                         <h2 style="font-weight:900; margin-bottom:4px;">🛍️ Gestión de Productos</h2>
                         <p style="color:var(--text-muted); font-size:13px; margin:0;">Agrega, edita y controla la disponibilidad de los productos del catálogo.</p>
                     </div>
-                    <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openProductFormModal(null)">➕ Nuevo Producto</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-robux" onclick="toggleRobuxPanel()">🎮 Manage Robux Pricing</button>
+                        <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openProductFormModal(null)">➕ Nuevo Producto</button>
+                    </div>
                 </div>
+
+                <!-- Collapsible Robux Panel -->
+                <div id="robux-panel-container" style="display:none; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <div style="font-weight:800; font-size:15px; color:var(--hp-pink);">🎮 Configuración de Precios Robux</div>
+                        <button class="admin-btn" style="padding:6px 12px; font-size:11px;" onclick="openAddRobuxModal()">➕ Agregar Robux</button>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                            <thead>
+                                <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted); text-transform:uppercase; font-size:11px;">
+                                    <th style="padding:12px 8px;">SKU (ID)</th>
+                                    <th style="padding:12px 8px;">Denominación</th>
+                                    <th style="padding:12px 8px; width:150px;">Precio (COP)</th>
+                                    <th style="padding:12px 8px; width:160px;">Proveedor (Estado)</th>
+                                    <th style="padding:12px 8px; text-align:right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="robux-table-body">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <div id="products-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:16px;">
                     <div style="color:var(--text-muted); font-size:13px; padding:40px 0;">Cargando productos...</div>
                 </div>
@@ -1058,33 +1084,6 @@
                 </div>
             </div>
 
-            <!-- TAB: ROBUX -->
-            <div id="tab-robux" class="tab-content">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
-                    <div>
-                        <h2 style="font-weight:900; margin-bottom:4px;">🎮 Panel de Robux</h2>
-                        <p style="color:var(--text-muted); font-size:13px; margin:0;">Controla la disponibilidad, precios y SKUs de las recargas de Robux.</p>
-                    </div>
-                    <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openAddRobuxModal()">➕ Agregar Robux</button>
-                </div>
-                
-                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:20px; overflow-x:auto;">
-                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
-                        <thead>
-                            <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted); text-transform:uppercase; font-size:11px;">
-                                <th style="padding:12px 8px;">SKU (ID)</th>
-                                <th style="padding:12px 8px;">Denominación</th>
-                                <th style="padding:12px 8px; width:150px;">Precio (COP)</th>
-                                <th style="padding:12px 8px; width:160px;">Proveedor (Estado)</th>
-                                <th style="padding:12px 8px; text-align:right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="robux-table-body">
-                            <!-- Populated dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
             <!-- TAB: CONFIG -->
             <div id="tab-config" class="tab-content">
@@ -2707,9 +2706,15 @@
             }
         };
 
-        // ==============================================
-        // ROBUX PANEL CONTROLLER LOGIC
-        // ==============================================
+        window.toggleRobuxPanel = function () {
+            const panel = document.getElementById('robux-panel-container');
+            const isShowing = panel.style.display !== 'none';
+            panel.style.display = isShowing ? 'none' : 'block';
+            if (!isShowing) {
+                loadRobuxTab();
+            }
+        };
+
         window.loadRobuxTab = async function () {
             const tbody = document.getElementById('robux-table-body');
             tbody.innerHTML = '<tr><td colspan="5" style="padding:20px 8px; color:var(--text-muted);">Cargando recargas de Robux...</td></tr>';

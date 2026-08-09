@@ -638,9 +638,11 @@
     <script type="module">
         import { initPromise, db, auth } from './firebase-auth.js';
         import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-        import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { doc, getDoc, getDocs, collection, query, where, updateDoc, writeBatch, runTransaction, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
         let PRODUCTS = [];
+        let activeCategory = 'all';
+        let productsUnsubscribe = null;
 
         const DEFAULT_PRODUCTS = [
             { id: 'bubbaloo', name: 'Bubbaloo', price: 400, img: 'bb.png', cat: 'dulces', available: true },
@@ -781,29 +783,37 @@
         async function initPOS() {
             await checkAndSeedProducts();
 
-            // Load from Firestore products
+            // Set up real-time listener for products
             try {
-                const snap = await getDocs(collection(db, 'products'));
-                PRODUCTS = [];
-                snap.forEach(d => {
-                    const p = d.data();
-                    // only load available products
-                    if (p.available !== false) {
-                        PRODUCTS.push({
-                            id: d.id,
-                            name: p.name,
-                            price: p.price,
-                            img: p.image || 'pizza.png',
-                            cat: p.category || 'dulces'
-                        });
-                    }
+                if (productsUnsubscribe) productsUnsubscribe();
+                
+                productsUnsubscribe = onSnapshot(collection(db, 'products'), (snap) => {
+                    PRODUCTS = [];
+                    snap.forEach(d => {
+                        const p = d.data();
+                        if (p.available !== false) {
+                            PRODUCTS.push({
+                                id: d.id,
+                                name: p.name,
+                                price: p.price,
+                                img: p.image || 'pizza.png',
+                                cat: p.category || 'dulces'
+                            });
+                        }
+                    });
+                    // Refresh the visible items for the active category
+                    filterCategory(activeCategory);
+                }, (err) => {
+                    console.error("POS: products snapshot error:", err);
                 });
             } catch (err) {
-                console.error("POS: Failed to fetch products:", err);
+                console.error("POS: Failed to set up snapshot listener:", err);
             }
 
-            // Load products grid
-            filterCategory('all');
+            // Cleanup listener on page unload
+            window.addEventListener('beforeunload', () => {
+                if (productsUnsubscribe) productsUnsubscribe();
+            });
 
             // Autocomplete clients load
             loadCustomersList();
@@ -855,6 +865,7 @@
 
         // Filter products grid
         window.filterCategory = function (cat) {
+            activeCategory = cat;
             document.querySelectorAll('.category-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('onclick').includes(cat));
             });

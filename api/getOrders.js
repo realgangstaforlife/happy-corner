@@ -67,15 +67,20 @@ export default async function handler(req, res) {
                 totalDisplay = 'Por definir';
             }
 
-            const msg = `🍭 *NUEVO PEDIDO: ${orderCode}* 🍭\n\n` +
-                `👤 *Cliente:* ${pedidoData.nombre}\n` +
-                `📱 *WhatsApp:* [${pedidoData.whatsapp}](${waLink})\n` +
-                `🎟️ *Loyalty:* \`${pedidoData.happycodigo || "No registrado"}\`\n` +
-                `📍 *Entrega:* ${pedidoData.tipo_entrega || "No especificada"}\n` +
-                `💳 *Pago:* ${pedidoData.metodo_pago || "No especificado"}\n` +
-                `🛒 *Pedido:* ${pedidoData.resumen}\n` +
-                `💖 *Propina:* ${pedidoData.propina || "Sin propina"}\n` +
-                `💰 *TOTAL FINAL:* ${totalDisplay}${note}`;
+            function escapeMarkdown(text) {
+                if (typeof text !== 'string') return '';
+                return text.replace(/([_*\[`])/g, '\\$1');
+            }
+
+            const msg = `🍭 *NUEVO PEDIDO: ${escapeMarkdown(orderCode)}* 🍭\n\n` +
+                `👤 *Cliente:* ${escapeMarkdown(pedidoData.nombre)}\n` +
+                `📱 *WhatsApp:* [${escapeMarkdown(pedidoData.whatsapp)}](${waLink})\n` +
+                `🎟️ *Loyalty:* \`${escapeMarkdown(pedidoData.happycodigo || "No registrado")}\`\n` +
+                `📍 *Entrega:* ${escapeMarkdown(pedidoData.tipo_entrega || "No especificada")}\n` +
+                `💳 *Pago:* ${escapeMarkdown(pedidoData.metodo_pago || "No especificado")}\n` +
+                `🛒 *Pedido:* ${escapeMarkdown(pedidoData.resumen)}\n` +
+                `💖 *Propina:* ${escapeMarkdown(pedidoData.propina || "Sin propina")}\n` +
+                `💰 *TOTAL FINAL:* ${escapeMarkdown(totalDisplay)}${note}`;
 
             // Preparar mensajes para WhatsApp
             const waApproval = `Hola ${pedidoData.nombre}! 🎉 Tu pedido de Happy Corner está confirmado.\n\n📦 Orden: ${orderCode}\n🛍️ Resumen: ${pedidoData.resumen}\n💰 Total: ${totalDisplay}\n\n¡Gracias por preferirnos!`;

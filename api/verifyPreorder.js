@@ -37,10 +37,15 @@ export default async function handler(req, res) {
             thanksMsg = `Hola ${nombre}. Entendemos, hemos cancelado tu pre-orden ${orderId}. ¡Gracias por avisarnos, esperamos verte pronto!`;
         }
 
+        function escapeMarkdown(text) {
+            if (typeof text !== 'string') return '';
+            return text.replace(/([_*\[`])/g, '\\$1');
+        }
+
         const msg = `${emoji} *PREORDEN ${actionStr}*\n\n` +
-                    `👤 *Cliente:* ${nombre}\n` +
-                    `📦 *Orden:* ${orderId}\n` +
-                    `🛒 *Pedido:* ${resumen}\n\n` +
+                    `👤 *Cliente:* ${escapeMarkdown(nombre)}\n` +
+                    `📦 *Orden:* ${escapeMarkdown(orderId)}\n` +
+                    `🛒 *Pedido:* ${escapeMarkdown(resumen)}\n\n` +
                     `*Nota:* Pedido ${actionStr.toLowerCase()} para el día de mañana.`;
 
         const tgRes = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
