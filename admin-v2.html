@@ -1101,7 +1101,7 @@
                     <!-- Preview -->
                     <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; position:sticky; top:20px;">
                         <div style="font-weight:800; font-size:15px; margin-bottom:16px;">📨 Vista previa en vivo</div>
-                        <div id="mkt-preview" style="border:1px solid var(--border-color); border-radius:12px; padding:16px; min-height:300px; background:#fff; color:#333; overflow-y:auto; font-size:13px;">
+                        <div id="mkt-preview" style="border:1px solid var(--border-color); border-radius:12px; overflow:hidden; min-height:300px; background:#0d0d0d; overflow-y:auto; font-size:13px;">
                             <!-- Live email preview renders here -->
                         </div>
                     </div>
@@ -3138,19 +3138,35 @@
             const body = document.getElementById('mkt-body').value || 'Escribe tu mensaje...';
             
             const replaced = body
-                .replace(/{name}/g, '<strong>Juan Pérez</strong>')
+                .replace(/{name}/g, '<strong style="color:#ff5299;">Juan Pérez</strong>')
                 .replace(/{email}/g, 'juan.perez@example.com')
                 .replace(/{happyscore}/g, '<strong>120</strong>')
                 .replace(/\n/g, '<br>');
 
             document.getElementById('mkt-preview').innerHTML = `
-                <div style="font-family:'Arial',sans-serif;">
-                    <div style="border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:12px; font-size:12px; color:#888;">
-                        <strong>Asunto:</strong> ${subject}
-                    </div>
-                    <div>
-                        ${replaced}
-                    </div>
+                <div style="background:#0d0d0d;padding:24px 16px;font-family:'Outfit',Arial,sans-serif;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;margin:0 auto;background:#181818;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+                    <tr>
+                      <td style="background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);padding:22px 28px;text-align:center;">
+                        <div style="font-size:20px;font-weight:900;color:#fff;">Happy Corner 🩷</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:3px;">Campaña de Marketing</div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding:24px 28px;">
+                        <div style="font-size:11px;color:#888;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:10px;margin-bottom:16px;"><strong style="color:#ccc;">Asunto:</strong> ${subject}</div>
+                        <div style="color:#ccc;font-size:14px;line-height:1.7;">${replaced}</div>
+                        <div style="text-align:center;margin:24px 0 4px;">
+                          <span style="display:inline-block;background:linear-gradient(135deg,#b01e5a,#ff5299);color:#fff;padding:10px 22px;border-radius:12px;font-weight:800;font-size:13px;">Visitar Happy Corner</span>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="background:rgba(255,255,255,0.03);padding:12px 28px;text-align:center;">
+                        <div style="color:#555;font-size:11px;">Happy Corner · Cali · happycorner.top</div>
+                      </td>
+                    </tr>
+                  </table>
                 </div>
             `;
         };
