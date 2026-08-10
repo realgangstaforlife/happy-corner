@@ -3179,7 +3179,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('/api/email/send-bulk', {
+                const res = await fetch('/api/account?action=sendBulk', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

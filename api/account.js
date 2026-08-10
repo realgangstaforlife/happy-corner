@@ -4,6 +4,148 @@ import { s3Client, bucketName, publicUrl } from './_lib/r2Client.js';
 import { DeleteObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import fetch from 'node-fetch';
 
+function getEmailTemplate(content, title = 'Happy Corner') {
+    return `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                * { margin: 0; padding: 0; }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    background-color: #f5f5f5;
+                    color: #333;
+                    line-height: 1.6;
+                }
+                .email-container {
+                    max-width: 600px;
+                    margin: 20px auto;
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                    overflow: hidden;
+                }
+                .email-header {
+                    background: linear-gradient(135deg, #ff6b9d 0%, #ee5a6f 100%);
+                    color: white;
+                    padding: 30px 20px;
+                    text-align: center;
+                }
+                .email-header h1 {
+                    font-size: 28px;
+                    margin-bottom: 5px;
+                    font-weight: 700;
+                }
+                .email-header p {
+                    font-size: 14px;
+                    opacity: 0.9;
+                }
+                .email-body {
+                    padding: 30px 20px;
+                    background-color: #fafafa;
+                }
+                .email-body h2 {
+                    color: #ff6b9d;
+                    font-size: 20px;
+                    margin-bottom: 15px;
+                    font-weight: 600;
+                }
+                .email-body p {
+                    margin-bottom: 15px;
+                    color: #555;
+                    font-size: 15px;
+                }
+                .email-body ul {
+                    margin-left: 20px;
+                    margin-bottom: 20px;
+                    color: #555;
+                }
+                .email-body li {
+                    margin-bottom: 8px;
+                    font-size: 15px;
+                }
+                .cta-button {
+                    display: inline-block;
+                    background: linear-gradient(135deg, #ff6b9d 0%, #ee5a6f 100%);
+                    color: white;
+                    padding: 12px 30px;
+                    border-radius: 6px;
+                    text-decoration: none;
+                    font-weight: 600;
+                    margin: 20px 0;
+                    font-size: 15px;
+                    transition: transform 0.2s;
+                }
+                .cta-button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 12px rgba(255, 107, 157, 0.3);
+                }
+                .code-block {
+                    background-color: #f0f0f0;
+                    padding: 12px 15px;
+                    border-radius: 6px;
+                    font-family: 'Courier New', monospace;
+                    font-weight: 700;
+                    color: #ff6b9d;
+                    text-align: center;
+                    font-size: 16px;
+                    margin: 15px 0;
+                    letter-spacing: 1px;
+                }
+                .email-footer {
+                    background-color: #f5f5f5;
+                    padding: 20px;
+                    text-align: center;
+                    border-top: 1px solid #ddd;
+                }
+                .email-footer p {
+                    font-size: 12px;
+                    color: #888;
+                    margin-bottom: 8px;
+                }
+                .email-footer a {
+                    color: #ff6b9d;
+                    text-decoration: none;
+                    font-weight: 600;
+                }
+                .divider {
+                    margin: 20px 0;
+                    border-top: 2px solid #ff6b9d;
+                    opacity: 0.3;
+                }
+                .badge {
+                    display: inline-block;
+                    background-color: #ff6b9d;
+                    color: white;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    margin: 5px 2px;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="email-header">
+                    <h1>🍭 Happy Corner</h1>
+                    <p>${title}</p>
+                </div>
+                <div class="email-body">
+                    ${content}
+                </div>
+                <div class="email-footer">
+                    <p>© 2026 Happy Corner | happycorner.top</p>
+                    <p><a href="https://happycorner.top">Visita nuestro sitio →</a></p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
 // Rate limiting
 const requestCounts = new Map();
 function checkRateLimit(ip, limit = 10, windowMs = 60000) {
@@ -871,58 +1013,41 @@ export default async function handler(req, res) {
                 return json(res, 200, { ok: true, sent, total: emails.length });
             }
 
-            // --- 9. ACCIÓN: sendWelcomeEmail (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
-            if (action === 'sendWelcomeEmail') {
+            // --- 9. ACCIÓN: send-welcome (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
+            if (action === 'send-welcome' || action === 'sendWelcomeEmail') {
                 const { email, name } = req.body || {};
                 if (!email || !name) return json(res, 400, { error: 'Falta email o nombre.' });
                 try {
                     const resendKey = process.env.RESEND_API_KEY;
                     const { Resend } = await import('resend');
                     const resend = new Resend(resendKey);
+
+                    const emailContent = `
+                        <h2>¡Hola ${name}! 🎉</h2>
+                        <p>Bienvenido a <strong>Happy Corner</strong>. Nos emociona tenerte aquí.</p>
+                        
+                        <p>Aquí encontrarás:</p>
+                        <ul>
+                            <li>🍕 Pizzas deliciosas</li>
+                            <li>🍫 Snacks frescos</li>
+                            <li>🎮 Robux exclusivos</li>
+                            <li>💝 Puntos Happy Score (⭐ cada compra suma)</li>
+                        </ul>
+                        
+                        <p style="text-align: center; margin-top: 30px;">
+                            <a href="https://happycorner.top" class="cta-button">Haz tu primer pedido →</a>
+                        </p>
+                        
+                        <p style="font-size: 12px; color: #888; margin-top: 30px;">
+                            Si tienes preguntas, estamos aquí para ayudarte.
+                        </p>
+                    `;
+
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@alertas.happycorner.top>',
                         to: [email.trim()],
                         subject: '¡Bienvenido a Happy Corner! 🍭',
-                        html: `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8f0f8;font-family:'Arial',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f0f8;padding:40px 0;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a0a1a;border-radius:20px;overflow:hidden;max-width:560px;width:100%;">
-        <tr><td style="background:linear-gradient(135deg,#ff6b9d,#ff9d5c,#ffd45e);height:6px;"></td></tr>
-        <tr><td align="center" style="padding:40px 32px 20px;">
-          <div style="font-size:36px;margin-bottom:8px;">🍭</div>
-          <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;">Happy Corner</div>
-        </td></tr>
-        <tr><td style="padding:0 32px 32px;">
-          <h1 style="color:#ff6b9d;font-size:22px;font-weight:800;margin:0 0 16px;">¡Hola, ${name}! 🎉</h1>
-          <p style="color:#ccc;font-size:15px;line-height:1.7;margin:0 0 20px;">
-            ¡Qué emoción tenerte con nosotros! Tu cuenta de Happy Corner está lista y puedes empezar a disfrutar de todos nuestros productos favoritos.
-          </p>
-          <table width="100%" cellpadding="0" cellspacing="0" style="background:#2a1a2a;border-radius:12px;padding:20px;margin-bottom:24px;">
-            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🍕 Pizzas deliciosas</td></tr>
-            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🍫 Dulces y snacks frescos</td></tr>
-            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🎮 Recargas de Robux</td></tr>
-            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">⭐ Puntos Happy Score con cada compra</td></tr>
-          </table>
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td align="center">
-              <a href="https://happycorner.top/order" style="display:inline-block;background:linear-gradient(135deg,#ff6b9d,#ff9d5c);color:#fff;font-weight:800;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:50px;">
-                Hacer mi primer pedido →
-              </a>
-            </td></tr>
-          </table>
-        </td></tr>
-        <tr><td style="padding:20px 32px;border-top:1px solid #2a1a2a;text-align:center;">
-          <p style="color:#666;font-size:12px;margin:0;">Happy Corner 🍭 · <a href="https://happycorner.top" style="color:#ff6b9d;text-decoration:none;">happycorner.top</a></p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
+                        html: getEmailTemplate(emailContent, 'Bienvenida')
                     });
                     return json(res, 200, { ok: true });
                 } catch (err) {
@@ -931,8 +1056,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 10. ACCIÓN: getRecipients (SOLO ADMIN) ---
-            if (action === 'getRecipients') {
+            // --- 10. ACCIÓN: get-recipients (SOLO ADMIN) ---
+            if (action === 'get-recipients' || action === 'getRecipients') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 const { filter } = req.query || {};
                 try {
@@ -990,8 +1115,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 11. ACCIÓN: getUsersList (SOLO ADMIN) ---
-            if (action === 'getUsersList') {
+            // --- 11. ACCIÓN: get-users-list (SOLO ADMIN) ---
+            if (action === 'get-users-list' || action === 'getUsersList') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 try {
                     const snap = await db.collection('users').orderBy('displayName', 'asc').limit(300).get();
@@ -1013,8 +1138,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 12. ACCIÓN: sendBulk (SOLO ADMIN) ---
-            if (action === 'sendBulk') {
+            // --- 12. ACCIÓN: send-bulk (SOLO ADMIN) ---
+            if (action === 'send-bulk' || action === 'sendBulk') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 const { recipients, subject, body } = req.body || {};
                 if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
@@ -1029,7 +1154,7 @@ export default async function handler(req, res) {
                     for (const recipient of recipients) {
                         if (!recipient.email) continue;
                         try {
-                            const formattedHtml = body
+                            const emailBody = body
                                 .replace(/{name}/g, recipient.name || 'Cliente')
                                 .replace(/{email}/g, recipient.email)
                                 .replace(/{happyscore}/g, recipient.happyscore || 0)
@@ -1039,30 +1164,7 @@ export default async function handler(req, res) {
                                 from: 'Happy Corner <noreply@alertas.happycorner.top>',
                                 to: [recipient.email],
                                 subject: subject,
-                                html: `
-<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f8f0f8;font-family:'Arial',sans-serif;color:#333;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f0f8;padding:40px 0;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e0d0e0;border-radius:20px;overflow:hidden;max-width:560px;width:100%;">
-        <tr><td style="background:linear-gradient(135deg,#ff6b9d,#ff9d5c,#ffd45e);height:6px;"></td></tr>
-        <tr><td align="center" style="padding:32px 32px 16px;background:#1a0a1a;color:#fff;">
-          <div style="font-size:28px;">🍭</div>
-          <div style="font-size:20px;font-weight:900;margin-top:4px;">Happy Corner</div>
-        </td></tr>
-        <tr><td style="padding:32px;font-size:15px;line-height:1.7;">
-          ${formattedHtml}
-        </td></tr>
-        <tr><td style="padding:20px 32px;border-top:1px solid #eee;text-align:center;background:#fafafa;">
-          <p style="color:#999;font-size:12px;margin:0;">Happy Corner Cali · <a href="https://happycorner.top" style="color:#ff6b9d;text-decoration:none;">happycorner.top</a></p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`
+                                html: getEmailTemplate(emailBody, 'Campaña de Marketing')
                             });
                             sentCount++;
                         } catch (err) {
@@ -1076,8 +1178,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 13. ACCIÓN: requestHappyCodeChange (USUARIO AUTENTICADO) ---
-            if (action === 'requestHappyCodeChange') {
+            // --- 13. ACCIÓN: request-change (USUARIO AUTENTICADO) ---
+            if (action === 'request-change' || action === 'requestHappyCodeChange') {
                 const { newCode } = req.body || {};
                 if (!newCode || typeof newCode !== 'string') return json(res, 400, { error: 'Falta newCode.' });
                 const cleaned = newCode.trim().toUpperCase();
@@ -1121,16 +1223,16 @@ export default async function handler(req, res) {
                         const resend = new Resend(resendKey);
                         await resend.emails.send({
                             from: 'Happy Corner <noreply@alertas.happycorner.top>',
-                            to: ['evan.l@happycorner.lol'],
+                            to: ['happycorner@happycorner.top'],
                             subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
-                            html: `
-                                <h2>Nueva solicitud de cambio de HappyCode</h2>
+                            html: getEmailTemplate(`
+                                <h2>Nueva solicitud de cambio</h2>
                                 <p><strong>Usuario:</strong> ${userData.displayName || userData.name}</p>
                                 <p><strong>Email:</strong> ${userData.email || '—'}</p>
                                 <p><strong>Código actual:</strong> <code>${userData.customerCode || '(ninguno)'}</code></p>
                                 <p><strong>Código solicitado:</strong> <code>${cleaned}</code></p>
-                                <p><a href="https://happycorner.top/admin-v2?tab=happycode" style="background:#ff6b9d;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">Ver en Admin Panel →</a></p>
-                            `
+                                <p><a href="https://happycorner.top/admin-v2?tab=happycode" class="cta-button">Ver solicitudes en admin →</a></p>
+                            `, 'Nueva Solicitud de HappyCode')
                         });
                     } catch (emailErr) {
                         console.warn('Admin email failed:', emailErr.message);
@@ -1143,8 +1245,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 14. ACCIÓN: listHappyCodeRequests (SOLO ADMIN) ---
-            if (action === 'listHappyCodeRequests') {
+            // --- 14. ACCIÓN: list (SOLO ADMIN) ---
+            if (action === 'list' || action === 'listHappyCodeRequests') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 try {
                     const snap = await db.collection('happycode_requests').orderBy('createdAt', 'desc').limit(100).get();
@@ -1156,8 +1258,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 15. ACCIÓN: approveHappyCodeChange (SOLO ADMIN) ---
-            if (action === 'approveHappyCodeChange') {
+            // --- 15. ACCIÓN: approve (SOLO ADMIN) ---
+            if (action === 'approve' || action === 'approveHappyCodeChange') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 const { requestId } = req.body || {};
                 if (!requestId) return json(res, 400, { error: 'Falta requestId.' });
@@ -1199,21 +1301,14 @@ export default async function handler(req, res) {
                                 from: 'Happy Corner <noreply@alertas.happycorner.top>',
                                 to: [reqData.userEmail],
                                 subject: '✅ Tu nuevo HappyCode fue aprobado',
-                                html: `
-                                    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
-                                        <h2 style="color:#ff6b9d;">¡Tu solicitud fue aprobada! 🎉</h2>
-                                        <p>Hola <strong>${reqData.userName}</strong>,</p>
-                                        <p>Tu solicitud de cambio de HappyCode fue aprobada.</p>
-                                        <p style="margin:20px 0;">
-                                            <strong>Tu nuevo código:</strong><br>
-                                            <span style="font-size:24px;font-weight:900;background:#f0e0ff;padding:8px 20px;border-radius:8px;letter-spacing:2px;">${reqData.newCode}</span>
-                                        </p>
-                                        <p>¡Ya puedes usarlo en tu próximo pedido!</p>
-                                        <a href="https://happycorner.top/mi-cuenta" style="display:inline-block;background:linear-gradient(135deg,#ff6b9d,#ff9d5c);color:#fff;font-weight:800;text-decoration:none;padding:12px 28px;border-radius:50px;margin-top:12px;">Ver mi cuenta →</a>
-                                        <hr style="margin-top:32px;border:none;border-top:1px solid #eee;">
-                                        <p style="font-size:12px;color:#999;">Happy Corner 🍭 · happycorner.top</p>
-                                    </div>
-                                `
+                                html: getEmailTemplate(`
+                                    <h2>¡Wow, increíble! 🎉</h2>
+                                    <p>Hola <strong>${reqData.userName}</strong>,</p>
+                                    <p>Tu solicitud de cambio de HappyCode fue aprobada.</p>
+                                    <p><strong>Tu nuevo código:</strong></p>
+                                    <div class="code-block">${reqData.newCode}</div>
+                                    <p>¡Ya puedes usarlo en tu próximo pedido!</p>
+                                `, 'HappyCode Actualizado')
                             });
                         } catch (emailErr) {
                             console.warn('Approve email failed:', emailErr.message);
@@ -1226,8 +1321,8 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 16. ACCIÓN: rejectHappyCodeChange (SOLO ADMIN) ---
-            if (action === 'rejectHappyCodeChange') {
+            // --- 16. ACCIÓN: reject (SOLO ADMIN) ---
+            if (action === 'reject' || action === 'rejectHappyCodeChange') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
                 const { requestId, reason } = req.body || {};
                 if (!requestId) return json(res, 400, { error: 'Falta requestId.' });
@@ -1252,17 +1347,13 @@ export default async function handler(req, res) {
                                 from: 'Happy Corner <noreply@alertas.happycorner.top>',
                                 to: [reqData.userEmail],
                                 subject: '❌ Tu solicitud de HappyCode no fue aprobada',
-                                html: `
-                                    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
-                                        <h2 style="color:#888;">Solicitud no aprobada</h2>
-                                        <p>Hola <strong>${reqData.userName}</strong>,</p>
-                                        <p>Revisamos tu solicitud de cambio de HappyCode a <strong>${reqData.newCode}</strong> y lamentablemente no pudimos procesarla en este momento.</p>
-                                        ${reason ? `<p><strong>Motivo:</strong> ${reason}</p>` : ''}
-                                        <p>Si tienes dudas, puedes escribirnos por WhatsApp.</p>
-                                        <hr style="margin-top:32px;border:none;border-top:1px solid #eee;">
-                                        <p style="font-size:12px;color:#999;">Happy Corner 🍭 · happycorner.top</p>
-                                    </div>
-                                `
+                                html: getEmailTemplate(`
+                                    <h2>Solicitud no aprobada</h2>
+                                    <p>Hola <strong>${reqData.userName}</strong>,</p>
+                                    <p>Revisamos tu solicitud de cambio de HappyCode a <strong>${reqData.newCode}</strong> y lamentablemente no pudimos procesarla en este momento.</p>
+                                    ${reason ? `<p><strong>Motivo:</strong> ${reason}</p>` : ''}
+                                    <p>Si tienes dudas, puedes escribirnos por WhatsApp.</p>
+                                `, 'Solicitud de HappyCode')
                             });
                         } catch (emailErr) {
                             console.warn('Rejection email failed:', emailErr.message);
