@@ -35,7 +35,7 @@ async function sendEmail({ to, subject, html }) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            from: 'Happy Corner <notificaciones@happycorner.com>',
+            from: 'Happy Corner <noreply@alertas.happycorner.top>',
             to,
             subject,
             html

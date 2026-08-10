@@ -2185,7 +2185,7 @@
             btn.textContent = 'Enviando...';
             try {
                 const token = await currentUser.getIdToken();
-                const resp = await fetch('/api/happycode/request-change', {
+                const resp = await fetch('/api/account?action=requestHappyCodeChange', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ newCode })

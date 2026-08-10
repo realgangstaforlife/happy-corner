@@ -871,6 +871,410 @@ export default async function handler(req, res) {
                 return json(res, 200, { ok: true, sent, total: emails.length });
             }
 
+            // --- 9. ACCIÓN: sendWelcomeEmail (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
+            if (action === 'sendWelcomeEmail') {
+                const { email, name } = req.body || {};
+                if (!email || !name) return json(res, 400, { error: 'Falta email o nombre.' });
+                try {
+                    const resendKey = process.env.RESEND_API_KEY;
+                    const { Resend } = await import('resend');
+                    const resend = new Resend(resendKey);
+                    await resend.emails.send({
+                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        to: [email.trim()],
+                        subject: '¡Bienvenido a Happy Corner! 🍭',
+                        html: `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8f0f8;font-family:'Arial',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f0f8;padding:40px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#1a0a1a;border-radius:20px;overflow:hidden;max-width:560px;width:100%;">
+        <tr><td style="background:linear-gradient(135deg,#ff6b9d,#ff9d5c,#ffd45e);height:6px;"></td></tr>
+        <tr><td align="center" style="padding:40px 32px 20px;">
+          <div style="font-size:36px;margin-bottom:8px;">🍭</div>
+          <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.5px;">Happy Corner</div>
+        </td></tr>
+        <tr><td style="padding:0 32px 32px;">
+          <h1 style="color:#ff6b9d;font-size:22px;font-weight:800;margin:0 0 16px;">¡Hola, ${name}! 🎉</h1>
+          <p style="color:#ccc;font-size:15px;line-height:1.7;margin:0 0 20px;">
+            ¡Qué emoción tenerte con nosotros! Tu cuenta de Happy Corner está lista y puedes empezar a disfrutar de todos nuestros productos favoritos.
+          </p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#2a1a2a;border-radius:12px;padding:20px;margin-bottom:24px;">
+            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🍕 Pizzas deliciosas</td></tr>
+            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🍫 Dulces y snacks frescos</td></tr>
+            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">🎮 Recargas de Robux</td></tr>
+            <tr><td style="padding:6px 0;color:#ff9d5c;font-size:14px;">⭐ Puntos Happy Score con cada compra</td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center">
+              <a href="https://happycorner.top/order" style="display:inline-block;background:linear-gradient(135deg,#ff6b9d,#ff9d5c);color:#fff;font-weight:800;font-size:15px;text-decoration:none;padding:14px 36px;border-radius:50px;">
+                Hacer mi primer pedido →
+              </a>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:20px 32px;border-top:1px solid #2a1a2a;text-align:center;">
+          <p style="color:#666;font-size:12px;margin:0;">Happy Corner 🍭 · <a href="https://happycorner.top" style="color:#ff6b9d;text-decoration:none;">happycorner.top</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+                    });
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('Welcome email error:', err);
+                    return json(res, 500, { error: 'No se pudo enviar el correo de bienvenida.' });
+                }
+            }
+
+            // --- 10. ACCIÓN: getRecipients (SOLO ADMIN) ---
+            if (action === 'getRecipients') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                const { filter } = req.query || {};
+                try {
+                    let queryRef = db.collection('users');
+                    if (filter === 'active') {
+                        const thirtyDaysAgo = new Date();
+                        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                        queryRef = queryRef.where('updatedAt', '>=', thirtyDaysAgo.toISOString());
+                    } else if (filter === 'high-score') {
+                        queryRef = queryRef.where('happyPoints', '>', 100);
+                    } else if (filter === 'robux-users') {
+                        const ordersSnap = await db.collection('orders').where('status', '==', 'delivered').get();
+                        const robuxUserIds = new Set();
+                        ordersSnap.forEach(doc => {
+                            const o = doc.data();
+                            if (o.resumen && o.resumen.toLowerCase().includes('robux') && o.uid) {
+                                robuxUserIds.add(o.uid);
+                            }
+                        });
+                        if (robuxUserIds.size === 0) return json(res, 200, { users: [] });
+                        const users = [];
+                        const uidsArray = Array.from(robuxUserIds).slice(0, 30);
+                        const userSnaps = await Promise.all(uidsArray.map(uid => db.collection('users').doc(uid).get()));
+                        userSnaps.forEach(snap => {
+                            if (snap.exists) {
+                                const u = snap.data();
+                                users.push({
+                                    uid: snap.id,
+                                    email: u.email || '',
+                                    name: u.displayName || u.name || 'Cliente',
+                                    happyscore: u.happyPoints || 0
+                                });
+                            }
+                        });
+                        return json(res, 200, { users });
+                    }
+
+                    const snap = await queryRef.limit(200).get();
+                    const users = [];
+                    snap.forEach(doc => {
+                        const u = doc.data();
+                        if (u.email) {
+                            users.push({
+                                uid: doc.id,
+                                email: u.email,
+                                name: u.displayName || u.name || 'Cliente',
+                                happyscore: u.happyPoints || 0
+                            });
+                        }
+                    });
+                    return json(res, 200, { users });
+                } catch (err) {
+                    console.error('getRecipients error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 11. ACCIÓN: getUsersList (SOLO ADMIN) ---
+            if (action === 'getUsersList') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                try {
+                    const snap = await db.collection('users').orderBy('displayName', 'asc').limit(300).get();
+                    const users = [];
+                    snap.forEach(doc => {
+                        const u = doc.data();
+                        if (u.email) {
+                            users.push({
+                                uid: doc.id,
+                                email: u.email,
+                                name: u.displayName || u.name || 'Cliente'
+                            });
+                        }
+                    });
+                    return json(res, 200, { users });
+                } catch (err) {
+                    console.error('getUsersList error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 12. ACCIÓN: sendBulk (SOLO ADMIN) ---
+            if (action === 'sendBulk') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                const { recipients, subject, body } = req.body || {};
+                if (!recipients || !Array.isArray(recipients) || recipients.length === 0) {
+                    return json(res, 400, { error: 'Missing recipients' });
+                }
+                if (!subject || !body) return json(res, 400, { error: 'Missing subject or body' });
+                try {
+                    const resendKey = process.env.RESEND_API_KEY;
+                    const { Resend } = await import('resend');
+                    const resend = new Resend(resendKey);
+                    let sentCount = 0;
+                    for (const recipient of recipients) {
+                        if (!recipient.email) continue;
+                        try {
+                            const formattedHtml = body
+                                .replace(/{name}/g, recipient.name || 'Cliente')
+                                .replace(/{email}/g, recipient.email)
+                                .replace(/{happyscore}/g, recipient.happyscore || 0)
+                                .replace(/\n/g, '<br>');
+
+                            await resend.emails.send({
+                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                to: [recipient.email],
+                                subject: subject,
+                                html: `
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8f0f8;font-family:'Arial',sans-serif;color:#333;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f0f8;padding:40px 0;">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e0d0e0;border-radius:20px;overflow:hidden;max-width:560px;width:100%;">
+        <tr><td style="background:linear-gradient(135deg,#ff6b9d,#ff9d5c,#ffd45e);height:6px;"></td></tr>
+        <tr><td align="center" style="padding:32px 32px 16px;background:#1a0a1a;color:#fff;">
+          <div style="font-size:28px;">🍭</div>
+          <div style="font-size:20px;font-weight:900;margin-top:4px;">Happy Corner</div>
+        </td></tr>
+        <tr><td style="padding:32px;font-size:15px;line-height:1.7;">
+          ${formattedHtml}
+        </td></tr>
+        <tr><td style="padding:20px 32px;border-top:1px solid #eee;text-align:center;background:#fafafa;">
+          <p style="color:#999;font-size:12px;margin:0;">Happy Corner Cali · <a href="https://happycorner.top" style="color:#ff6b9d;text-decoration:none;">happycorner.top</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+                            });
+                            sentCount++;
+                        } catch (err) {
+                            console.error(`Failed to send to ${recipient.email}:`, err.message);
+                        }
+                    }
+                    return json(res, 200, { sent: sentCount, total: recipients.length });
+                } catch (err) {
+                    console.error('sendBulk error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 13. ACCIÓN: requestHappyCodeChange (USUARIO AUTENTICADO) ---
+            if (action === 'requestHappyCodeChange') {
+                const { newCode } = req.body || {};
+                if (!newCode || typeof newCode !== 'string') return json(res, 400, { error: 'Falta newCode.' });
+                const cleaned = newCode.trim().toUpperCase();
+                if (cleaned.length < 4 || cleaned.length > 12) {
+                    return json(res, 400, { error: 'El código debe tener entre 4 y 12 caracteres.' });
+                }
+                if (!/^[A-Z0-9_-]+$/.test(cleaned)) {
+                    return json(res, 400, { error: 'Solo letras, números, - y _' });
+                }
+                try {
+                    const existing = await db.collection('users').where('customerCode', '==', cleaned).limit(1).get();
+                    if (!existing.empty) return json(res, 409, { error: 'Ese código ya está en uso.' });
+
+                    const pendingCheck = await db.collection('happycode_requests')
+                        .where('uid', '==', decoded.uid)
+                        .where('status', '==', 'pending')
+                        .limit(1)
+                        .get();
+                    if (!pendingCheck.empty) {
+                        return json(res, 409, { error: 'Ya tienes una solicitud pendiente.' });
+                    }
+
+                    const userRef = db.collection('users').doc(decoded.uid);
+                    const userSnap = await userRef.get();
+                    if (!userSnap.exists) return json(res, 404, { error: 'Usuario no encontrado.' });
+                    const userData = userSnap.data();
+
+                    const reqRef = await db.collection('happycode_requests').add({
+                        uid: decoded.uid,
+                        userName: userData.displayName || userData.name || 'Usuario',
+                        userEmail: userData.email || '',
+                        currentCode: userData.customerCode || '(ninguno)',
+                        newCode: cleaned,
+                        status: 'pending',
+                        createdAt: new Date().toISOString()
+                    });
+
+                    try {
+                        const resendKey = process.env.RESEND_API_KEY;
+                        const { Resend } = await import('resend');
+                        const resend = new Resend(resendKey);
+                        await resend.emails.send({
+                            from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                            to: ['evan.l@happycorner.lol'],
+                            subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
+                            html: `
+                                <h2>Nueva solicitud de cambio de HappyCode</h2>
+                                <p><strong>Usuario:</strong> ${userData.displayName || userData.name}</p>
+                                <p><strong>Email:</strong> ${userData.email || '—'}</p>
+                                <p><strong>Código actual:</strong> <code>${userData.customerCode || '(ninguno)'}</code></p>
+                                <p><strong>Código solicitado:</strong> <code>${cleaned}</code></p>
+                                <p><a href="https://happycorner.top/admin-v2?tab=happycode" style="background:#ff6b9d;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;">Ver en Admin Panel →</a></p>
+                            `
+                        });
+                    } catch (emailErr) {
+                        console.warn('Admin email failed:', emailErr.message);
+                    }
+
+                    return json(res, 200, { ok: true, requestId: reqRef.id });
+                } catch (err) {
+                    console.error('requestHappyCodeChange error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 14. ACCIÓN: listHappyCodeRequests (SOLO ADMIN) ---
+            if (action === 'listHappyCodeRequests') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                try {
+                    const snap = await db.collection('happycode_requests').orderBy('createdAt', 'desc').limit(100).get();
+                    const requests = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    return json(res, 200, { requests });
+                } catch (err) {
+                    console.error('listHappyCodeRequests error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 15. ACCIÓN: approveHappyCodeChange (SOLO ADMIN) ---
+            if (action === 'approveHappyCodeChange') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                const { requestId } = req.body || {};
+                if (!requestId) return json(res, 400, { error: 'Falta requestId.' });
+                try {
+                    const reqSnap = await db.collection('happycode_requests').doc(requestId).get();
+                    if (!reqSnap.exists) return json(res, 404, { error: 'Solicitud no encontrada.' });
+                    const reqData = reqSnap.data();
+                    if (reqData.status !== 'pending') return json(res, 409, { error: 'La solicitud ya no está pendiente.' });
+
+                    const existing = await db.collection('users').where('customerCode', '==', reqData.newCode).limit(1).get();
+                    if (!existing.empty) {
+                        await db.collection('happycode_requests').doc(requestId).update({ status: 'rejected', rejectedReason: 'Código en uso', resolvedAt: new Date().toISOString() });
+                        return json(res, 409, { error: 'Código tomado por otro usuario — Rechazada automáticamente.' });
+                    }
+
+                    const batch = db.batch();
+                    batch.update(db.collection('users').doc(reqData.uid), {
+                        customerCode: reqData.newCode,
+                        updatedAt: new Date().toISOString()
+                    });
+                    const lookupRef = db.collection('customerCodes').doc(reqData.newCode);
+                    batch.set(lookupRef, { uid: reqData.uid });
+                    if (reqData.currentCode && reqData.currentCode !== '(ninguno)') {
+                        batch.delete(db.collection('customerCodes').doc(reqData.currentCode));
+                    }
+
+                    batch.update(db.collection('happycode_requests').doc(requestId), {
+                        status: 'approved',
+                        resolvedAt: new Date().toISOString()
+                    });
+                    await batch.commit();
+
+                    if (reqData.userEmail) {
+                        try {
+                            const resendKey = process.env.RESEND_API_KEY;
+                            const { Resend } = await import('resend');
+                            const resend = new Resend(resendKey);
+                            await resend.emails.send({
+                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                to: [reqData.userEmail],
+                                subject: '✅ Tu nuevo HappyCode fue aprobado',
+                                html: `
+                                    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
+                                        <h2 style="color:#ff6b9d;">¡Tu solicitud fue aprobada! 🎉</h2>
+                                        <p>Hola <strong>${reqData.userName}</strong>,</p>
+                                        <p>Tu solicitud de cambio de HappyCode fue aprobada.</p>
+                                        <p style="margin:20px 0;">
+                                            <strong>Tu nuevo código:</strong><br>
+                                            <span style="font-size:24px;font-weight:900;background:#f0e0ff;padding:8px 20px;border-radius:8px;letter-spacing:2px;">${reqData.newCode}</span>
+                                        </p>
+                                        <p>¡Ya puedes usarlo en tu próximo pedido!</p>
+                                        <a href="https://happycorner.top/mi-cuenta" style="display:inline-block;background:linear-gradient(135deg,#ff6b9d,#ff9d5c);color:#fff;font-weight:800;text-decoration:none;padding:12px 28px;border-radius:50px;margin-top:12px;">Ver mi cuenta →</a>
+                                        <hr style="margin-top:32px;border:none;border-top:1px solid #eee;">
+                                        <p style="font-size:12px;color:#999;">Happy Corner 🍭 · happycorner.top</p>
+                                    </div>
+                                `
+                            });
+                        } catch (emailErr) {
+                            console.warn('Approve email failed:', emailErr.message);
+                        }
+                    }
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('approveHappyCodeChange error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
+            // --- 16. ACCIÓN: rejectHappyCodeChange (SOLO ADMIN) ---
+            if (action === 'rejectHappyCodeChange') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'Acceso denegado.' });
+                const { requestId, reason } = req.body || {};
+                if (!requestId) return json(res, 400, { error: 'Falta requestId.' });
+                try {
+                    const reqSnap = await db.collection('happycode_requests').doc(requestId).get();
+                    if (!reqSnap.exists) return json(res, 404, { error: 'Solicitud no encontrada.' });
+                    const reqData = reqSnap.data();
+                    if (reqData.status !== 'pending') return json(res, 409, { error: 'La solicitud ya no está pendiente.' });
+
+                    await db.collection('happycode_requests').doc(requestId).update({
+                        status: 'rejected',
+                        rejectedReason: reason || 'No especificado',
+                        resolvedAt: new Date().toISOString()
+                    });
+
+                    if (reqData.userEmail) {
+                        try {
+                            const resendKey = process.env.RESEND_API_KEY;
+                            const { Resend } = await import('resend');
+                            const resend = new Resend(resendKey);
+                            await resend.emails.send({
+                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                to: [reqData.userEmail],
+                                subject: '❌ Tu solicitud de HappyCode no fue aprobada',
+                                html: `
+                                    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
+                                        <h2 style="color:#888;">Solicitud no aprobada</h2>
+                                        <p>Hola <strong>${reqData.userName}</strong>,</p>
+                                        <p>Revisamos tu solicitud de cambio de HappyCode a <strong>${reqData.newCode}</strong> y lamentablemente no pudimos procesarla en este momento.</p>
+                                        ${reason ? `<p><strong>Motivo:</strong> ${reason}</p>` : ''}
+                                        <p>Si tienes dudas, puedes escribirnos por WhatsApp.</p>
+                                        <hr style="margin-top:32px;border:none;border-top:1px solid #eee;">
+                                        <p style="font-size:12px;color:#999;">Happy Corner 🍭 · happycorner.top</p>
+                                    </div>
+                                `
+                            });
+                        } catch (emailErr) {
+                            console.warn('Rejection email failed:', emailErr.message);
+                        }
+                    }
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('rejectHappyCodeChange error:', err);
+                    return json(res, 500, { error: 'Internal server error' });
+                }
+            }
+
             return json(res, 400, { error: 'Acción no válida' });
 
         } catch (e) {
