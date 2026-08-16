@@ -1254,6 +1254,40 @@
         </div>
     </div>
 
+    <!-- REVIEW MODAL -->
+    <div class="mc-modal-overlay" id="review-modal">
+        <div class="mc-modal" style="max-width: 480px;">
+            <button class="mc-modal-close" onclick="document.getElementById('review-modal').classList.remove('active')">✕</button>
+            <div class="mc-modal-title">⭐ Deja tu Reseña</div>
+            <div class="mc-modal-subtitle">Cuéntanos sobre tu experiencia con el pedido <span id="review-modal-order-id" style="font-weight:700; color:var(--hp-pink);"></span></div>
+            
+            <form id="review-form" onsubmit="submitReview(event)" style="margin-top:16px;">
+                <input type="hidden" id="review-order-id">
+                
+                <!-- Star Rating -->
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:8px; text-transform:uppercase;">Calificación</label>
+                <div style="display:flex; gap:8px; font-size:28px; cursor:pointer; margin-bottom:16px;" id="star-rating-container">
+                    <span onclick="setRating(1)">☆</span>
+                    <span onclick="setRating(2)">☆</span>
+                    <span onclick="setRating(3)">☆</span>
+                    <span onclick="setRating(4)">☆</span>
+                    <span onclick="setRating(5)">☆</span>
+                </div>
+                <input type="hidden" id="review-rating" value="0">
+                
+                <!-- Title -->
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Título de la reseña</label>
+                <input type="text" id="review-title" class="mc-input" required placeholder="Ej: ¡Excelente servicio!" style="width:100%; box-sizing:border-box; margin-bottom:16px;">
+                
+                <!-- Content -->
+                <label style="display:block; font-size:12px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Comentarios</label>
+                <textarea id="review-content" class="mc-input" required placeholder="Cuéntanos más detalles del pedido... (mínimo 10 caracteres)" rows="4" style="width:100%; box-sizing:border-box; resize:vertical; margin-bottom:20px; font-family:inherit;"></textarea>
+                
+                <button type="submit" class="mc-btn-primary" style="width:100%;">Enviar Reseña 🍭</button>
+            </form>
+        </div>
+    </div>
+
     <!-- TOAST -->
     <div class="mc-toast" id="mc-toast"></div>
 
@@ -1495,6 +1529,9 @@
                     const o = d.data();
                     const fecha = o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' }) : '—';
                     const stepper = buildOrderStepper(o.status || 'pending');
+                    const reviewBtn = (o.status === 'completed') 
+                        ? `<button class="mc-btn-primary" style="margin-top: 10px; width: auto; align-self: flex-start; padding: 6px 12px; font-size: 12px;" onclick="openReviewModal('${o.orderId || d.id}')">⭐ Dejar Reseña</button>`
+                        : '';
                     container.innerHTML += `
                         <div class="order-item" style="flex-direction:column; align-items:stretch; gap:6px;">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -1505,6 +1542,7 @@
                                 <div style="font-weight:900; color:var(--hp-pink); font-size:15px;">${o.total || '—'}</div>
                             </div>
                             ${stepper}
+                            ${reviewBtn}
                         </div>`;
                 });
             });
@@ -2198,6 +2236,89 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Enviar Solicitud';
+            }
+        };
+
+        // ============================================================
+        // Reviews Handlers
+        // ============================================================
+        let currentRating = 0;
+        window.setRating = function(rating) {
+            currentRating = rating;
+            document.getElementById('review-rating').value = rating;
+            const stars = document.querySelectorAll('#star-rating-container span');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.textContent = '★';
+                    star.style.color = '#ffb800';
+                } else {
+                    star.textContent = '☆';
+                    star.style.color = 'var(--text-muted, #888)';
+                }
+            });
+        };
+
+        window.openReviewModal = function(orderId) {
+            document.getElementById('review-order-id').value = orderId;
+            document.getElementById('review-modal-order-id').textContent = orderId;
+            setRating(0);
+            document.getElementById('review-title').value = '';
+            document.getElementById('review-content').value = '';
+            document.getElementById('review-modal').classList.add('active');
+        };
+
+        window.submitReview = async function(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('review-order-id').value;
+            const rating = parseInt(document.getElementById('review-rating').value);
+            const title = document.getElementById('review-title').value.trim();
+            const content = document.getElementById('review-content').value.trim();
+            
+            if (!rating) {
+                hcAlert('Por favor selecciona una calificación de 1 a 5 estrellas.', 'warning');
+                return;
+            }
+            if (content.length < 10) {
+                hcAlert('La reseña debe tener al menos 10 caracteres.', 'warning');
+                return;
+            }
+            
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Enviando...';
+            
+            try {
+                const uid = auth.currentUser.uid;
+                const userSnap = await getDoc(doc(db, 'users', uid));
+                const userData = userSnap.exists() ? userSnap.data() : {};
+                const fullName = userData.name || userData.displayName || 'Cliente';
+                
+                const nameParts = fullName.trim().split(' ');
+                const firstName = nameParts[0] || 'Cliente';
+                const lastNameInitial = nameParts.length > 1 ? ' ' + nameParts[nameParts.length - 1][0] + '.' : '';
+                const anonDisplayName = firstName + lastNameInitial;
+                
+                await addDoc(collection(db, 'reviews'), {
+                    uid,
+                    userName: fullName,
+                    displayName: anonDisplayName,
+                    rating,
+                    title,
+                    content,
+                    orderIds: [orderId],
+                    verified: false,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                });
+                
+                hcAlert('✅ ¡Reseña enviada! Aparecerá públicamente una vez aprobada.', 'success');
+                document.getElementById('review-modal').classList.remove('active');
+            } catch (err) {
+                console.error('Error submitting review:', err);
+                hcAlert('Error al enviar la reseña: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Enviar Reseña 🍭';
             }
         };
 

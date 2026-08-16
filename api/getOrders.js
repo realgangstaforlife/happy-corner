@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { db } from './_lib/firebaseAdmin.js';
+import admin, { db } from './_lib/firebaseAdmin.js';
 import { requireAdmin } from './_lib/adminAuth.js';
 import { signToken } from './_lib/token.js';
 
@@ -37,6 +37,19 @@ export default async function handler(req, res) {
 
                 if (status === 'completed') {
                     updateData.completedAt = now;
+                    try {
+                        const orderSnap = await db.collection('orders').doc(orderId).get();
+                        if (orderSnap.exists) {
+                            const oData = orderSnap.data();
+                            if (oData.customerUID) {
+                                await db.collection('users').doc(oData.customerUID).update({
+                                    activeOrders: admin.firestore.FieldValue.increment(1)
+                                });
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error updating activeOrders on order completion:', err);
+                    }
                 }
 
                 await db.collection('orders').doc(orderId).update(updateData);
@@ -119,6 +132,12 @@ export default async function handler(req, res) {
                     updatedAt: new Date().toISOString(),
                     completedAt: null
                 });
+
+                if (pedidoData.customerUID) {
+                    await db.collection('users').doc(pedidoData.customerUID).update({
+                        activeOrders: admin.firestore.FieldValue.increment(1)
+                    }).catch(err => console.error('Error updating activeOrders on order creation:', err));
+                }
             } catch (e) {
                 console.error('Firestore orders save failed:', e);
             }

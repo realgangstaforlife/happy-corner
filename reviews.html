@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reseñas de Clientes | Happy Corner 🍭</title>
+    <meta name="description" content="Opiniones reales y verificadas de nuestros clientes sobre las pizzas, dulces y servicio de Happy Corner.">
+    <link rel="icon" href="happyfavicon.png" type="image/png">
+    
+    <!-- CSS and Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        .reviews-hero {
+            text-align: center;
+            padding: 60px 20px 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .reviews-hero h1 {
+            font-size: 40px;
+            font-weight: 900;
+            background: var(--hp-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+        }
+
+        .reviews-hero p {
+            color: var(--text-muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .reviews-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 20px 60px;
+        }
+
+        .review-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .review-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .review-stars {
+            color: #ffb800;
+            font-size: 20px;
+            display: flex;
+            gap: 2px;
+        }
+
+        .review-title {
+            font-weight: 800;
+            font-size: 17px;
+            color: var(--text-color);
+        }
+
+        .review-content {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .review-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 14px;
+            margin-top: 8px;
+        }
+
+        .review-author {
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--text-color);
+        }
+
+        .review-badge {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <a href="/" class="logo">
+            <img src="loguito.png" alt="HappyCorner" class="logo-img">
+        </a>
+        <nav class="nav-desktop">
+            <a href="/index">Inicio</a>
+            <a href="/catalogo">Catálogo</a>
+            <a href="/order">HappyOrder</a>
+            <a href="/track">Rastrear Pedido</a>
+        </nav>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+            <a href="/login.html" id="auth-icon-desktop"
+                style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <section class="reviews-hero">
+        <h1>Reseñas de Clientes</h1>
+        <p>¿Qué dicen de nosotros? Conoce las opiniones de nuestra comunidad sobre las pizzas, dulces y el servicio súper rápido de Happy Corner. Solo mostramos opiniones reales y verificadas de compras concretadas.</p>
+    </section>
+
+    <main>
+        <div class="reviews-grid" id="reviews-container">
+            <div class="empty-state">
+                <div class="empty-state-icon">🍭</div>
+                <div style="font-size: 15px;">Cargando opiniones reales...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase Script Setup -->
+    <script type="module">
+        import { initPromise, db, auth } from './firebase-auth.js';
+        import { collection, query, where, orderBy, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Night Mode toggler
+        let isDark = false;
+        window.toggleTheme = function () {
+            isDark = !isDark;
+            const themeBtn = document.getElementById('theme-icon');
+            if (isDark) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeBtn.innerText = '☀️';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeBtn.innerText = '🌙';
+            }
+        };
+
+        async function loadReviews() {
+            await initPromise;
+            const container = document.getElementById('reviews-container');
+            
+            try {
+                // Fetch approved reviews ordered by newest first
+                const q = query(
+                    collection(db, 'reviews'),
+                    where('status', '==', 'approved'),
+                    orderBy('createdAt', 'desc'),
+                    limit(12)
+                );
+                
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">⭐</div>
+                            <div style="font-size: 15px; font-weight:700;">¡Aún no hay reseñas!</div>
+                            <div style="font-size: 13px; margin-top: 6px;">Sé el primero en calificar tu pedido en Mi Cuenta.</div>
+                        </div>`;
+                    return;
+                }
+                
+                container.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const review = docSnap.data();
+                    
+                    // Render Stars
+                    let starsHtml = '';
+                    for (let i = 1; i <= 5; i++) {
+                        starsHtml += i <= review.rating ? '★' : '☆';
+                    }
+                    
+                    const badgeHtml = review.verified 
+                        ? `<div class="review-badge">✓ Compra verificada</div>` 
+                        : '';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'review-card';
+                    card.innerHTML = `
+                        <div class="review-stars">${starsHtml}</div>
+                        <div class="review-title">${review.title || 'Reseña'}</div>
+                        <div class="review-content">"${review.content}"</div>
+                        <div class="review-footer">
+                            <div class="review-author">- ${review.displayName || 'Anónimo'}</div>
+                            ${badgeHtml}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+                
+            } catch (err) {
+                console.error("Error loading reviews:", err);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <div style="font-size: 15px; color:#ff5252;">Error al cargar las reseñas</div>
+                        <div style="font-size: 13px; margin-top: 6px;">Intenta refrescar la página.</div>
+                    </div>`;
+            }
+        }
+
+        // Initialize theme and load reviews
+        const hour = new Date().getHours();
+        if (hour < 6 || hour >= 18) {
+            toggleTheme();
+        }
+        
+        loadReviews();
+    </script>
+    
+    <script src="/footer.js"></script>
+</body>
+
+</html>

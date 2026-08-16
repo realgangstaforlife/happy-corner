@@ -15,20 +15,42 @@ service cloud.firestore {
     // Users collection rules
     match /users/{uid} {
       allow read: if isOwner(uid) || isAdmin();
-allow create: if request.auth != null && request.auth.uid == uid &&
-              (!('role' in request.resource.data) || request.resource.data.role == 'user') &&
-              (!('activeDebt' in request.resource.data) || request.resource.data.activeDebt == 0) &&
-              (!('happyPoints' in request.resource.data) || request.resource.data.happyPoints == 0);
+      allow create: if request.auth != null && request.auth.uid == uid &&
+                    (!('role' in request.resource.data) || request.resource.data.role == 'user') &&
+                    (!('activeDebt' in request.resource.data) || request.resource.data.activeDebt == 0) &&
+                    (!('happyPoints' in request.resource.data) || request.resource.data.happyPoints == 0) &&
+                    (!('activeOrders' in request.resource.data) || request.resource.data.activeOrders == 0);
       
-      // Updates: owner can update, but cannot touch activeDebt, happyPoints, or role,
+      // Updates: owner can update, but cannot touch activeDebt, happyPoints, role, or activeOrders,
       // and customerCode is immutable once set. Admin has full rights.
       allow update: if isAdmin() || (
         isOwner(uid) &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activeDebt', 'happyPoints', 'role']) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['activeDebt', 'happyPoints', 'role', 'activeOrders']) &&
         (
           !('customerCode' in resource.data) ||
           request.resource.data.customerCode == resource.data.customerCode
         )
+      );
+    }
+
+    // reviews collection rules
+    match /reviews/{reviewId} {
+      // Public read for approved reviews, admin can read all
+      allow read: if (resource != null && resource.data.status == 'approved') || isAdmin();
+      // Authenticated create access if user has activeOrders > 0
+      allow create: if request.auth != null && 
+                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activeOrders > 0 &&
+                    request.resource.data.uid == request.auth.uid &&
+                    request.resource.data.status == 'pending' &&
+                    request.resource.data.rating >= 1 &&
+                    request.resource.data.rating <= 5 &&
+                    request.resource.data.content.size() >= 10;
+      // Allow update/delete by owner (only if status is pending) or admin
+      allow update, delete: if isAdmin() || (
+        request.auth != null && 
+        resource.data.uid == request.auth.uid && 
+        resource.data.status == 'pending' && 
+        (!('status' in request.resource.data) || request.resource.data.status == 'pending')
       );
     }
 

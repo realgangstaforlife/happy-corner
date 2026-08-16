@@ -501,6 +501,38 @@
 
 
                     localStorage.setItem('lastHappyOrder', JSON.stringify(lastHappyOrder));
+
+                    // Send order confirmation email
+                    if (payload.email) {
+                        try {
+                            const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                            const emailItems = cart.map(item => ({
+                                name: item.name,
+                                quantity: item.qty || 1,
+                                price: item.price
+                            }));
+                            const orderTotalNumber = Number(payload.total.replace(/[^0-9.-]+/g, '')) || 0;
+                            await fetch('/api/account?action=sendOrderConfirmationEmail', {
+                                method: 'POST',
+                                headers: { 
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    orderId: ref,
+                                    email: payload.email,
+                                    customerName: payload.nombre,
+                                    items: emailItems,
+                                    total: orderTotalNumber,
+                                    paymentMethod: payload.metodo_pago,
+                                    estimatedTime: "15 minutos aprox"
+                                })
+                            });
+                        } catch (emailErr) {
+                            console.error('Failed to trigger order confirmation email:', emailErr);
+                        }
+                    }
+
                     localStorage.removeItem('hc_cart');
                     window.location.href = '/confirmed';
                 } else {

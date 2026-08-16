@@ -248,6 +248,7 @@
               <a href="/track">📦 Rastrear Pedido</a>
               <a href="/mi-cuenta">👤 Mi Cuenta</a>
               <a href="/loyalty">⭐ Happy Passes</a>
+              <a href="/reviews">💬 Reseñas</a>
               <a href="/terminos">📄 Términos y Condiciones</a>
               <a href="/privacidad">🔒 Política de Privacidad</a>
             </div>

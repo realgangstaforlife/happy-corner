@@ -65,6 +65,14 @@
       "destination": "/loyalty.html"
     },
     {
+      "source": "/reviews",
+      "destination": "/reviews.html"
+    },
+    {
+      "source": "/reviews-admin",
+      "destination": "/reviews-admin.html"
+    },
+    {
       "source": "/wallet",
       "destination": "/wallet.html"
     },
