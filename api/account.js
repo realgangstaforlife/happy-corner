@@ -631,8 +631,8 @@ export default async function handler(req, res) {
                         const { Resend } = await import('resend');
                         const resend = new Resend(resendKey);
                         await resend.emails.send({
-                            from: 'Happy Corner <noreply@alertas.happycorner.top>',
-                            to: ['somos@happycorner.top'],
+                            from: 'Happy Corner <admin@alertas.happycorner.top>',
+                            to: ['happycorner.com@gmail.com'],
                             subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
                             html: getEmailTemplate(`
                                 <p style="margin:0 0 16px;">Hola Evan 👋</p>
@@ -806,8 +806,8 @@ export default async function handler(req, res) {
                 
                 try {
                     await resend.emails.send({
-                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
-                        to: ['somos@happycorner.top'],
+                        from: 'Happy Corner <admin@alertas.happycorner.top>',
+                        to: ['happycorner.com@gmail.com'],
                         subject: `Nueva Resena: ${rating} Estrellas de ${userName || 'Cliente'}`,
                         html: getEmailTemplate(emailContent, 'Moderacion de Resenas')
                     });
