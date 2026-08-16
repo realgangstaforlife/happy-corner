@@ -2028,22 +2028,15 @@
             const authEmail = currentUser?.email || currentUserData?.email || '';
             const emailInput = document.getElementById('edit-email-display');
             const emailNote = emailInput.nextElementSibling;
-            
             // If it's a dummy email, show it as empty to prompt the user
             const isDummy = authEmail.endsWith('@clientes.happycorner.top');
             emailInput.value = isDummy ? '' : authEmail;
             
-            if (!authEmail || isDummy) {
-                emailInput.readOnly = false;
-                emailInput.style.opacity = '1';
-                emailInput.style.cursor = 'text';
-                emailNote.textContent = '📧 Ingresa tu correo para poder firmar y recibir notificaciones.';
-            } else {
-                emailInput.readOnly = true;
-                emailInput.style.opacity = '0.55';
-                emailInput.style.cursor = 'not-allowed';
-                emailNote.textContent = '📧 El correo está vinculado a tu cuenta y no se puede cambiar aquí.';
-            }
+            // Allow user to edit their contact email
+            emailInput.readOnly = false;
+            emailInput.style.opacity = '1';
+            emailInput.style.cursor = 'text';
+            emailNote.textContent = '📧 Ingresa el correo electrónico donde recibirás tus recibos y notificaciones.';
         };
 
         window.saveProfile = async function () {
