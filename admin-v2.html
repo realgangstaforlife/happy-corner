@@ -1941,8 +1941,11 @@
                     <button class="dp-action-btn primary" style="background:var(--accent-green);" onclick="updateOrderStatus('${order.id}', 'completed')">✅ Marcar Entregado</button>
                     <button class="dp-action-btn danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">✕ Cancelar Pedido</button>
                 `;
-            } else if (order.status === 'completed') {
-                actionsHtml = `<div style="text-align:center; color:var(--accent-green); font-weight:700; font-size:13px; padding:8px;">✅ Pedido Completado</div>`;
+            } else if (order.status === 'completed' || order.status === 'refunded') {
+                actionsHtml = `
+                    <div style="text-align:center; color:var(--accent-green); font-weight:700; font-size:13px; padding:8px; margin-bottom:8px;">✅ Pedido Completado</div>
+                    <button class="dp-action-btn primary" style="background:var(--accent-purple);" onclick="openRefundModal('${order.id}')">💸 Reembolsar Ítems</button>
+                `;
             } else if (order.status === 'cancelled') {
                 actionsHtml = `<div style="text-align:center; color:var(--accent-red); font-weight:700; font-size:13px; padding:8px;">❌ Pedido Cancelado</div>`;
             }

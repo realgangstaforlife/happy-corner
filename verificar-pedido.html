@@ -149,17 +149,29 @@
             }
 
             try {
-                const docRef = doc(db, 'orders', orderId);
-                const docSnap = await getDoc(docRef);
+                let idToken = null;
+                if (currentUser) {
+                    idToken = await currentUser.getIdToken();
+                }
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    const isOwner = currentUser && (data.customerUID === currentUser.uid);
-                    const isAdmin = userRole === 'admin';
-                    const canSeeFullDetails = isOwner || isAdmin;
+                const headers = {};
+                if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
+
+                const response = await fetch(`/api/verifyOrder?orderId=${orderId}`, {
+                    method: 'GET',
+                    headers
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const canSeeFullDetails = !data.isRedacted;
                     showSuccess(data, orderId, canSeeFullDetails, currentUser);
-                } else {
+                } else if (response.status === 404) {
                     showError("Este código no existe en el sistema. El recibo podría ser falso.");
+                } else {
+                    const errData = await response.json().catch(() => ({}));
+                    console.error("Error from API:", errData);
+                    showError("Hubo un error al verificar tu pedido con el servidor.");
                 }
             } catch (error) {
                 console.error("Error al verificar:", error);
@@ -189,13 +201,15 @@
             };
             const statusStr = statusMap[data.status] || data.status;
 
-            // Client name: truncate to 1 letter and stars the rest if not owner/admin
-            const rawName = data.nombre || data.customerName || '';
-            const firstLetter = rawName.charAt(0) || 'N';
+            // Client name: if redacted, we use the server-provided length and firstLetter
+            const rawName = data.nombre || data.customerName || data.redactedName || '';
+            const firstLetter = data.isRedacted ? data.firstLetter : (rawName.charAt(0) || 'N');
+            const nameLen = data.isRedacted ? data.nameLength : rawName.length;
+            const asterisks = '*'.repeat(Math.max(3, nameLen - 1)); // At least 3 asterisks
 
             const displayNameHtml = canSeeFullDetails
                 ? (rawName || 'N/A')
-                : `${firstLetter.toUpperCase()}<span style="filter: blur(4px); user-select: none;">${rawName.substring(1) || 'xxxx'}</span>`;
+                : `${firstLetter.toUpperCase()}${asterisks}`;
 
             let detailsHtml = `
                 <div class="detail-row">

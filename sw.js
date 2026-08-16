@@ -37,10 +37,12 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip API calls and external services
-  if (event.request.url.includes('/api/') || 
-      event.request.url.includes('firestore.googleapis.com') ||
-      event.request.url.includes('identitytoolkit.googleapis.com')) {
+  // Skip API calls and external services (including fonts and avatars)
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+  
+  if (event.request.url.includes('/api/')) {
     return;
   }
 

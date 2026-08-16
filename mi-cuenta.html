@@ -1918,16 +1918,18 @@
             btn.disabled = true;
             btn.textContent = 'Enviando...';
 
-            const email = currentUser.email || (currentUserData && currentUserData.email);
-            if (!email) {
+            let email = currentUser.email || (currentUserData && currentUserData.email) || '';
+            const isDummy = email.endsWith('@clientes.happycorner.top');
+            
+            if (!email || isDummy) {
                 closeContractModal();
-                showToast('❌ No tienes correo registrado');
+                showToast('❌ No tienes un correo real registrado');
                 setTimeout(() => {
-                    document.getElementById('edit-profile-modal').classList.add('active');
+                    openEditModal();
                     const emailInput = document.getElementById('edit-email-display');
                     emailInput.focus();
-                    hcAlert('Por favor, ingresa tu correo electrónico aquí y guarda los cambios para poder firmar el contrato.', 'info');
-                }, 1000);
+                    hcAlert('Por favor, ingresa tu correo electrónico real aquí y guarda los cambios para poder firmar el contrato.', 'info');
+                }, 500);
                 btn.disabled = false; btn.textContent = '📧 Enviar PIN por correo';
                 return;
             }
@@ -2022,12 +2024,16 @@
                 document.getElementById('edit-curso').value = currentUserData.grade || '';
                 document.getElementById('edit-marketing').checked = currentUserData.marketingOptIn !== false;
             }
-            // Always show the auth email as read-only, unless it is empty
+            // Always show the auth email as read-only, unless it is empty or a dummy email
             const authEmail = currentUser?.email || currentUserData?.email || '';
             const emailInput = document.getElementById('edit-email-display');
             const emailNote = emailInput.nextElementSibling;
-            emailInput.value = authEmail;
-            if (!authEmail) {
+            
+            // If it's a dummy email, show it as empty to prompt the user
+            const isDummy = authEmail.endsWith('@clientes.happycorner.top');
+            emailInput.value = isDummy ? '' : authEmail;
+            
+            if (!authEmail || isDummy) {
                 emailInput.readOnly = false;
                 emailInput.style.opacity = '1';
                 emailInput.style.cursor = 'text';
