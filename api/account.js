@@ -632,7 +632,7 @@ export default async function handler(req, res) {
                         const resend = new Resend(resendKey);
                         await resend.emails.send({
                             from: 'Happy Corner <noreply@alertas.happycorner.top>',
-                            to: ['happycorner@happycorner.top'],
+                            to: ['somos@happycorner.top'],
                             subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
                             html: getEmailTemplate(`
                                 <p style="margin:0 0 16px;">Hola Evan 👋</p>
@@ -660,7 +660,7 @@ export default async function handler(req, res) {
 
             // --- ACCIÓN: sendOrderConfirmationEmail (USUARIO AUTENTICADO — no requiere ser admin) ---
             if (action === 'sendOrderConfirmationEmail' || action === 'send-order-confirmation') {
-                const { orderId, email, customerName, items, total, paymentMethod, estimatedTime } = req.body || {};
+                const { orderId, email, customerName, items, total, paymentMethod } = req.body || {};
                 
                 if (!orderId || !email || !items || !total) {
                     return json(res, 400, { error: 'Faltan campos obligatorios para la confirmacion de la orden' });
@@ -705,9 +705,6 @@ export default async function handler(req, res) {
                     </table>
                     
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin:20px 0; font-size:14px; line-height:1.6;">
-                        <p style="margin:0 0 8px 0; color:#ccc;">
-                          <strong>Tiempo estimado:</strong> ${estimatedTime || '15 minutos aprox'}
-                        </p>
                         <p style="margin:0; color:#ccc;">
                           <strong>Metodo de pago:</strong> ${paymentMethod || 'No especificado'}
                         </p>
@@ -779,6 +776,45 @@ export default async function handler(req, res) {
                 } catch (err) {
                     console.error('Delivery email error:', err);
                     return json(res, 500, { error: 'Failed to send delivery email' });
+                }
+            }
+
+            // --- ACCIÓN: notifyAdminReview (USUARIO AUTENTICADO) ---
+            if (action === 'notifyAdminReview' || action === 'notify-admin-review') {
+                const { userName, rating, content } = req.body || {};
+                
+                const emailContent = `
+                    <p style="margin:0 0 20px;">Hola Equipo,</p>
+                    <p style="margin:0 0 16px;">Se ha publicado una nueva resena que requiere moderacion.</p>
+                    
+                    <div style="background:rgba(255,82,153,0.08); border:1px solid rgba(255,82,153,0.2); padding:15px; border-radius:12px; margin:20px 0;">
+                        <p style="margin:0 0 5px; color:#ccc;"><strong>Cliente:</strong> ${userName || 'Anonimo'}</p>
+                        <p style="margin:0 0 5px; color:#ccc;"><strong>Calificacion:</strong> ${rating || '?'} Estrellas</p>
+                        <p style="margin:0; color:#ccc;"><strong>Comentario:</strong> <em>"${content || 'Sin comentario'}"</em></p>
+                    </div>
+                    
+                    <div style="text-align:center; margin:30px 0 10px;">
+                      <a href="https://happycorner.top/admin-v2?tab=reviews" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299); color:#fff; padding:14px 32px; border-radius:14px; text-decoration:none; font-weight:800; font-size:14px;">Ir al Panel Admin</a>
+                    </div>
+                `;
+                
+                const resendKey = process.env.RESEND_API_KEY;
+                if (!resendKey) return json(res, 500, { error: 'Email service not configured' });
+                
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
+                
+                try {
+                    await resend.emails.send({
+                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        to: ['somos@happycorner.top'],
+                        subject: `Nueva Resena: ${rating} Estrellas de ${userName || 'Cliente'}`,
+                        html: getEmailTemplate(emailContent, 'Moderacion de Resenas')
+                    });
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('Admin review notification error:', err);
+                    return json(res, 500, { error: 'Failed to send admin notification' });
                 }
             }
 

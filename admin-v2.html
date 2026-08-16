@@ -697,6 +697,7 @@
             <button class="sidebar-item" id="snav-marketing" onclick="switchSidebar('marketing'); loadMarketingStats();"><span class="s-icon">📧</span> Marketing</button>
 
             <button class="sidebar-item" id="snav-happycode" onclick="switchSidebar('happycode'); loadHappyCodeRequests();"><span class="s-icon">🎫</span> HappyCódigos</button>
+            <button class="sidebar-item" id="snav-reviews" onclick="switchSidebar('reviews'); loadAllReviewsAdmin();"><span class="s-icon">⭐</span> Reseñas</button>
             <button class="sidebar-item" id="snav-config" onclick="switchSidebar('config')"><span class="s-icon">⚙️</span> Configuración</button>
             <div class="sidebar-footer">
                 <span style="font-size:11px; color:var(--text-muted);">Happy Corner Admin v2</span>
@@ -1080,6 +1081,7 @@
                             <option value="promotion">Promoción / Oferta especial 🎁</option>
                             <option value="announcement">Anuncio / Novedades 📢</option>
                             <option value="reminder">Recordatorio de compra ⏰</option>
+                            <option value="review">Solicitar Reseña ⭐</option>
                         </select>
 
                         <!-- Subject -->
@@ -1132,6 +1134,34 @@
                         </thead>
                         <tbody id="happycode-requests-tbody">
                             <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">Cargando solicitudes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: REVIEWS -->
+            <div id="tab-reviews" class="tab-content">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h2 style="font-weight:900; margin-bottom:4px;">⭐ Reseñas de Clientes</h2>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;">Verifica la autenticidad de las reseñas, apruébalas o recházalas para mostrarlas en la página pública.</p>
+                    </div>
+                    <button class="admin-btn" style="background:rgba(255,255,255,0.06); border:1px solid var(--border-color);" onclick="loadAllReviewsAdmin()">🔄 Actualizar</button>
+                </div>
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; overflow:hidden;">
+                    <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border-color); color:var(--text-muted); text-transform:uppercase; font-size:11px;">
+                                <th style="padding:14px 16px;">Cliente</th>
+                                <th style="padding:14px 8px;">Calificación</th>
+                                <th style="padding:14px 8px;">Reseña</th>
+                                <th style="padding:14px 8px;">Verificación</th>
+                                <th style="padding:14px 8px;">Estado</th>
+                                <th style="padding:14px 16px; text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviews-table-body">
+                            <tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">Cargando reseñas...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -2331,21 +2361,30 @@
 
                 await updateDoc(doc(db, 'orders', orderId), updateData);
 
-                // Sync to Telegram
-                try {
-                    // Send auth token if we require it for requireAdmin, though requireAdmin might check cookies or headers.
-                    // Assuming token is available as await auth.currentUser.getIdToken()
-                    const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
-                    await fetch('/api/syncTelegramStatus', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ orderId, newStatus: status })
-                    });
-                } catch (tgErr) {
-                    console.error("Telegram sync failed:", tgErr);
+                if (status === 'completed') {
+                    try {
+                        const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                        const orderSnap = await getDoc(doc(db, 'orders', orderId));
+                        if (orderSnap.exists()) {
+                            const orderData = orderSnap.data();
+                            if (orderData.customerEmail) {
+                                await fetch('/api/account?action=sendDeliveryEmail', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${token}`
+                                    },
+                                    body: JSON.stringify({ 
+                                        orderId, 
+                                        email: orderData.customerEmail,
+                                        customerName: orderData.customerName || orderData.nombre || 'Cliente'
+                                    })
+                                });
+                            }
+                        }
+                    } catch (emailErr) {
+                        console.error("Delivery email failed:", emailErr);
+                    }
                 }
 
                 hcAlert(`Pedido ${orderId} actualizado con éxito.`, 'success');
@@ -3119,6 +3158,10 @@
                 reminder: {
                     subject: '¿Qué tal un snack hoy? ⏰',
                     body: `Hola {name},\n\nHace unos días que no te vemos en Happy Corner. Tu HappyScore es de {happyscore} puntos.\n\n¡Ven a visitarnos o haz tu preorder hoy mismo!\n\nHappy Corner Cali`
+                },
+                review: {
+                    subject: '¿Cómo fue tu experiencia en Happy Corner? ⭐',
+                    body: `Hola {name},\n\nEsperamos que hayas disfrutado tu pedido.\n\nTu opinión es muy importante para nosotros. ¿Podrías tomarte un minuto para dejarnos una reseña en tu cuenta?\n\nSolo ingresa a: https://happycorner.top/mi-cuenta y cuéntanos qué tal estuvo.\n\n¡Gracias por tu apoyo!\n\nHappy Corner Cali`
                 }
             };
 

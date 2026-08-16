@@ -2311,6 +2311,21 @@
                     createdAt: new Date().toISOString()
                 });
                 
+                // Notify admin via email
+                try {
+                    const token = await auth.currentUser.getIdToken();
+                    await fetch('/api/account?action=notifyAdminReview', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ userName: anonDisplayName, rating, content })
+                    });
+                } catch (emailErr) {
+                    console.error('Failed to notify admin:', emailErr);
+                }
+                
                 hcAlert('✅ ¡Reseña enviada! Aparecerá públicamente una vez aprobada.', 'success');
                 document.getElementById('review-modal').classList.remove('active');
             } catch (err) {
