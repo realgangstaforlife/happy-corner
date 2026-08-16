@@ -7,6 +7,11 @@
     <title>Happy Corner - Verificar Pedido</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1b24">
+    <link rel="apple-touch-icon" href="/loguito.png">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
@@ -190,7 +195,7 @@
 
             const displayNameHtml = canSeeFullDetails
                 ? (rawName || 'N/A')
-                : `${firstLetter.toUpperCase()}***`;
+                : `${firstLetter.toUpperCase()}<span style="filter: blur(4px); user-select: none;">${rawName.substring(1) || 'xxxx'}</span>`;
 
             let detailsHtml = `
                 <div class="detail-row">
@@ -224,7 +229,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Total</span>
-                    <span class="detail-value">$ ${(data.total || 0).toLocaleString('es-CO')}</span>
+                    <span class="detail-value">${(data.total || 0).toLocaleString('es-CO')}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Método de Pago</span>
@@ -272,6 +277,16 @@
         }
 
         initPromise.then(init);
+    </script>
+    <script>
+        // Register PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 

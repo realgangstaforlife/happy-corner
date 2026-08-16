@@ -7,6 +7,12 @@
     <meta name="robots" content="noindex, nofollow">
     <title>Mi Cuenta | Happy Corner</title>
     <link rel="icon" href="/happyfavicon.png">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1b24">
+    <link rel="apple-touch-icon" href="/loguito.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="/notifications.js"></script>
@@ -1913,7 +1919,18 @@
             btn.textContent = 'Enviando...';
 
             const email = currentUser.email || (currentUserData && currentUserData.email);
-            if (!email) { showToast('❌ No tienes correo registrado'); btn.disabled = false; btn.textContent = '📧 Enviar PIN por correo'; return; }
+            if (!email) {
+                closeContractModal();
+                showToast('❌ No tienes correo registrado');
+                setTimeout(() => {
+                    document.getElementById('edit-profile-modal').classList.add('active');
+                    const emailInput = document.getElementById('edit-email-display');
+                    emailInput.focus();
+                    hcAlert('Por favor, ingresa tu correo electrónico aquí y guarda los cambios para poder firmar el contrato.', 'info');
+                }, 1000);
+                btn.disabled = false; btn.textContent = '📧 Enviar PIN por correo';
+                return;
+            }
 
             try {
                 const idToken = await currentUser.getIdToken();
@@ -2361,5 +2378,16 @@
             </div>
         </div>
     </div>
+    
+    <script>
+        // Register PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
+    </script>
 </body>
 </html>

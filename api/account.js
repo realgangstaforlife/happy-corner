@@ -282,7 +282,7 @@ export default async function handler(req, res) {
                     `;
 
                         await resend.emails.send({
-                            from: 'Seguridad Happy Corner <pin@alertas.happycorner.top>',
+                            from: 'Seguridad Happy Corner <pin@email.happycorner.top>',
                             reply_to: 'happycorner.com@gmail.com',
                             to: [cleanEmail],
                             subject: '🔒 Restablecer tu contraseña en Happy Corner',
@@ -306,7 +306,7 @@ export default async function handler(req, res) {
                     const { Resend } = await import('resend');
                     const resend = new Resend(resendKey);
                     await resend.emails.send({
-                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        from: 'Happy Corner <noreply@email.happycorner.top>',
                         reply_to: 'happycorner.com@gmail.com',
                         to: [email.trim()],
                         subject: 'Bienvenido a Happy Corner',
@@ -392,7 +392,7 @@ export default async function handler(req, res) {
                 await pinRef.set({ hashedPin, expiresAt, attempts: 0, createdAt: new Date().toISOString() });
 
                 await resend.emails.send({
-                    from: 'Happy Corner Seguridad <pin@alertas.happycorner.top>',
+                    from: 'Happy Corner Seguridad <pin@email.happycorner.top>',
                     reply_to: 'happycorner.com@gmail.com',
                     to: [email],
                     subject: '⚠️ PIN para eliminar tu cuenta en Happy Corner',
@@ -533,7 +533,7 @@ export default async function handler(req, res) {
                             const resend = new Resend(resendKey);
                             const userName = targetData.name || targetData.displayName || 'Cliente';
                             await resend.emails.send({
-                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                from: 'Happy Corner <noreply@email.happycorner.top>',
                                 reply_to: 'happycorner.com@gmail.com',
                                 to: [targetData.email],
                                 subject: 'Tu cuenta en Happy Corner ha sido eliminada',
@@ -638,7 +638,7 @@ export default async function handler(req, res) {
                         const { Resend } = await import('resend');
                         const resend = new Resend(resendKey);
                         await resend.emails.send({
-                            from: 'Happy Corner <admin@alertas.happycorner.top>',
+                            from: 'Happy Corner <admin@email.happycorner.top>',
                             reply_to: 'happycorner.com@gmail.com',
                             to: ['happycorner.com@gmail.com'],
                             subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
@@ -731,7 +731,7 @@ export default async function handler(req, res) {
                 
                 try {
                     await resend.emails.send({
-                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        from: 'Happy Corner <noreply@email.happycorner.top>',
                         reply_to: 'happycorner.com@gmail.com',
                         to: email,
                         subject: `Pedido confirmado ${orderId} - ${customerName}`,
@@ -776,7 +776,7 @@ export default async function handler(req, res) {
                 
                 try {
                     await resend.emails.send({
-                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        from: 'Happy Corner <noreply@email.happycorner.top>',
                         reply_to: 'happycorner.com@gmail.com',
                         to: email,
                         subject: `Pedido entregado ${orderId} - ${customerName}`,
@@ -816,7 +816,7 @@ export default async function handler(req, res) {
                 
                 try {
                     await resend.emails.send({
-                        from: 'Happy Corner <admin@alertas.happycorner.top>',
+                        from: 'Happy Corner <admin@email.happycorner.top>',
                         reply_to: 'happycorner.com@gmail.com',
                         to: ['happycorner.com@gmail.com'],
                         subject: `⭐ Nueva Reseña Pendiente: ${rating} estrellas de ${userName || 'Cliente'}`,
@@ -938,7 +938,7 @@ export default async function handler(req, res) {
                             subject
                         );
                         return resend.emails.send({
-                            from: 'Happy Corner <info@alertas.happycorner.top>',
+                            from: 'Happy Corner <info@email.happycorner.top>',
                             reply_to: 'happycorner.com@gmail.com',
                             to: [recipient.email.trim()],
                             subject: subject,
@@ -957,11 +957,12 @@ export default async function handler(req, res) {
             // --- 4. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
             if (action === 'adminCreateClient') {
                 const { nombre, email, telefono, customerCode, password } = req.body;
-                if (!nombre || !email || !telefono) {
-                    return json(res, 400, { error: 'Nombre, correo y teléfono son obligatorios.' });
+                if (!nombre || !telefono) {
+                    return json(res, 400, { error: 'Nombre y teléfono son obligatorios.' });
                 }
 
-                const cleanEmail = email.trim().toLowerCase();
+                // If email is missing, generate a dummy one so Auth works
+                const cleanEmail = email ? email.trim().toLowerCase() : `user_${Math.random().toString(36).substr(2,8)}@clientes.happycorner.top`;
                 const cleanPhone = telefono.replace(/\D/g, '');
                 const cleanCode = customerCode ? customerCode.trim().toUpperCase() : null;
 

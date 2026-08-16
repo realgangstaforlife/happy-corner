@@ -9,6 +9,12 @@
     <meta name="description"
         content="Happy Corner: la tienda de snacks, dulces, pizzas y combos favorita de Cali. Pide en línea y recibe en tu campus. ¡Puntos y recompensas en cada compra!">
     <link rel="canonical" href="https://happycorner.top/">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1b24">
+    <link rel="apple-touch-icon" href="/loguito.png">
+    
     <meta name="robots" content="index, follow">
     <meta property="og:title" content="Happy Corner | Dulces, Snacks y Combos">
     <meta property="og:description"
@@ -503,6 +509,15 @@
             }
         }
         window.addEventListener('DOMContentLoaded', initIndex);
+
+        // Register PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 

@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Happy Corner | Admin v2</title>
     <link rel="icon" type="image/png" href="/happyfavicon.png">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a1b24">
+    <link rel="apple-touch-icon" href="/loguito.png">
 
     <!-- Google Fonts & Styles -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap"
@@ -1441,8 +1446,8 @@
                     <input type="text" id="create-name" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: John Doe" required>
                 </div>
                 <div>
-                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">CORREO ELECTRÓNICO (Obligatorio)</label>
-                    <input type="email" id="create-email" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: john@example.com" required>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">CORREO ELECTRÓNICO (Opcional)</label>
+                    <input type="email" id="create-email" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: john@example.com">
                 </div>
                 <div>
                     <label style="font-size:12px; color:var(--text-muted); font-weight:700;">TELÉFONO / WHATSAPP (Obligatorio)</label>
@@ -2321,6 +2326,10 @@
                         <button class="admin-btn" style="padding: 6px 12px; font-size: 11px; background: var(--accent-green);" onclick="updateOrderStatus('${o.id}', 'completed')">✓ Entregar</button>
                         <button class="admin-btn" style="padding: 6px 12px; font-size: 11px; background: var(--accent-red); margin-left: 6px;" onclick="updateOrderStatus('${o.id}', 'cancelled')">✕ Cancelar</button>
                     `;
+                } else if (o.status === 'completed' || o.status === 'refunded') {
+                    actionsHTML = `
+                        <button class="admin-btn" style="padding: 6px 12px; font-size: 11px; background: var(--accent-purple);" onclick="openRefundModal('${o.id}')">💸 Reembolsar</button>
+                    `;
                 } else {
                     actionsHTML = `<span style="font-size: 11px; color: var(--text-muted);">Sin acciones</span>`;
                 }
@@ -2347,6 +2356,80 @@
                 tableBody.appendChild(row);
             });
         }
+
+        window.openRefundModal = async function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            let itemsHtml = order.items.map((it, idx) => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity}x ${it.name} ($${(it.price * it.quantity).toLocaleString()})</label>
+                </div>
+            `).join('');
+
+            const modalHtml = `
+            <div class="admin-modal-overlay active" id="refund-modal">
+                <div class="admin-modal" style="max-width:400px;">
+                    <button class="modal-close" onclick="document.getElementById('refund-modal').remove()">✕</button>
+                    <h2 style="font-weight:900; margin-bottom:12px;">💸 Reembolsar Pedido ${order.id}</h2>
+                    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Selecciona los ítems a reembolsar:</p>
+                    <div style="margin-bottom:20px; max-height:200px; overflow-y:auto; border:1px solid var(--border-color); padding:10px; border-radius:12px;">
+                        ${itemsHtml}
+                    </div>
+                    <button class="admin-btn" style="background:var(--accent-red);" onclick="submitRefund('${order.id}')">Confirmar Reembolso</button>
+                </div>
+            </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            window.currentRefundOrder = order;
+        };
+
+        window.submitRefund = async function(orderId) {
+            const order = window.currentRefundOrder;
+            if (!order) return;
+            const checkboxes = document.querySelectorAll('[id^="refund-item-"]');
+            let refundTotal = 0;
+            let itemsToRefund = [];
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    const idx = parseInt(cb.value);
+                    const item = order.items[idx];
+                    refundTotal += (item.price * item.quantity);
+                    itemsToRefund.push(item);
+                }
+            });
+
+            if (itemsToRefund.length === 0) {
+                hcAlert('Selecciona al menos un ítem para reembolsar.', 'warning');
+                return;
+            }
+
+            if (!confirm(`¿Estás seguro de reembolsar $${refundTotal.toLocaleString()}?`)) return;
+
+            try {
+                if (order.customerUID) {
+                    const desc = `Reembolso pedido ${order.id} (${itemsToRefund.map(i=>i.name).join(', ')})`;
+                    await applyLedgerMovement(order.customerUID, 'refund', -refundTotal, desc);
+                }
+                
+                await updateDoc(doc(db, 'orders', order.id), {
+                    status: 'refunded',
+                    refundAmount: refundTotal,
+                    updatedAt: new Date().toISOString()
+                });
+
+                hcAlert('✅ Reembolso procesado con éxito.', 'success');
+                document.getElementById('refund-modal').remove();
+                
+                // Refresh local status for UI
+                order.status = 'refunded';
+                if (window.renderOrdersTable) renderOrdersTable();
+            } catch (err) {
+                console.error(err);
+                hcAlert('Error procesando reembolso: ' + err.message, 'error');
+            }
+        };
 
         window.updateOrderStatus = async function (orderId, status) {
             try {
@@ -4447,8 +4530,8 @@
             const accessType = document.querySelector('input[name="access-type"]:checked').value;
             const password = accessType === 'manual' ? document.getElementById('create-password').value : '';
 
-            if (!nombre || !email || !telefono) {
-                hcAlert('Nombre, correo y teléfono son obligatorios.', 'warning');
+            if (!nombre || !telefono) {
+                hcAlert('Nombre y teléfono son obligatorios.', 'warning');
                 return;
             }
             if (accessType === 'manual' && password.length < 6) {
@@ -4558,6 +4641,14 @@
             }
         };
 
+        // Register PWA Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('SW registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 

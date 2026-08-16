@@ -1,0 +1,21 @@
+{
+  "name": "Happy Corner",
+  "short_name": "Happy Corner",
+  "description": "Tu tienda favorita de snacks y Robux en SENA Cali.",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "background_color": "#0b0c10",
+  "theme_color": "#1a1b24",
+  "icons": [
+    {
+      "src": "/loguito.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/loguito.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
