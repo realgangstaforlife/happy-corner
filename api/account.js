@@ -25,6 +25,9 @@ function getEmailTemplate(content, title = 'Happy Corner') {
         <tr>
           <td style="padding:32px;font-family:'Outfit',Arial,sans-serif;color:#ccc;font-size:15px;line-height:1.7;">
             ${content}
+            <div style="text-align:center;margin:30px 0 10px;">
+              <a href="https://happycorner.top" style="display:inline-block;background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:14px 32px;border-radius:14px;">Visitar Happy Corner</a>
+            </div>
           </td>
         </tr>
         <tr>
@@ -279,7 +282,8 @@ export default async function handler(req, res) {
                     `;
 
                         await resend.emails.send({
-                            from: 'Seguridad Happy Corner <seguridad@alertas.happycorner.top>',
+                            from: 'Seguridad Happy Corner <pin@alertas.happycorner.top>',
+                            reply_to: 'happycorner.com@gmail.com',
                             to: [cleanEmail],
                             subject: '🔒 Restablecer tu contraseña en Happy Corner',
                             html: emailHtml
@@ -303,6 +307,7 @@ export default async function handler(req, res) {
                     const resend = new Resend(resendKey);
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        reply_to: 'happycorner.com@gmail.com',
                         to: [email.trim()],
                         subject: 'Bienvenido a Happy Corner',
                         html: getEmailTemplate(`
@@ -387,7 +392,8 @@ export default async function handler(req, res) {
                 await pinRef.set({ hashedPin, expiresAt, attempts: 0, createdAt: new Date().toISOString() });
 
                 await resend.emails.send({
-                    from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                    from: 'Happy Corner Seguridad <pin@alertas.happycorner.top>',
+                    reply_to: 'happycorner.com@gmail.com',
                     to: [email],
                     subject: '⚠️ PIN para eliminar tu cuenta en Happy Corner',
                     html: `
@@ -527,7 +533,8 @@ export default async function handler(req, res) {
                             const resend = new Resend(resendKey);
                             const userName = targetData.name || targetData.displayName || 'Cliente';
                             await resend.emails.send({
-                                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                reply_to: 'happycorner.com@gmail.com',
                                 to: [targetData.email],
                                 subject: 'Tu cuenta en Happy Corner ha sido eliminada',
                                 html: `<!DOCTYPE html>
@@ -632,6 +639,7 @@ export default async function handler(req, res) {
                         const resend = new Resend(resendKey);
                         await resend.emails.send({
                             from: 'Happy Corner <admin@alertas.happycorner.top>',
+                            reply_to: 'happycorner.com@gmail.com',
                             to: ['happycorner.com@gmail.com'],
                             subject: `🎫 Solicitud de HappyCode: ${userData.displayName || userData.name}`,
                             html: getEmailTemplate(`
@@ -724,6 +732,7 @@ export default async function handler(req, res) {
                 try {
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        reply_to: 'happycorner.com@gmail.com',
                         to: email,
                         subject: `Pedido confirmado ${orderId} - ${customerName}`,
                         html: getEmailTemplate(emailContent, 'Confirmacion de Pedido')
@@ -768,6 +777,7 @@ export default async function handler(req, res) {
                 try {
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        reply_to: 'happycorner.com@gmail.com',
                         to: email,
                         subject: `Pedido entregado ${orderId} - ${customerName}`,
                         html: getEmailTemplate(emailContent, 'Entrega de Pedido')
@@ -807,9 +817,10 @@ export default async function handler(req, res) {
                 try {
                     await resend.emails.send({
                         from: 'Happy Corner <admin@alertas.happycorner.top>',
+                        reply_to: 'happycorner.com@gmail.com',
                         to: ['happycorner.com@gmail.com'],
-                        subject: `Nueva Resena: ${rating} Estrellas de ${userName || 'Cliente'}`,
-                        html: getEmailTemplate(emailContent, 'Moderacion de Resenas')
+                        subject: `⭐ Nueva Reseña Pendiente: ${rating} estrellas de ${userName || 'Cliente'}`,
+                        html: getEmailTemplate(emailContent, 'Moderacion de Reseñas')
                     });
                     return json(res, 200, { ok: true });
                 } catch (err) {
@@ -927,7 +938,8 @@ export default async function handler(req, res) {
                             subject
                         );
                         return resend.emails.send({
-                            from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                            from: 'Happy Corner <info@alertas.happycorner.top>',
+                            reply_to: 'happycorner.com@gmail.com',
                             to: [recipient.email.trim()],
                             subject: subject,
                             html: emailHtml
