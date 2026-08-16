@@ -184,14 +184,13 @@
             };
             const statusStr = statusMap[data.status] || data.status;
 
-            // Client name: truncate to 1 letter and blur the rest if not owner/admin
+            // Client name: truncate to 1 letter and stars the rest if not owner/admin
             const rawName = data.nombre || data.customerName || '';
             const firstLetter = rawName.charAt(0) || 'N';
-            const restOfName = rawName.length > 1 ? rawName.substring(1) : '/A';
 
             const displayNameHtml = canSeeFullDetails
                 ? (rawName || 'N/A')
-                : `${firstLetter.toUpperCase()}<span style="filter: blur(4px); user-select: none;">${restOfName}</span>`;
+                : `${firstLetter.toUpperCase()}***`;
 
             let detailsHtml = `
                 <div class="detail-row">
@@ -225,7 +224,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Total</span>
-                    <span class="detail-value">$${(data.total || 0).toLocaleString('es-CO')}</span>
+                    <span class="detail-value">$ ${(data.total || 0).toLocaleString('es-CO')}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Método de Pago</span>
