@@ -333,6 +333,63 @@ export default async function handler(req, res) {
                 }
             }
 
+            // --- 17. ACCIÓN: verifyOrder (GET, VERIFICACIÓN PÚBLICA / PRIVADA) ---
+            if (action === 'verifyOrder') {
+                const orderId = req.query.orderId;
+                if (!orderId) return json(res, 400, { error: 'Missing orderId' });
+
+                let isOwnerOrAdmin = false;
+                const authHeader = req.headers.authorization || req.headers.Authorization;
+                let callerUid = null;
+
+                if (authHeader && authHeader.startsWith('Bearer ')) {
+                    const token = authHeader.split('Bearer ')[1];
+                    try {
+                        const decoded = await auth.verifyIdToken(token);
+                        callerUid = decoded.uid;
+                        const userDoc = await db.collection('users').doc(callerUid).get();
+                        if (userDoc.exists && userDoc.data().role === 'admin') {
+                            isOwnerOrAdmin = true;
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                }
+
+                const docSnap = await db.collection('orders').doc(orderId).get();
+                if (!docSnap.exists) return json(res, 404, { error: 'Order not found' });
+                
+                const data = docSnap.data();
+                if (callerUid && (data.customerUID === callerUid || (data.customer && data.customer.uid === callerUid))) {
+                    isOwnerOrAdmin = true;
+                }
+
+                if (!isOwnerOrAdmin) {
+                    const rawName = data.nombre || data.customerName || '';
+                    const firstLetter = rawName.charAt(0) || 'N';
+                    const redactedData = {
+                        id: orderId,
+                        status: data.status,
+                        total: data.total,
+                        resumen: data.resumen,
+                        paymentMethod: data.paymentMethod,
+                        createdAt: data.createdAt,
+                        timestamp: data.timestamp,
+                        nameLength: rawName.length > 1 ? rawName.length : 5,
+                        firstLetter: firstLetter,
+                        isRedacted: true
+                    };
+                    return json(res, 200, redactedData);
+                } else {
+                    return json(res, 200, {
+                        id: orderId,
+                        ...data,
+                        isRedacted: false
+                    });
+                }
+            }
+
+
             // --- ACCIONES REQUERIDAS DE AUTENTICACIÓN PARA OTROS CASOS ---
             const idToken = (req.headers.authorization || '').replace('Bearer ', '');
             if (!idToken) return json(res, 401, { error: 'No autenticado.' });
@@ -1426,62 +1483,6 @@ export default async function handler(req, res) {
                 } catch (err) {
                     console.error('rejectHappyCodeChange error:', err);
                     return json(res, 500, { error: 'Internal server error' });
-                }
-            }
-
-            // --- 17. ACCIÓN: verifyOrder (GET, VERIFICACIÓN PÚBLICA / PRIVADA) ---
-            if (action === 'verifyOrder') {
-                const orderId = req.query.orderId;
-                if (!orderId) return json(res, 400, { error: 'Missing orderId' });
-
-                let isOwnerOrAdmin = false;
-                const authHeader = req.headers.authorization || req.headers.Authorization;
-                let callerUid = null;
-
-                if (authHeader && authHeader.startsWith('Bearer ')) {
-                    const token = authHeader.split('Bearer ')[1];
-                    try {
-                        const decoded = await auth.verifyIdToken(token);
-                        callerUid = decoded.uid;
-                        const userDoc = await db.collection('users').doc(callerUid).get();
-                        if (userDoc.exists && userDoc.data().role === 'admin') {
-                            isOwnerOrAdmin = true;
-                        }
-                    } catch (e) {
-                        // ignore
-                    }
-                }
-
-                const docSnap = await db.collection('orders').doc(orderId).get();
-                if (!docSnap.exists) return json(res, 404, { error: 'Order not found' });
-                
-                const data = docSnap.data();
-                if (callerUid && (data.customerUID === callerUid || (data.customer && data.customer.uid === callerUid))) {
-                    isOwnerOrAdmin = true;
-                }
-
-                if (!isOwnerOrAdmin) {
-                    const rawName = data.nombre || data.customerName || '';
-                    const firstLetter = rawName.charAt(0) || 'N';
-                    const redactedData = {
-                        id: orderId,
-                        status: data.status,
-                        total: data.total,
-                        resumen: data.resumen,
-                        paymentMethod: data.paymentMethod,
-                        createdAt: data.createdAt,
-                        timestamp: data.timestamp,
-                        nameLength: rawName.length > 1 ? rawName.length : 5,
-                        firstLetter: firstLetter,
-                        isRedacted: true
-                    };
-                    return json(res, 200, redactedData);
-                } else {
-                    return json(res, 200, {
-                        id: orderId,
-                        ...data,
-                        isRedacted: false
-                    });
                 }
             }
 

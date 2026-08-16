@@ -983,3 +983,11 @@ header {
     }
 }
 
+/* Fondo para páginas específicas */
+.bg-image-body {
+    background-image: url('/backphoto.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
