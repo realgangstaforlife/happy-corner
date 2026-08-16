@@ -584,7 +584,7 @@ POST /api/account?action=rejectHappyCodeChange
 
 ---
 
-## 📝 VERSION HISTORY
+## 📝 VERSION HISTORY OF THE PAGE
 
 | Version | Date | Changes |
 |---------|------|---------|
