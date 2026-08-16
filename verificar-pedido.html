@@ -157,7 +157,7 @@
                 const headers = {};
                 if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
-                const response = await fetch(`/api/verifyOrder?orderId=${orderId}`, {
+                const response = await fetch(`/api/account?action=verifyOrder&orderId=${orderId}`, {
                     method: 'GET',
                     headers
                 });
