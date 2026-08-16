@@ -187,12 +187,11 @@
             const container = document.getElementById('reviews-container');
             
             try {
-                // Fetch approved reviews ordered by newest first
+                // Fetch approved reviews (up to 50) and sort client-side to avoid composite index requirements
                 const q = query(
                     collection(db, 'reviews'),
                     where('status', '==', 'approved'),
-                    orderBy('createdAt', 'desc'),
-                    limit(12)
+                    limit(50)
                 );
                 
                 const snap = await getDocs(q);
@@ -206,9 +205,19 @@
                     return;
                 }
                 
-                container.innerHTML = '';
+                // Sort client-side by createdAt descending
+                const reviews = [];
                 snap.forEach(docSnap => {
-                    const review = docSnap.data();
+                    reviews.push(docSnap.data());
+                });
+                reviews.sort((a, b) => {
+                    const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return tB - tA;
+                });
+
+                container.innerHTML = '';
+                reviews.slice(0, 12).forEach(review => {
                     
                     // Render Stars
                     let starsHtml = '';

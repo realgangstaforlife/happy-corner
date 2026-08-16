@@ -164,7 +164,14 @@
 
         function showSuccess(data, orderId, canSeeFullDetails, currentUser) {
             const card = document.getElementById('verifyCard');
-            const date = data.timestamp ? new Date(data.timestamp.toMillis()).toLocaleString('es-CO') : 'N/A';
+            let date = 'N/A';
+            if (data.createdAt) {
+                date = new Date(data.createdAt).toLocaleString('es-CO');
+            } else if (data.timestamp) {
+                date = typeof data.timestamp.toMillis === 'function'
+                    ? new Date(data.timestamp.toMillis()).toLocaleString('es-CO')
+                    : new Date(data.timestamp).toLocaleString('es-CO');
+            }
 
             const statusMap = {
                 'pending':   '⏳ Pendiente',
@@ -178,7 +185,7 @@
             const statusStr = statusMap[data.status] || data.status;
 
             // Client name: truncate to 3 letters if not owner/admin
-            const rawName = data.customerName || '';
+            const rawName = data.nombre || data.customerName || '';
             const displayName = canSeeFullDetails
                 ? (rawName || 'N/A')
                 : (rawName.substring(0, 3).toUpperCase() || 'N/A');

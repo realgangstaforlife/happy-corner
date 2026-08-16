@@ -293,6 +293,41 @@ export default async function handler(req, res) {
                 }
             }
 
+            // --- 9. ACCIÓN: send-welcome (PÚBLICA - USUARIO EN REGISTRO) ---
+            if (action === 'send-welcome' || action === 'sendWelcomeEmail') {
+                const { email, name } = req.body || {};
+                if (!email || !name) return json(res, 400, { error: 'Falta email o nombre.' });
+                try {
+                    const resendKey = process.env.RESEND_API_KEY;
+                    const { Resend } = await import('resend');
+                    const resend = new Resend(resendKey);
+                    await resend.emails.send({
+                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        to: [email.trim()],
+                        subject: 'Bienvenido a Happy Corner',
+                        html: getEmailTemplate(`
+                            <p style="margin:0 0 20px;">Hola <strong style="color:#ff5299;">${name}</strong>,</p>
+                            <p style="margin:0 0 16px;">Nos emociona tenerte en <strong>Happy Corner</strong>. Somos la tienda de tus suenos dentro del colegio.</p>
+                            <div style="background:rgba(255,82,153,0.08);border:1px solid rgba(255,82,153,0.2);border-radius:14px;padding:20px;margin:20px 0;">
+                                <p style="margin:0 0 10px;font-weight:700;color:#ff5299;">¿Que puedes pedir?</p>
+                                <p style="margin:4px 0;">Pizzas deliciosas</p>
+                                <p style="margin:4px 0;">Snacks y dulces frescos</p>
+                                <p style="margin:4px 0;">Robux exclusivos</p>
+                                <p style="margin:4px 0;">Gana Happy Points en cada compra</p>
+                            </div>
+                            <div style="text-align:center;margin:28px 0 8px;">
+                                <a href="https://happycorner.top" style="display:inline-block;background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:14px 32px;border-radius:14px;">Hacer mi primer pedido</a>
+                            </div>
+                            <p style="margin:20px 0 0;font-size:12px;color:#666;">¿Tienes dudas? Escribenos por WhatsApp y te ayudamos al instante.</p>
+                        `, 'Bienvenido')
+                    });
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('Welcome email error:', err);
+                    return json(res, 500, { error: 'No se pudo enviar el correo de bienvenida.' });
+                }
+            }
+
             // --- ACCIONES REQUERIDAS DE AUTENTICACIÓN PARA OTROS CASOS ---
             const idToken = (req.headers.authorization || '').replace('Bearer ', '');
             if (!idToken) return json(res, 401, { error: 'No autenticado.' });
@@ -551,40 +586,6 @@ export default async function handler(req, res) {
                 return json(res, 200, { ok: true });
             }
 
-            // --- 9. ACCIÓN: send-welcome (USUARIO AUTENTICADO — no requiere ser admin) ---
-            if (action === 'send-welcome' || action === 'sendWelcomeEmail') {
-                const { email, name } = req.body || {};
-                if (!email || !name) return json(res, 400, { error: 'Falta email o nombre.' });
-                try {
-                    const resendKey = process.env.RESEND_API_KEY;
-                    const { Resend } = await import('resend');
-                    const resend = new Resend(resendKey);
-                    await resend.emails.send({
-                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
-                        to: [email.trim()],
-                        subject: '¡Bienvenido a Happy Corner! 🍭',
-                        html: getEmailTemplate(`
-                            <p style="margin:0 0 20px;">Hola <strong style="color:#ff5299;">${name}</strong> 👋</p>
-                            <p style="margin:0 0 16px;">¡Nos emociona tenerte en <strong>Happy Corner</strong>! Somos el tiendita de tus sueños dentro del colegio. 🍭</p>
-                            <div style="background:rgba(255,82,153,0.08);border:1px solid rgba(255,82,153,0.2);border-radius:14px;padding:20px;margin:20px 0;">
-                                <p style="margin:0 0 10px;font-weight:700;color:#ff5299;">¿Qué puedes pedir?</p>
-                                <p style="margin:4px 0;">🍕 Pizzas deliciosas</p>
-                                <p style="margin:4px 0;">🍫 Snacks y dulces frescos</p>
-                                <p style="margin:4px 0;">🎮 Robux exclusivos</p>
-                                <p style="margin:4px 0;">⭐ Gana Happy Points en cada compra</p>
-                            </div>
-                            <div style="text-align:center;margin:28px 0 8px;">
-                                <a href="https://happycorner.top" style="display:inline-block;background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:14px 32px;border-radius:14px;">Hacer mi primer pedido →</a>
-                            </div>
-                            <p style="margin:20px 0 0;font-size:12px;color:#666;">¿Tienes dudas? Escríbenos por WhatsApp y te ayudamos al instante.</p>
-                        `, '¡Bienvenido!')
-                    });
-                    return json(res, 200, { ok: true });
-                } catch (err) {
-                    console.error('Welcome email error:', err);
-                    return json(res, 500, { error: 'No se pudo enviar el correo de bienvenida.' });
-                }
-            }
 
             // --- 13. ACCIÓN: request-change (USUARIO AUTENTICADO — no requiere ser admin) ---
             if (action === 'request-change' || action === 'requestHappyCodeChange') {
@@ -662,98 +663,61 @@ export default async function handler(req, res) {
                 const { orderId, email, customerName, items, total, paymentMethod, estimatedTime } = req.body || {};
                 
                 if (!orderId || !email || !items || !total) {
-                    return json(res, 400, { error: 'Faltan campos obligatorios para la confirmación de la orden' });
+                    return json(res, 400, { error: 'Faltan campos obligatorios para la confirmacion de la orden' });
                 }
                 
                 const itemsHtml = items.map(item => `
                     <tr>
-                        <td style="padding:10px; border-bottom:1px solid #eee; text-align:left;">${item.name}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${item.quantity}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">$${Number(item.price).toLocaleString('es-CO')}</td>
-                        <td style="padding:10px; border-bottom:1px solid #eee; text-align:right;">$${(Number(item.quantity) * Number(item.price)).toLocaleString('es-CO')}</td>
+                        <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:left; color:#ccc;">${item.name}</td>
+                        <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:center; color:#ccc;">${item.quantity}</td>
+                        <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right; color:#ccc;">$${Number(item.price).toLocaleString('es-CO')}</td>
+                        <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.08); text-align:right; color:#ff5299; font-weight:700;">$${(Number(item.quantity) * Number(item.price)).toLocaleString('es-CO')}</td>
                     </tr>
                 `).join('');
                 
-                const htmlTemplate = `<!DOCTYPE html>
-<html lang="es">
-<head><meta charset="UTF-8"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;">
-    <tr><td align="center" style="padding:20px;">
-      <table width="100%" style="max-width:600px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-        
-        <!-- Header -->
-        <tr>
-          <td style="background:linear-gradient(135deg,#ff6b9d,#ee5a6f);padding:30px;text-align:center;color:#fff;">
-            <h1 style="margin:0;font-size:24px;">✅ ¡Tu pedido está confirmado!</h1>
-            <p style="margin:10px 0 0 0;font-size:14px;opacity:0.9;">Happy Corner 🍭</p>
-          </td>
-        </tr>
-        
-        <!-- Content -->
-        <tr>
-          <td style="padding:30px;">
-            <p style="color:#333;font-size:15px;margin:0 0 10px;">Hola ${customerName || 'Cliente'},</p>
-            <p style="color:#666;font-size:14px;margin:15px 0;">Tu pedido ha sido recibido y está siendo preparado.</p>
-            
-            <!-- Order Number -->
-            <div style="background:#f9f9f9;padding:15px;border-radius:6px;margin:20px 0;text-align:center;">
-              <p style="margin:0;color:#888;font-size:12px;">Número de Pedido</p>
-              <p style="margin:5px 0 0 0;color:#ff6b9d;font-size:20px;font-weight:bold;">${orderId}</p>
-            </div>
-            
-            <!-- Items Table -->
-            <table width="100%" style="margin:20px 0;border-collapse:collapse;">
-              <thead>
-                <tr style="border-bottom:2px solid #ff6b9d;">
-                  <th style="text-align:left;padding:10px;color:#333;font-weight:600;font-size:13px;">Producto</th>
-                  <th style="text-align:center;padding:10px;color:#333;font-weight:600;font-size:13px;">Cantidad</th>
-                  <th style="text-align:right;padding:10px;color:#333;font-weight:600;font-size:13px;">Precio</th>
-                  <th style="text-align:right;padding:10px;color:#333;font-weight:600;font-size:13px;">Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itemsHtml}
-              </tbody>
-              <tfoot>
-                <tr style="border-top:2px solid #ff6b9d;">
-                  <td colspan="3" style="text-align:right;padding:10px;color:#333;font-weight:600;">Total:</td>
-                  <td style="text-align:right;padding:10px;color:#ff6b9d;font-size:18px;font-weight:bold;">$${Number(total).toLocaleString('es-CO')}</td>
-                </tr>
-              </tfoot>
-            </table>
-            
-            <!-- Details -->
-            <div style="background:#f9f9f9;padding:15px;border-radius:6px;margin:20px 0;">
-              <p style="margin:0 0 10px 0;color:#333;font-size:14px;">
-                <strong>⏱️ Tiempo estimado:</strong> ${estimatedTime || '15 minutos aprox'}
-              </p>
-              <p style="margin:0;color:#333;font-size:14px;">
-                <strong>💳 Método de pago:</strong> ${paymentMethod || 'No especificado'}
-              </p>
-            </div>
-            
-            <!-- CTA Button -->
-            <div style="text-align:center;margin:30px 0;">
-              <a href="https://happycorner.top/verificar-pedido.html?order=${orderId}" style="display:inline-block;background:linear-gradient(135deg,#ff6b9d,#ee5a6f);color:#fff;padding:12px 30px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;">Ver estado de mi pedido →</a>
-            </div>
-            
-            <p style="color:#888;font-size:12px;margin:30px 0 0 0;text-align:center;">¿Tienes dudas? Escríbenos a happycorner@happycorner.top</p>
-          </td>
-        </tr>
-        
-        <!-- Footer -->
-        <tr>
-          <td style="background:#f5f5f5;padding:20px;text-align:center;border-top:1px solid #ddd;">
-            <p style="margin:0;color:#888;font-size:11px;">Happy Corner 🍭 | happycorner.top</p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-
+                const emailContent = `
+                    <p style="margin:0 0 20px;">Hola <strong>${customerName || 'Cliente'}</strong>,</p>
+                    <p style="margin:0 0 16px;">Tu pedido ha sido recibido y esta siendo preparado.</p>
+                    
+                    <div style="background:rgba(255,82,153,0.08); border:1px solid rgba(255,82,153,0.2); padding:15px; border-radius:12px; margin:20px 0; text-align:center;">
+                        <p style="margin:0; color:#888; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Numero de Pedido</p>
+                        <p style="margin:5px 0 0 0; color:#ff5299; font-size:22px; font-weight:900;">${orderId}</p>
+                    </div>
+                    
+                    <table width="100%" style="margin:20px 0; border-collapse:collapse;">
+                      <thead>
+                        <tr style="border-bottom:2px solid #ff5299;">
+                          <th style="text-align:left; padding:10px; color:#fff; font-weight:700; font-size:13px;">Producto</th>
+                          <th style="text-align:center; padding:10px; color:#fff; font-weight:700; font-size:13px;">Cantidad</th>
+                          <th style="text-align:right; padding:10px; color:#fff; font-weight:700; font-size:13px;">Precio</th>
+                          <th style="text-align:right; padding:10px; color:#fff; font-weight:700; font-size:13px;">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${itemsHtml}
+                      </tbody>
+                      <tfoot>
+                        <tr style="border-top:2px solid #ff5299;">
+                          <td colspan="3" style="text-align:right; padding:10px; color:#fff; font-weight:700;">Total:</td>
+                          <td style="text-align:right; padding:10px; color:#ff5299; font-size:18px; font-weight:900;">$${Number(total).toLocaleString('es-CO')}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                    
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin:20px 0; font-size:14px; line-height:1.6;">
+                        <p style="margin:0 0 8px 0; color:#ccc;">
+                          <strong>Tiempo estimado:</strong> ${estimatedTime || '15 minutos aprox'}
+                        </p>
+                        <p style="margin:0; color:#ccc;">
+                          <strong>Metodo de pago:</strong> ${paymentMethod || 'No especificado'}
+                        </p>
+                    </div>
+                    
+                    <div style="text-align:center; margin:30px 0 10px;">
+                      <a href="https://happycorner.top/verificar-pedido.html?order=${orderId}" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c); color:#fff; padding:14px 32px; border-radius:14px; text-decoration:none; font-weight:800; font-size:14px;">Ver estado de mi pedido</a>
+                    </div>
+                `;
+                
                 const resendKey = process.env.RESEND_API_KEY;
                 if (!resendKey) return json(res, 500, { error: 'Email service not configured' });
                 
@@ -764,13 +728,57 @@ export default async function handler(req, res) {
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@alertas.happycorner.top>',
                         to: email,
-                        subject: '✅ Tu pedido ha sido confirmado - Happy Corner 🍭',
-                        html: htmlTemplate
+                        subject: `Pedido confirmado ${orderId} - ${customerName}`,
+                        html: getEmailTemplate(emailContent, 'Confirmacion de Pedido')
                     });
                     return json(res, 200, { ok: true });
                 } catch (err) {
                     console.error('Order confirmation email error:', err);
                     return json(res, 500, { error: 'Failed to send confirmation email' });
+                }
+            }
+
+            // --- ACCIÓN: sendDeliveryEmail (USUARIO AUTENTICADO — no requiere ser admin) ---
+            if (action === 'sendDeliveryEmail' || action === 'send-delivery') {
+                const { orderId, email, customerName } = req.body || {};
+                
+                if (!orderId || !email) {
+                    return json(res, 400, { error: 'Faltan campos obligatorios para el correo de entrega' });
+                }
+                
+                const emailContent = `
+                    <p style="margin:0 0 20px;">Hola <strong>${customerName || 'Cliente'}</strong>,</p>
+                    <p style="margin:0 0 16px;">Tu pedido con codigo <strong>${orderId}</strong> ha sido marcado como entregado. Esperamos que lo disfrutes.</p>
+                    
+                    <div style="background:rgba(255,82,153,0.08); border:1px solid rgba(255,82,153,0.2); padding:15px; border-radius:12px; margin:20px 0; text-align:center;">
+                        <p style="margin:0; color:#888; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Estado del Pedido</p>
+                        <p style="margin:5px 0 0 0; color:#2ecc71; font-size:22px; font-weight:900;">Entregado</p>
+                    </div>
+                    
+                    <p style="margin:20px 0 16px; line-height:1.6;">Tu opinion es muy valiosa para nosotros. Te invitamos a dejarnos una resena sobre tu experiencia de compra en la seccion Mi Cuenta.</p>
+                    
+                    <div style="text-align:center; margin:30px 0 10px;">
+                      <a href="https://happycorner.top/mi-cuenta" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c); color:#fff; padding:14px 32px; border-radius:14px; text-decoration:none; font-weight:800; font-size:14px;">Dejar una resena</a>
+                    </div>
+                `;
+                
+                const resendKey = process.env.RESEND_API_KEY;
+                if (!resendKey) return json(res, 500, { error: 'Email service not configured' });
+                
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
+                
+                try {
+                    await resend.emails.send({
+                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                        to: email,
+                        subject: `Pedido entregado ${orderId} - ${customerName}`,
+                        html: getEmailTemplate(emailContent, 'Entrega de Pedido')
+                    });
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('Delivery email error:', err);
+                    return json(res, 500, { error: 'Failed to send delivery email' });
                 }
             }
 

@@ -46,9 +46,85 @@ export default async function handler(req, res) {
                                     activeOrders: admin.firestore.FieldValue.increment(1)
                                 });
                             }
+
+                            // Send delivery email
+                            let customerEmail = oData.email;
+                            if (!customerEmail && oData.customerUID) {
+                                const uSnap = await db.collection('users').doc(oData.customerUID).get();
+                                if (uSnap.exists) {
+                                    customerEmail = uSnap.data().email;
+                                }
+                            }
+
+                            if (customerEmail) {
+                                const customerName = oData.nombre || 'Cliente';
+                                const resendKey = process.env.RESEND_API_KEY;
+                                if (resendKey) {
+                                    const { Resend } = await import('resend');
+                                    const resend = new Resend(resendKey);
+
+                                    const getEmailTemplate = (content, title = 'Happy Corner') => {
+                                        return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background:#0d0d0d;font-family:'Outfit',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0d0d0d;">
+    <tr><td align="center" style="padding:32px 16px;">
+      <table width="100%" style="max-width:520px;background:#181818;border-radius:20px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+        <tr>
+          <td style="background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c);padding:28px 32px;text-align:center;">
+            <img src="https://happycorner.top/happyfavicon.png" width="48" height="48" alt="Happy Corner" style="border-radius:10px;display:block;margin:0 auto 10px;">
+            <div style="font-family:'Outfit',Arial,sans-serif;font-size:24px;font-weight:900;color:#fff;letter-spacing:-0.02em;">Happy Corner</div>
+            <div style="font-family:'Outfit',Arial,sans-serif;font-size:12px;color:rgba(255,255,255,0.8);margin-top:4px;">${title}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px;font-family:'Outfit',Arial,sans-serif;color:#ccc;font-size:15px;line-height:1.7;">
+            ${content}
+          </td>
+        </tr>
+        <tr>
+          <td style="background:rgba(255,255,255,0.03);padding:16px 32px;text-align:center;">
+            <div style="font-family:'Outfit',Arial,sans-serif;color:#555;font-size:11px;">Happy Corner · Cali, Valle del Cauca · <a href="https://happycorner.top" style="color:#ff5299;text-decoration:none;">happycorner.top</a></div>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+                                    };
+
+                                    const emailContent = `
+                                        <p style="margin:0 0 20px;">Hola <strong>${customerName}</strong>,</p>
+                                        <p style="margin:0 0 16px;">Tu pedido con codigo <strong>${orderId}</strong> ha sido marcado como entregado. Esperamos que lo disfrutes.</p>
+                                        
+                                        <div style="background:rgba(255,82,153,0.08); border:1px solid rgba(255,82,153,0.2); padding:15px; border-radius:12px; margin:20px 0; text-align:center;">
+                                            <p style="margin:0; color:#888; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Estado del Pedido</p>
+                                            <p style="margin:5px 0 0 0; color:#2ecc71; font-size:22px; font-weight:900;">Entregado</p>
+                                        </div>
+                                        
+                                        <p style="margin:20px 0 16px; line-height:1.6;">Tu opinion es muy valiosa para nosotros. Te invitamos a dejarnos una resena sobre tu experiencia de compra en la seccion Mi Cuenta.</p>
+                                        
+                                        <div style="text-align:center; margin:30px 0 10px;">
+                                          <a href="https://happycorner.top/mi-cuenta" style="display:inline-block; background:linear-gradient(135deg,#b01e5a,#ff5299,#ff9d5c); color:#fff; padding:14px 32px; border-radius:14px; text-decoration:none; font-weight:800; font-size:14px;">Dejar una resena</a>
+                                        </div>
+                                    `;
+
+                                    await resend.emails.send({
+                                        from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                        to: customerEmail,
+                                        subject: `Pedido entregado ${orderId} - ${customerName}`,
+                                        html: getEmailTemplate(emailContent, 'Entrega de Pedido')
+                                    });
+                                }
+                            }
                         }
                     } catch (err) {
-                        console.error('Error updating activeOrders on order completion:', err);
+                        console.error('Error updating activeOrders or sending delivery email on order completion:', err);
                     }
                 }
 
@@ -123,6 +199,7 @@ export default async function handler(req, res) {
                     customerUID: pedidoData.customerUID || null,
                     customerCode: pedidoData.customerCode || pedidoData.happycodigo || null,
                     nombre: pedidoData.nombre,
+                    email: pedidoData.email || null,
                     whatsapp: cleanNumber,
                     resumen: pedidoData.resumen,
                     total: totalDisplay,
