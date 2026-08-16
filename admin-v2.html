@@ -1608,6 +1608,33 @@
     </div>
 
     <!-- ============================================== -->
+    <!-- MODAL: BAN ENTITY -->
+    <!-- ============================================== -->
+    <div class="admin-modal-overlay" id="ban-modal">
+        <div class="admin-modal" style="max-width:400px; border: 1px solid var(--accent-red);">
+            <button class="modal-close" onclick="closeBanModal()">✕</button>
+            <h2 style="font-weight:900; margin-bottom:10px; color:var(--accent-red);">⛔ Suspender</h2>
+            
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Elige qué datos quieres suspender de manera permanente.</p>
+            
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Tipo de Bloqueo</label>
+            <select id="ban-type" class="admin-input" style="margin-bottom:16px; width:100%;">
+                <option value="both">Ambos (Recomendado)</option>
+                <option value="ip">Solo IP</option>
+                <option value="device">Solo Dispositivo</option>
+            </select>
+
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Motivo (Visible para el usuario)</label>
+            <input type="text" id="ban-reason" class="admin-input" placeholder="Spam, broma pesada..." style="margin-bottom:20px; width:100%;">
+            
+            <input type="hidden" id="ban-ip">
+            <input type="hidden" id="ban-device">
+            
+            <button class="admin-btn" style="background:var(--accent-red); width:100%;" onclick="submitBan()">CONFIRMAR SUSPENSIÓN</button>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
     <!-- DATABASE & FIREBASE CONFIGURATION -->
     <!-- ============================================== -->
     <script src="/credit-gauge.js"></script>
@@ -1985,9 +2012,13 @@
                 <div class="dp-meta-row"><span>Fecha:</span><span>${dateStr}</span></div>
                 <div class="dp-meta-row"><span>Método pago:</span><span style="text-transform:capitalize;">${order.paymentMethod || 'Efectivo'}</span></div>
                 <div class="dp-meta-row"><span>Tipo entrega:</span><span>${order.deliveryType || 'Presencial'}</span></div>
+                <div class="dp-meta-row"><span>IP Origen:</span><span style="font-size:11px; word-break:break-all;">${order.clientIp || 'Desconocida'}</span></div>
+                <div class="dp-meta-row"><span>Dispositivo:</span><span style="font-size:10px; word-break:break-all; max-width:60%; text-align:right;">${order.clientDevice || 'Desconocido'}</span></div>
 
                 <div class="dp-actions">${actionsHtml}</div>
                 <div style="margin-top:12px; text-align:center;">
+                    <button onclick="openBanModal('${order.clientIp}', '${order.clientDevice}', '${order.id}')" style="background:var(--accent-red); border:none; color:white; padding:8px 18px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:transform 0.2s; margin-bottom:8px; display:inline-flex; align-items:center; gap:6px;">⛔ Suspender IP/Equipo</button>
+                    <br>
                     <button onclick="deleteOrder('${order.id}')" style="background:transparent; border:1px solid var(--accent-red); color:var(--accent-red); padding:8px 18px; border-radius:10px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.2s;" onmouseover="this.style.background='rgba(235,87,87,0.1)'" onmouseout="this.style.background='transparent'">🗑️ Eliminar pedido</button>
                 </div>
             `;
@@ -2431,6 +2462,52 @@
             } catch (err) {
                 console.error(err);
                 hcAlert('Error procesando reembolso: ' + err.message, 'error');
+            }
+        };
+
+        window.openBanModal = function(ip, device, orderId) {
+            document.getElementById('ban-ip').value = ip;
+            document.getElementById('ban-device').value = device;
+            document.getElementById('ban-modal').classList.add('open');
+        };
+
+        window.closeBanModal = function() {
+            document.getElementById('ban-modal').classList.remove('open');
+            document.getElementById('ban-reason').value = '';
+        };
+
+        window.submitBan = async function() {
+            const ip = document.getElementById('ban-ip').value;
+            const device = document.getElementById('ban-device').value;
+            const type = document.getElementById('ban-type').value;
+            const reason = document.getElementById('ban-reason').value.trim();
+
+            if (!reason) {
+                hcAlert("Debe ingresar un motivo para el baneo.", "warning");
+                return;
+            }
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=banEntity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ ip, device, type, reason })
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("✅ Entidad suspendida exitosamente.", "success");
+                    closeBanModal();
+                } else {
+                    hcAlert(data.error || "Error suspendiendo.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error de conexión al suspender.", "error");
             }
         };
 

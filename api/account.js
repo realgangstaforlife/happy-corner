@@ -102,6 +102,32 @@ export default async function handler(req, res) {
                 return json(res, 400, { error: 'Falta el parámetro action' });
             }
 
+            // --- 0. ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
+            if (action === 'checkBan') {
+                const forwarded = req.headers['x-forwarded-for'];
+                const clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
+                const clientDevice = req.headers['user-agent'] || 'unknown';
+                
+                // Buscar si existe un ban por IP o Dispositivo
+                const bansRef = db.collection('banned_entities');
+                let isBanned = false;
+                let reason = '';
+                
+                const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
+                if (!ipQuery.empty) {
+                    isBanned = true;
+                    reason = ipQuery.docs[0].data().reason || 'Violación de términos.';
+                } else if (clientDevice !== 'unknown') {
+                    const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
+                    if (!deviceQuery.empty) {
+                        isBanned = true;
+                        reason = deviceQuery.docs[0].data().reason || 'Violación de términos.';
+                    }
+                }
+                
+                return json(res, 200, { banned: isBanned, reason });
+            }
+
             // --- 1. ACCIÓN: logLogin (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
             if (action === 'logLogin') {
                 const idToken = (req.headers.authorization || '').replace('Bearer ', '');
@@ -1011,7 +1037,44 @@ export default async function handler(req, res) {
                 return json(res, 200, { sent, total: recipients.length });
             }
 
-            // --- 4. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
+            // --- 4. ACCIÓN: banEntity (SOLO ADMIN) ---
+            if (action === 'banEntity') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
+
+                const { ip, device, type, reason } = req.body;
+                
+                if (!ip && !device) return json(res, 400, { error: 'Faltan datos de IP o Dispositivo.' });
+
+                const bansRef = db.collection('banned_entities');
+                
+                if (type === 'ip' || type === 'both') {
+                    if (ip && ip !== 'unknown') {
+                        await bansRef.add({
+                            ip,
+                            device: null,
+                            reason: reason || 'Bloqueo manual',
+                            createdAt: new Date().toISOString(),
+                            adminUid: decoded.uid
+                        });
+                    }
+                }
+                
+                if (type === 'device' || type === 'both') {
+                    if (device && device !== 'unknown') {
+                        await bansRef.add({
+                            ip: null,
+                            device,
+                            reason: reason || 'Bloqueo manual',
+                            createdAt: new Date().toISOString(),
+                            adminUid: decoded.uid
+                        });
+                    }
+                }
+
+                return json(res, 200, { ok: true });
+            }
+
+            // --- 5. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
             if (action === 'adminCreateClient') {
                 const { nombre, email, telefono, customerCode, password } = req.body;
                 if (!nombre || !telefono) {

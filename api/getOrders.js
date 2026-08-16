@@ -135,6 +135,21 @@ export default async function handler(req, res) {
             // Otherwise, it's a new order submission
             const pedidoData = body;
 
+            // Extract IP and UA
+            const forwarded = req.headers['x-forwarded-for'];
+            const clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
+            const clientDevice = req.headers['user-agent'] || 'unknown';
+
+            // Check if banned
+            const bansRef = db.collection('banned_entities');
+            const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
+            if (!ipQuery.empty) return res.status(403).json({ error: 'Acceso denegado.' });
+            
+            if (clientDevice !== 'unknown') {
+                const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
+                if (!deviceQuery.empty) return res.status(403).json({ error: 'Acceso denegado.' });
+            }
+
             // Generate order code h-xxxxx
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let orderCodeId = '';
@@ -207,7 +222,9 @@ export default async function handler(req, res) {
                     status: 'pending',
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
-                    completedAt: null
+                    completedAt: null,
+                    clientIp: clientIp,
+                    clientDevice: clientDevice
                 });
 
                 if (pedidoData.customerUID) {
@@ -329,7 +346,9 @@ export default async function handler(req, res) {
                     status: data.status || 'pending',
                     resumen: data.resumen,
                     createdAt: data.createdAt || new Date().toISOString(),
-                    customerUID: data.customerUID || null
+                    customerUID: data.customerUID || null,
+                    clientIp: data.clientIp || 'Desconocida',
+                    clientDevice: data.clientDevice || 'Desconocido'
                 });
             });
 

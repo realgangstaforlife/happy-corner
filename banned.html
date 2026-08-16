@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Suspendido - Happy Corner</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            font-family: 'Outfit', sans-serif;
+        }
+        .banned-container {
+            background: var(--surface-color);
+            padding: 40px 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(235, 87, 87, 0.3);
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(235, 87, 87, 0.1);
+        }
+        .banned-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .banned-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--accent-red);
+            margin-bottom: 10px;
+        }
+        .banned-text {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .banned-reason-box {
+            background: rgba(235, 87, 87, 0.1);
+            color: var(--accent-red);
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 25px;
+            word-break: break-word;
+        }
+        .banned-btn {
+            display: inline-block;
+            background: var(--accent-red);
+            color: white;
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 14px;
+            transition: transform 0.2s, opacity 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .banned-btn:hover {
+            opacity: 0.9;
+            transform: scale(0.98);
+        }
+        .catalog-btn {
+            display: inline-block;
+            background: transparent;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-top: 10px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body class="bg-image-body">
+    <div class="banned-container">
+        <div class="banned-icon">⛔</div>
+        <div class="banned-title">Acceso Suspendido</div>
+        <div class="banned-text">Tu equipo o red ha sido suspendido permanentemente de Happy Corner debido a infracciones en nuestras políticas.</div>
+        
+        <div class="banned-reason-box" id="reason-box">Motivo: Violación de términos</div>
+        
+        <a href="https://wa.me/573001234567?text=Hola,%20fui%20suspendido%20de%20Happy%20Corner%20y%20quiero%20apelar." class="banned-btn">Apelar Suspensión por WhatsApp</a>
+        <a href="/catalogo" class="catalog-btn">Ver Catálogo de Precios</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const reason = urlParams.get('reason');
+        if (reason) {
+            document.getElementById('reason-box').innerText = 'Motivo: ' + reason;
+        }
+    </script>
+</body>
+</html>

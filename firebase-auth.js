@@ -58,5 +58,25 @@ const initPromise = fetch('/api/getConfig')
         await setPersistence(auth, browserLocalPersistence);
     });
 
+// --- 🛡️ SISTEMA DE SEGURIDAD GLOBAL ---
+if (window.location.pathname !== '/banned' && window.location.pathname !== '/catalogo') {
+    (async function runSecurityCheck() {
+        if (localStorage.getItem('hc_blacklist') || document.cookie.includes('hc_banned')) {
+            window.location.href = '/banned';
+            return;
+        }
+        try {
+            const res = await fetch('/api/account?action=checkBan');
+            const data = await res.json();
+            if (data.banned) {
+                localStorage.setItem('hc_blacklist', 'true');
+                window.location.href = '/banned?reason=' + encodeURIComponent(data.reason);
+            }
+        } catch (e) {
+            console.error("Error validando seguridad.");
+        }
+    })();
+}
+
 export { initPromise, auth, db, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, RecaptchaVerifier, signInWithPhoneNumber, signOut, onAuthStateChanged, doc, getDoc, setDoc };
 
