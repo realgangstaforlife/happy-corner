@@ -39,7 +39,7 @@
             gap: 10px;
         }
         .review-stars span.active {
-            color: var(--accent-green);
+            color: #ffb800; /* Yellow stars */
         }
         .review-input {
             width: 100%;
@@ -55,6 +55,10 @@
         .review-input:focus {
             outline: none;
             border-color: var(--hp-pink);
+        }
+        .review-input:read-only {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ccc;
         }
         .review-btn {
             background: var(--hp-gradient);
@@ -94,6 +98,8 @@
         <p style="font-size:14px; color:var(--text-muted); margin-bottom: 20px;">Tu opinión nos ayuda a mejorar en Happy Corner.</p>
         
         <div class="order-info" id="order-info"></div>
+
+        <input type="text" id="review-orderId" class="review-input" placeholder="ID del Pedido (Opcional si no lo tienes)" style="display:none;">
 
         <input type="text" id="review-name" class="review-input" placeholder="Tu Nombre o HappyCódigo" required>
         
@@ -135,7 +141,6 @@
                     currentUser = user;
                     document.getElementById('review-name').value = user.displayName || user.email;
                     document.getElementById('review-name').readOnly = true;
-                    document.getElementById('review-name').style.opacity = '0.7';
                 }
             });
 
@@ -148,12 +153,15 @@
                         document.getElementById('order-info').innerHTML = `<b>Pedido #${orderId}</b><br>${data.resumen || 'Sin detalles'}`;
                     } else {
                         document.getElementById('order-info').innerHTML = `<b>Pedido #${orderId} no encontrado</b>`;
+                        document.getElementById('review-orderId').style.display = 'block';
                     }
                 } catch(e) {
                     document.getElementById('order-info').innerHTML = `<b>Error verificando pedido #${orderId}</b>`;
+                    document.getElementById('review-orderId').style.display = 'block';
                 }
             } else {
                 document.getElementById('order-info').style.display = 'none';
+                document.getElementById('review-orderId').style.display = 'block';
             }
 
             document.getElementById('loading-container').style.display = 'none';
@@ -174,39 +182,54 @@
             const rating = parseInt(document.getElementById('review-rating').value);
             const title = document.getElementById('review-title').value.trim();
             const content = document.getElementById('review-content').value.trim();
+            
+            // Si el input manual está visible y tiene valor, lo usamos
+            const manualOrderId = document.getElementById('review-orderId').value.trim();
+            const finalOrderId = orderId || manualOrderId;
 
             if (!name || rating === 0 || !title || !content) {
-                alert("Por favor completa todos los campos.");
+                alert("Por favor completa todos los campos y dale una calificación en estrellas.");
+                return;
+            }
+
+            if (content.length < 10) {
+                alert("Por favor escribe una reseña más detallada (mínimo 10 caracteres).");
                 return;
             }
 
             try {
                 const btn = document.querySelector('.review-btn');
-                btn.innerText = "Enviando...";
+                btn.innerText = "Enviando... ⏳";
                 btn.disabled = true;
 
                 await addDoc(collection(db, 'reviews'), {
-                    orderIds: orderId ? [orderId] : [],
-                    uid: currentUser ? currentUser.uid : null,
+                    uid: currentUser ? currentUser.uid : 'anonymous',
                     userName: name,
                     rating: rating,
                     title: title,
                     content: content,
+                    orderIds: finalOrderId ? [finalOrderId] : [],
+                    verified: orderVerified,
                     status: 'pending',
-                    createdAt: new Date().toISOString(),
-                    verified: orderVerified
+                    createdAt: new Date().toISOString()
                 });
 
                 document.getElementById('main-container').style.display = 'none';
                 document.getElementById('success-container').style.display = 'block';
-            } catch(e) {
-                console.error(e);
-                alert("Error al enviar. Intenta de nuevo.");
+                
+                // Trigger confetti
+                try {
+                    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ff5299', '#ff9d5c', '#ffd45e'] });
+                } catch(e){}
+
+            } catch (err) {
+                console.error("Error submitting review:", err);
+                alert("Hubo un error al enviar tu reseña. Por favor intenta de nuevo.");
                 const btn = document.querySelector('.review-btn');
                 btn.innerText = "Enviar Reseña 🚀";
                 btn.disabled = false;
             }
-        }
+        };
 
         init();
     </script>

@@ -490,29 +490,49 @@
             if (data.items && data.items.length > 0) {
                 data.items.forEach(item => {
                     const row = document.createElement('tr');
-                    const qty = item.qty || 1;
-                    const price = item.price || 0;
+                    const qty = item.qty || item.quantity || 1;
+                    const price = item.price || item.precio || 0;
                     const subtotal = qty * price;
+                    
+                    const isRefunded = item.refunded ? true : false;
+                    const nameStyle = isRefunded ? 'color: var(--accent-red); text-decoration: line-through;' : '';
+                    const refundedLabel = isRefunded ? ' <span style="color:var(--accent-red); font-size:10px; font-weight:900;">(Reembolsado)</span>' : '';
 
                     row.innerHTML = `
                         <td>
-                            <div class="item-name">${item.name || 'Producto'}</div>
+                            <div class="item-name" style="${nameStyle}">${item.name || item.titulo || 'Producto'}${refundedLabel}</div>
                             <div class="item-meta">${qty} x $${price.toLocaleString('es-CO')}</div>
                         </td>
-                        <td class="item-total">$${subtotal.toLocaleString('es-CO')}</td>
+                        <td class="item-total" style="${nameStyle}">$${subtotal.toLocaleString('es-CO')}</td>
                     `;
                     tbody.appendChild(row);
                 });
             } else {
                 // Fallback to text summary
                 const row = document.createElement('tr');
+                const isAllRefunded = data.status === 'refunded';
+                const nameStyle = isAllRefunded ? 'color: var(--accent-red); text-decoration: line-through;' : '';
+                const refundedLabel = isAllRefunded ? ' <span style="color:var(--accent-red); font-size:10px; font-weight:900;">(Reembolsado)</span>' : '';
                 row.innerHTML = `
                     <td>
-                        <div class="item-name">${data.itemsSummary || data.resumen || 'Consumo general'}</div>
+                        <div class="item-name" style="${nameStyle}">${data.itemsSummary || data.resumen || 'Consumo general'}${refundedLabel}</div>
                     </td>
-                    <td class="item-total">$${totalStr}</td>
+                    <td class="item-total" style="${nameStyle}">$${totalStr}</td>
                 `;
                 tbody.appendChild(row);
+            }
+
+            if (data.refundAmount > 0) {
+                const refundRow = document.createElement('tr');
+                refundRow.innerHTML = `
+                    <td style="padding-top: 12px; border-top: 1px dashed var(--border-color);">
+                        <div class="item-name" style="color: var(--accent-red);">Reembolsos aplicados</div>
+                    </td>
+                    <td class="item-total" style="color: var(--accent-red); padding-top: 12px; border-top: 1px dashed var(--border-color);">
+                        -$${(data.refundAmount).toLocaleString('es-CO')}
+                    </td>
+                `;
+                tbody.appendChild(refundRow);
             }
 
             document.getElementById('inv-total').textContent = `$${totalStr}`;

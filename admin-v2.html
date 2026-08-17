@@ -2492,13 +2492,16 @@
             
             let itemsHtml = '';
             if (Array.isArray(order.items) && order.items.length > 0) {
-                itemsHtml = order.items.map((it, idx) => `
+                itemsHtml = order.items.map((it, idx) => {
+                    if (it.refunded) return ''; // No mostrar si ya está reembolsado
+                    return `
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
                         <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity || it.qty || 1}x ${it.name || it.titulo || 'Producto'} ($${((it.price || it.precio || 0) * (it.quantity || it.qty || 1)).toLocaleString()})</label>
                     </div>
-                `).join('');
+                `}).join('');
+                if (!itemsHtml) itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Todos los ítems ya fueron reembolsados.</div>`;
             } else {
-                itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">No hay desglose de ítems. Solo se puede reembolsar el total.</div>`;
+                itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">No hay desglose de ítems. Se reembolsará el total del pedido ($${order.total || 0}).</div>`;
             }
 
             const modalHtml = `
@@ -2522,43 +2525,65 @@
         window.submitRefund = async function(orderId) {
             const order = window.currentRefundOrder;
             if (!order) return;
-            const checkboxes = document.querySelectorAll('[id^="refund-item-"]');
+            
             let refundTotal = 0;
-            let itemsToRefund = [];
-            checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    const idx = parseInt(cb.value);
-                    const item = order.items[idx];
-                    refundTotal += (item.price * item.quantity);
-                    itemsToRefund.push(item);
-                }
-            });
+            let itemsToRefundText = [];
+            let updatedItems = [];
+            
+            if (Array.isArray(order.items) && order.items.length > 0) {
+                // clone items
+                updatedItems = JSON.parse(JSON.stringify(order.items));
+                const checkboxes = document.querySelectorAll('[id^="refund-item-"]');
+                checkboxes.forEach(cb => {
+                    if (cb.checked) {
+                        const idx = parseInt(cb.value);
+                        const item = updatedItems[idx];
+                        const qty = item.quantity || item.qty || 1;
+                        const price = item.price || item.precio || 0;
+                        refundTotal += (price * qty);
+                        itemsToRefundText.push(item.name || item.titulo);
+                        item.refunded = true; // Mark as refunded
+                    }
+                });
 
-            if (itemsToRefund.length === 0) {
-                hcAlert('Selecciona al menos un ítem para reembolsar.', 'warning');
-                return;
+                if (itemsToRefundText.length === 0) {
+                    hcAlert('Selecciona al menos un ítem para reembolsar.', 'warning');
+                    return;
+                }
+            } else {
+                // No items, refund the full total
+                refundTotal = parseInt((order.total || '0').toString().replace(/[^0-9]/g, '')) || 0;
+                itemsToRefundText.push('Total del Pedido');
             }
 
             if (!confirm(`¿Estás seguro de reembolsar $${refundTotal.toLocaleString()}?`)) return;
 
             try {
                 if (order.customerUID) {
-                    const desc = `Reembolso pedido ${order.id} (${itemsToRefund.map(i=>i.name).join(', ')})`;
+                    const desc = `Reembolso pedido ${order.id} (${itemsToRefundText.join(', ')})`;
                     await applyLedgerMovement(order.customerUID, 'refund', -refundTotal, desc);
                 }
                 
-                await updateDoc(doc(db, 'orders', order.id), {
+                let updateData = {
                     status: 'refunded',
-                    refundAmount: refundTotal,
+                    refundAmount: (order.refundAmount || 0) + refundTotal,
                     updatedAt: new Date().toISOString()
-                });
+                };
+                
+                if (updatedItems.length > 0) {
+                    updateData.items = updatedItems;
+                    // If all items are refunded, set status to refunded, else keep current
+                    const allRefunded = updatedItems.every(i => i.refunded);
+                    if (!allRefunded) {
+                        updateData.status = order.status; // Keep it 'completed' or 'ready' if partial refund
+                    }
+                }
+                
+                await updateDoc(doc(db, 'orders', order.id), updateData);
 
                 hcAlert('✅ Reembolso procesado con éxito.', 'success');
                 document.getElementById('refund-modal').remove();
                 
-                // Refresh local status for UI
-                order.status = 'refunded';
-                if (window.renderOrdersTable) renderOrdersTable();
             } catch (err) {
                 console.error(err);
                 hcAlert('Error procesando reembolso: ' + err.message, 'error');

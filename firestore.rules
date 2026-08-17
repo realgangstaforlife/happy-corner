@@ -37,11 +37,8 @@ service cloud.firestore {
     match /reviews/{reviewId} {
       // Public read for approved reviews, admin can read all
       allow read: if (resource != null && resource.data.status == 'approved') || isAdmin();
-      // Authenticated create access if user has activeOrders > 0
-      allow create: if request.auth != null && 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.activeOrders > 0 &&
-                    request.resource.data.uid == request.auth.uid &&
-                    request.resource.data.status == 'pending' &&
+      // Allow creation of pending reviews by anyone (admin approves them later)
+      allow create: if request.resource.data.status == 'pending' &&
                     request.resource.data.rating >= 1 &&
                     request.resource.data.rating <= 5 &&
                     request.resource.data.content.size() >= 10;
@@ -99,7 +96,7 @@ service cloud.firestore {
     }
     match /shortlinks/{code} {
       allow get: if true;
-      allow write: if false;
+      allow write: if isAdmin();
     }
 
     // loginHistory - written server-side only; readable only by admins

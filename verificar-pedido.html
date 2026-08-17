@@ -236,13 +236,44 @@
                 }
             }
 
-            detailsHtml += `
+            let itemsHtml = '';
+            if (data.items && data.items.length > 0) {
+                const itemsList = data.items.map(item => {
+                    const isRefunded = item.refunded ? true : false;
+                    const nameStyle = isRefunded ? 'color: var(--accent-red); text-decoration: line-through;' : '';
+                    const refundedLabel = isRefunded ? ' <span style="color:var(--accent-red); font-size:10px; font-weight:900;">(Reem)</span>' : '';
+                    const qty = item.qty || item.quantity || 1;
+                    return `<div style="${nameStyle}">${qty}x ${item.name || item.titulo || 'Producto'}${refundedLabel}</div>`;
+                }).join('');
+                itemsHtml = `
+                <div class="detail-row">
+                    <span class="detail-label">Ítems</span>
+                    <span class="detail-value" style="text-align:right; max-width:60%; font-size:12px;">${itemsList}</span>
+                </div>`;
+            } else {
+                const isAllRefunded = data.status === 'refunded';
+                const nameStyle = isAllRefunded ? 'color: var(--accent-red); text-decoration: line-through;' : '';
+                const refundedLabel = isAllRefunded ? ' <span style="color:var(--accent-red); font-size:10px; font-weight:900;">(Reembolsado)</span>' : '';
+                itemsHtml = `
                 <div class="detail-row">
                     <span class="detail-label">Resumen</span>
-                    <span class="detail-value" style="text-align:right; max-width:60%;">${data.resumen || 'N/A'}</span>
-                </div>
+                    <span class="detail-value" style="text-align:right; max-width:60%; ${nameStyle}">${data.resumen || 'N/A'}${refundedLabel}</span>
+                </div>`;
+            }
+
+            detailsHtml += itemsHtml;
+
+            if (data.refundAmount > 0) {
+                detailsHtml += `
                 <div class="detail-row">
-                    <span class="detail-label">Total</span>
+                    <span class="detail-label" style="color:var(--accent-red);">Reembolsos</span>
+                    <span class="detail-value" style="color:var(--accent-red);">-$${(data.refundAmount).toLocaleString('es-CO')}</span>
+                </div>`;
+            }
+
+            detailsHtml += `
+                <div class="detail-row">
+                    <span class="detail-label">Total Pago</span>
                     <span class="detail-value">${(data.total || 0).toLocaleString('es-CO')}</span>
                 </div>
                 <div class="detail-row">

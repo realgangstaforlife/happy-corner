@@ -403,7 +403,9 @@ export default async function handler(req, res) {
                         timestamp: data.timestamp,
                         nameLength: rawName.length > 1 ? rawName.length : 5,
                         firstLetter: firstLetter,
-                        isRedacted: true
+                        isRedacted: true,
+                        items: data.items || null,
+                        refundAmount: data.refundAmount || 0
                     };
                     return json(res, 200, redactedData);
                 } else {
