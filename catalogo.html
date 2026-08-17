@@ -145,19 +145,27 @@
 
 
     <script>
-        let isDark = false;
-        function toggleTheme() {
-            isDark = !isDark;
+        
+        let isDark = localStorage.getItem('hc_theme') === 'dark';
+        
+        function applyTheme() {
             const themeBtn = document.getElementById('theme-icon');
             if (isDark) {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeBtn.innerText = '☀️';
+                if (themeBtn) themeBtn.innerText = '☀️';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeBtn.innerText = '🌙';
+                if (themeBtn) themeBtn.innerText = '🌙';
             }
         }
 
+        function toggleTheme() {
+            isDark = !isDark;
+            localStorage.setItem('hc_theme', isDark ? 'dark' : 'light');
+            applyTheme();
+        }
+    </script>
+    <style>
         /* --- COMMENTS MODAL --- */
         .comments-modal {
             position: fixed;
@@ -248,8 +256,11 @@
 
     <script>
         window.addEventListener('DOMContentLoaded', () => {
-            const hour = new Date().getHours();
-            if (hour >= 18 || hour < 6) toggleTheme();
+            if (!localStorage.getItem('hc_theme')) {
+                const hour = new Date().getHours();
+                if (hour >= 18 || hour < 6) isDark = true;
+            }
+            applyTheme();
             updateCartBadge();
         });
 
@@ -422,7 +433,7 @@
                             <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
                         </div>
                         <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
-                        <button class="btn-comments" onclick="openProductComments('${docSnap.id}', '${p.name}')" style="display:none; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px; border-radius:12px; margin-top:8px; width:100%; font-family:inherit; font-weight:700; cursor:pointer; font-size:12px;">💬 Reseñas</button>
+                        <button class="btn-comments" onclick="openProductComments('${docSnap.id}', '${p.name}')" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px; border-radius:12px; margin-top:8px; width:100%; font-family:inherit; font-weight:700; cursor:pointer; font-size:12px;">💬 Ver Reseñas</button>
                     `;
 
                     let cat = p.category || 'dulces';
@@ -506,7 +517,7 @@
             document.getElementById('comments-rating').value = rating;
             const stars = document.getElementById('comments-stars').querySelectorAll('span');
             stars.forEach((star, index) => {
-                star.style.color = index < rating ? 'var(--accent-green)' : 'var(--border-color)';
+                star.style.color = index < rating ? '#ffd45e' : 'var(--border-color)';
                 star.innerText = index < rating ? '★' : '☆';
             });
         };

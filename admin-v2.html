@@ -748,6 +748,7 @@
                     <a href="https://happycorner.top" target="_blank" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);">🏠 happycorner.top</a>
                     <a href="/pos-v2" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px;">🛒 Ir al POS</a>
                     <button class="admin-btn" style="background:var(--accent-green); font-size:13px; padding:10px 18px;" onclick="openCreateClientModal()">➕ Crear Cliente</button>
+                    <button class="admin-btn" style="background:var(--accent-purple); font-size:13px; padding:10px 18px;" onclick="document.getElementById('ip-search-modal').classList.add('active');">🔍 Consultar IP</button>
                     <button class="admin-btn" style="background:#333; color:var(--text-color); border:1px solid var(--border-color); font-size:13px; padding:10px 18px;" onclick="switchSidebar('contracts')">📄 Ver Contratos</button>
                 </div>
 
@@ -1651,6 +1652,11 @@
             </div>
 
             <div id="ip-search-ban-status" style="margin-bottom:16px;"></div>
+            <div id="ip-search-ban-actions" style="margin-bottom:20px; display:none; gap:10px;">
+                <input type="text" id="ip-ban-reason" class="admin-input" placeholder="Motivo del baneo (opcional)" style="flex:1; font-size:13px;">
+                <button class="admin-btn" id="btn-ban-ip" style="background:var(--accent-red); font-size:13px;" onclick="banCurrentIp()">Banear</button>
+                <button class="admin-btn" id="btn-unban-ip" style="background:var(--accent-green); font-size:13px; display:none;" onclick="unbanCurrentIp()">Desbanear</button>
+            </div>
 
             <div style="max-height:300px; overflow-y:auto; border: 1px solid var(--border-color); border-radius: 12px; background:var(--bg-color);">
                 <table class="orders-table" style="margin:0;">
@@ -2158,7 +2164,7 @@
             // KPIs
             const todayRevenue = todayOrders
                 .filter(o => o.status !== 'cancelled')
-                .reduce((sum, o) => sum + parsePrice(o.total), 0);
+                .reduce((sum, o) => sum + Math.max(0, parsePrice(o.total) - parsePrice(o.refundAmount || 0)), 0);
 
             const pendingCount = allOrders.filter(o => o.status === 'pending' || o.status === 'preparing').length;
 
@@ -2496,7 +2502,7 @@
                     if (it.refunded) return ''; // No mostrar si ya está reembolsado
                     return `
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity || it.qty || 1}x ${it.name || it.titulo || 'Producto'} ($${((it.price || it.precio || 0) * (it.quantity || it.qty || 1)).toLocaleString()})</label>
+                        <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity || it.qty || 1}x ${it.name || it.titulo || 'Producto'} ($${(parsePrice(it.price || it.precio || 0) * (it.quantity || it.qty || 1)).toLocaleString()})</label>
                     </div>
                 `}).join('');
                 if (!itemsHtml) itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Todos los ítems ya fueron reembolsados.</div>`;
@@ -2539,7 +2545,7 @@
                         const idx = parseInt(cb.value);
                         const item = updatedItems[idx];
                         const qty = item.quantity || item.qty || 1;
-                        const price = item.price || item.precio || 0;
+                        const price = parsePrice(item.price || item.precio || 0);
                         refundTotal += (price * qty);
                         itemsToRefundText.push(item.name || item.titulo);
                         item.refunded = true; // Mark as refunded
@@ -2580,6 +2586,29 @@
                 }
                 
                 await updateDoc(doc(db, 'orders', order.id), updateData);
+
+                // Send Refund Email if email exists
+                if (order.customerEmail || order.email) {
+                    try {
+                        const token = await auth.currentUser.getIdToken();
+                        await fetch('https://happycorner.top/api/account?action=sendRefundEmail', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: JSON.stringify({
+                                orderId: order.id,
+                                email: order.customerEmail || order.email,
+                                customerName: order.nombre || order.customerName || 'Cliente',
+                                refundedItems: itemsToRefundText,
+                                refundTotal: refundTotal
+                            })
+                        });
+                    } catch (emailErr) {
+                        console.error('Error sending refund email', emailErr);
+                    }
+                }
 
                 hcAlert('✅ Reembolso procesado con éxito.', 'success');
                 document.getElementById('refund-modal').remove();
@@ -2647,13 +2676,75 @@
                     }
                 }
 
+                const actionsDiv = document.getElementById('ip-search-ban-actions');
+                const btnBan = document.getElementById('btn-ban-ip');
+                const btnUnban = document.getElementById('btn-unban-ip');
+
+                actionsDiv.style.display = 'flex';
+
                 if (isBanned) {
                     statusDiv.innerHTML = `<div style="background:rgba(235,87,87,0.1); color:var(--accent-red); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">⛔ Esta IP/Dispositivo está BANEADO. Motivo: ${reason}</div>`;
+                    btnBan.style.display = 'none';
+                    btnUnban.style.display = 'block';
                 } else {
                     statusDiv.innerHTML = `<div style="background:rgba(46,213,115,0.1); color:var(--accent-green); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">✅ Esta IP/Dispositivo NO está baneado.</div>`;
+                    btnBan.style.display = 'block';
+                    btnUnban.style.display = 'none';
                 }
             } catch (e) {
                 console.error(e);
+            }
+        };
+
+        window.banCurrentIp = async function() {
+            const input = document.getElementById('ip-search-input').value.trim();
+            const reason = document.getElementById('ip-ban-reason').value.trim() || 'Bloqueo manual por Admin';
+            if (!input) return;
+
+            if (!confirm(`¿Estás seguro de banear a: ${input}?`)) return;
+
+            try {
+                // Generamos un ID seguro para firestore
+                const safeId = input.replace(/\//g, '_');
+                await setDoc(doc(db, 'banned_entities', safeId), {
+                    ip: input.includes('.') || input.includes(':') ? input : null,
+                    device: !input.includes('.') && !input.includes(':') ? input : null,
+                    reason: reason,
+                    bannedAt: new Date().toISOString()
+                });
+                hcAlert("Baneado exitosamente.", "success");
+                performIpSearch();
+            } catch (e) {
+                console.error(e);
+                hcAlert("Error al banear", "error");
+            }
+        };
+
+        window.unbanCurrentIp = async function() {
+            const input = document.getElementById('ip-search-input').value.trim();
+            if (!input) return;
+
+            if (!confirm(`¿Estás seguro de DESBANEAR a: ${input}?`)) return;
+
+            try {
+                const bansRef = collection(db, 'banned_entities');
+                let q = query(bansRef, where('ip', '==', input));
+                let snap = await getDocs(q);
+                if (snap.empty) {
+                    q = query(bansRef, where('device', '==', input));
+                    snap = await getDocs(q);
+                }
+
+                if (!snap.empty) {
+                    const batch = writeBatch(db);
+                    snap.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                    hcAlert("Desbaneado exitosamente.", "success");
+                    performIpSearch();
+                }
+            } catch (e) {
+                console.error(e);
+                hcAlert("Error al desbanear", "error");
             }
         };
 
@@ -2671,8 +2762,8 @@
                 // HappyCorner usa s.html para acortar links, normalmente se necesita crearlos en BD
                 // Por rapidez, creamos un documento corto
                 const shortId = Math.random().toString(36).substring(2, 8);
-                await setDoc(doc(db, 'shortlinks', shortId), { url: longUrl, createdAt: new Date().toISOString() });
-                const shortUrl = `https://happycorner.top/s?id=${shortId}`;
+                await setDoc(doc(db, 'shortlinks', shortId), { target: longUrl, createdAt: new Date().toISOString() });
+                const shortUrl = `https://happycorner.top/s?code=${shortId}`;
                 
                 await navigator.clipboard.writeText(shortUrl);
                 hcAlert("✅ Link único copiado al portapapeles: " + shortUrl, "success");
@@ -2700,7 +2791,7 @@
             document.getElementById('instant-review-rating').value = rating;
             const stars = document.getElementById('instant-review-stars').querySelectorAll('span');
             stars.forEach((star, index) => {
-                star.style.color = index < rating ? 'var(--accent-green)' : 'var(--border-color)';
+                star.style.color = index < rating ? '#ffd45e' : 'var(--border-color)';
                 star.innerText = index < rating ? '★' : '☆';
             });
         };
@@ -4046,7 +4137,8 @@
             // ---- KPIs ----
             const totalRevenue = orders.reduce((sum, o) => {
                 const raw = String(o.total || '0').replace(/[^0-9.]/g, '');
-                return sum + (parseFloat(raw) || 0);
+                const rawRefund = String(o.refundAmount || '0').replace(/[^0-9.]/g, '');
+                return sum + Math.max(0, (parseFloat(raw) || 0) - (parseFloat(rawRefund) || 0));
             }, 0);
             const uniqueClients = new Set(orders.map(o => o.customerUID || o.customer?.uid).filter(Boolean)).size;
             const avgTicket = orders.length > 0 ? totalRevenue / orders.length : 0;
@@ -4073,7 +4165,8 @@
                 const key = `${ts.getFullYear()}-${String(ts.getMonth()+1).padStart(2,'0')}`;
                 if (revenueByMonth[key] !== undefined) {
                     const raw = String(o.total || '0').replace(/[^0-9.]/g, '');
-                    revenueByMonth[key] += parseFloat(raw) || 0;
+                    const rawRefund = String(o.refundAmount || '0').replace(/[^0-9.]/g, '');
+                    revenueByMonth[key] += Math.max(0, (parseFloat(raw) || 0) - (parseFloat(rawRefund) || 0));
                 }
             });
 

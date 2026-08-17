@@ -170,13 +170,14 @@
             btn.innerText = "ESPERA...";
 
             const resumen = sel.map(p => `${carrito[p.id]}x ${p.nombre}`).join(', ');
+            const items = sel.map(p => ({ id: p.id, name: p.nombre, price: p.precio, qty: carrito[p.id] }));
             const totalStr = document.getElementById('total-view').innerText;
 
             try {
                 const res = await fetch('/api/getOrders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, whatsapp: tel, resumen, total: totalStr })
+                    body: JSON.stringify({ nombre, whatsapp: tel, resumen, total: totalStr, items })
                 });
 
                 if (res.status === 403) {

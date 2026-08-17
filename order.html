@@ -222,7 +222,7 @@
         });
 
         // --- THEME & NAV ---
-        let isDark = false;
+        
         window.toggleTheme = function () {
             isDark = !isDark;
             const themeBtn = document.getElementById('theme-icon');
@@ -463,9 +463,10 @@
                 metodo_pago: document.getElementById('metodo_pago').value,
                 tipo_entrega: document.getElementById('tipo_entrega').value,
                  happycodigo: document.getElementById('puntos_code').value ? 'HC' + document.getElementById('puntos_code').value.trim().toUpperCase() : null,
-                 propina: document.getElementById('hidden-total').getAttribute('data-propina') || "$0",
-                 customerUID: auth.currentUser ? auth.currentUser.uid : null,
-                 customerCode: document.getElementById('puntos_code').value ? 'HC' + document.getElementById('puntos_code').value.trim().toUpperCase() : null
+                propina: document.getElementById('hidden-total').getAttribute('data-propina') || "$0",
+                customerUID: auth.currentUser ? auth.currentUser.uid : null,
+                customerCode: document.getElementById('puntos_code').value ? 'HC' + document.getElementById('puntos_code').value.trim().toUpperCase() : null,
+                items: cart
             };
 
             const btn = e.target.querySelector('button[type="submit"]');

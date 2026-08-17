@@ -829,6 +829,67 @@ export default async function handler(req, res) {
                 }
             }
 
+            // --- ACCIÓN: sendRefundEmail (SOLO ADMIN) ---
+            if (action === 'sendRefundEmail') {
+                const { orderId, email, customerName, refundedItems, refundTotal } = req.body || {};
+                
+                if (!orderId || !email) {
+                    return json(res, 400, { error: 'Faltan campos obligatorios para el correo de reembolso' });
+                }
+
+                // Verify Admin
+                const idToken = (req.headers.authorization || '').replace('Bearer ', '');
+                if (!idToken) return json(res, 401, { error: 'No autenticado.' });
+                let decoded;
+                try {
+                    decoded = await auth.verifyIdToken(idToken);
+                    const adminSnap = await db.collection('users').doc(decoded.uid).get();
+                    if (!adminSnap.exists || adminSnap.data().role !== 'admin') {
+                        return json(res, 403, { error: 'No autorizado. Se requiere rol admin.' });
+                    }
+                } catch {
+                    return json(res, 401, { error: 'Token inválido.' });
+                }
+                
+                const emailContent = `
+                    <p style="margin:0 0 20px;">Hola <strong>${customerName || 'Cliente'}</strong>,</p>
+                    <p style="margin:0 0 16px;">Se ha procesado un reembolso para tu pedido <strong>${orderId}</strong>.</p>
+                    
+                    <div style="background:rgba(255,82,153,0.08); border:1px solid rgba(255,82,153,0.2); padding:15px; border-radius:12px; margin:20px 0; text-align:center;">
+                        <p style="margin:0; color:#888; font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Monto Reembolsado</p>
+                        <p style="margin:5px 0 0 0; color:#ff5299; font-size:22px; font-weight:900;">$${Number(refundTotal).toLocaleString('es-CO')}</p>
+                    </div>
+                    
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin:20px 0; font-size:14px; line-height:1.6;">
+                        <p style="margin:0; color:#ccc;">
+                          <strong>Detalle de productos reembolsados:</strong><br>
+                          ${(refundedItems || []).map(i => `- ${i}`).join('<br>')}
+                        </p>
+                    </div>
+                    
+                    <p style="margin:20px 0 16px; line-height:1.6;">Si tienes alguna duda sobre este reembolso, por favor contáctanos.</p>
+                `;
+                
+                const resendKey = process.env.RESEND_API_KEY;
+                if (!resendKey) return json(res, 500, { error: 'Email service not configured' });
+                
+                const { Resend } = await import('resend');
+                const resend = new Resend(resendKey);
+                
+                try {
+                    await resend.emails.send({
+                        from: 'Happy Corner <noreply@email.happycorner.top>',
+                        reply_to: 'happycorner.com@gmail.com',
+                        to: email,
+                        subject: `Reembolso procesado - Pedido ${orderId}`,
+                        html: getEmailTemplate(emailContent, 'Reembolso de Pedido')
+                    });
+                    return json(res, 200, { ok: true });
+                } catch (err) {
+                    console.error('Refund email error:', err);
+                    return json(res, 500, { error: 'Failed to send refund email' });
+                }
+            }
             // --- ACCIÓN: sendDeliveryEmail (USUARIO AUTENTICADO — no requiere ser admin) ---
             if (action === 'sendDeliveryEmail' || action === 'send-delivery') {
                 const { orderId, email, customerName } = req.body || {};

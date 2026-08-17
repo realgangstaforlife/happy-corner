@@ -169,7 +169,7 @@
         import { collection, query, where, orderBy, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Night Mode toggler
-        let isDark = false;
+        
         window.toggleTheme = function () {
             isDark = !isDark;
             const themeBtn = document.getElementById('theme-icon');
@@ -236,7 +236,7 @@
                         <div class="review-title">${review.title || 'Reseña'}</div>
                         <div class="review-content">"${review.content}"</div>
                         <div class="review-footer">
-                            <div class="review-author">- ${review.displayName || 'Anónimo'}</div>
+                            <div class="review-author">- ${review.userName || review.displayName || 'Anónimo'}</div>
                             ${badgeHtml}
                         </div>
                     `;

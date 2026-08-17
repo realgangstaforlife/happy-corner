@@ -217,6 +217,7 @@ export default async function handler(req, res) {
                     email: pedidoData.email || null,
                     whatsapp: cleanNumber,
                     resumen: pedidoData.resumen,
+                    items: pedidoData.items || [],
                     total: totalDisplay,
                     paymentMethod: pedidoData.metodo_pago,
                     status: 'pending',

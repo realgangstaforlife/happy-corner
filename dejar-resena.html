@@ -172,7 +172,7 @@
             document.getElementById('review-rating').value = rating;
             const stars = document.getElementById('review-stars').querySelectorAll('span');
             stars.forEach((star, index) => {
-                star.style.color = index < rating ? 'var(--accent-green)' : 'var(--border-color)';
+                star.style.color = index < rating ? '#ffd45e' : 'var(--border-color)';
                 star.innerText = index < rating ? '★' : '☆';
             });
         }

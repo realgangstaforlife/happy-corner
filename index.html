@@ -261,17 +261,24 @@
         // -----------------------
         // INTERFAZ Y DARK MODE
         // -----------------------
-        let isDark = false;
-        function toggleTheme() {
-            isDark = !isDark;
+        
+        let isDark = localStorage.getItem('hc_theme') === 'dark';
+        
+        function applyTheme() {
             const themeBtn = document.getElementById('theme-icon');
             if (isDark) {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeBtn.innerText = '☀️';
+                if (themeBtn) themeBtn.innerText = '☀️';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeBtn.innerText = '🌙';
+                if (themeBtn) themeBtn.innerText = '🌙';
             }
+        }
+
+        function toggleTheme() {
+            isDark = !isDark;
+            localStorage.setItem('hc_theme', isDark ? 'dark' : 'light');
+            applyTheme();
         }
 
         const menuBtn = document.getElementById('menuBtn');
@@ -297,8 +304,11 @@
 
         // Auto-detect Night Mode
         window.addEventListener('DOMContentLoaded', () => {
-            const hour = new Date().getHours();
-            if (hour >= 18 || hour < 6) toggleTheme();
+            if (!localStorage.getItem('hc_theme')) {
+                const hour = new Date().getHours();
+                if (hour >= 18 || hour < 6) isDark = true;
+            }
+            applyTheme();
             updateCartBadge();
         });
 

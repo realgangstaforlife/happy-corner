@@ -22,12 +22,14 @@
     
     --input-bg: #f5f6fa;
     --input-border: #dcdde1;
+    --surface-card: #ffffff;
 }
 
 [data-theme="dark"] {
     /* Candy / Neon Dark Mode */
     --bg-color: #0b0c10;
     --surface-color: #1a1b24;
+    --surface-card: #252736;
     --text-color: #ffffff;
     --text-muted: #a0a5b5;
     
