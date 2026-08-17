@@ -158,7 +158,93 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        /* --- COMMENTS MODAL --- */
+        .comments-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .comments-modal.active { display: flex; }
+        .comments-content {
+            background: var(--surface-card);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .comments-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .comments-list {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .comment-item {
+            background: var(--surface-color);
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .comments-form {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body class="bg-image-body">
+
+    <!-- Modal Comentarios -->
+    <div class="comments-modal" id="comments-modal">
+        <div class="comments-content">
+            <button onclick="document.getElementById('comments-modal').classList.remove('active')" style="position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">✕</button>
+            <div class="comments-header">
+                <h3 style="margin:0; font-weight:900;" id="comments-product-name">Comentarios</h3>
+            </div>
+            <div class="comments-list" id="comments-list">
+                <div style="text-align:center; color:var(--text-muted); padding:20px;">Cargando...</div>
+            </div>
+            <div class="comments-form">
+                <input type="hidden" id="comments-product-id">
+                <div style="display:flex; gap:8px; font-size:24px; justify-content:center; cursor:pointer; color:var(--border-color);" id="comments-stars">
+                    <span onclick="setCommentRating(1)">☆</span>
+                    <span onclick="setCommentRating(2)">☆</span>
+                    <span onclick="setCommentRating(3)">☆</span>
+                    <span onclick="setCommentRating(4)">☆</span>
+                    <span onclick="setCommentRating(5)">☆</span>
+                </div>
+                <input type="hidden" id="comments-rating" value="0">
+                <textarea id="comments-text" placeholder="Escribe tu reseña..." rows="3" style="width:100%; border-radius:12px; padding:12px; background:var(--surface-color); border:1px solid var(--border-color); color:var(--text-color); font-family:inherit; resize:none; box-sizing:border-box;"></textarea>
+                <button onclick="submitProductComment()" class="btn-add" style="margin:0;">Enviar Reseña</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Background Image container -->
+    <div class="bg-image"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <div class="overlay" id="overlay"></div>
             const hour = new Date().getHours();
             if (hour >= 18 || hour < 6) toggleTheme();
             updateCartBadge();
@@ -269,11 +355,21 @@
     </script>
     <script src="/footer.js"></script>
     <script type="module">
-        import { initPromise, db } from './firebase-auth.js';
-        import { collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { initPromise, db, auth, onAuthStateChanged } from './firebase-auth.js';
+        import { collection, getDocs, addDoc, query, where } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        let currentUser = null;
 
         async function initCatalog() {
             await initPromise;
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    currentUser = user;
+                    // Show comments buttons
+                    document.querySelectorAll('.btn-comments').forEach(btn => btn.style.display = 'block');
+                }
+            });
             const containers = {
                 combos:     document.getElementById('cat-combos'),
                 dulces:     document.getElementById('cat-dulces'),
@@ -323,6 +419,7 @@
                             <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
                         </div>
                         <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
+                        <button class="btn-comments" onclick="openProductComments('${docSnap.id}', '${p.name}')" style="display:none; background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px; border-radius:12px; margin-top:8px; width:100%; font-family:inherit; font-weight:700; cursor:pointer; font-size:12px;">💬 Reseñas</button>
                     `;
 
                     let cat = p.category || 'dulces';
@@ -361,6 +458,100 @@
                 });
             }
         }
+
+        window.openProductComments = async function(productId, productName) {
+            document.getElementById('comments-product-id').value = productId;
+            document.getElementById('comments-product-name').innerText = `Reseñas de ${productName}`;
+            document.getElementById('comments-text').value = '';
+            setCommentRating(0);
+            document.getElementById('comments-modal').classList.add('active');
+            
+            const listEl = document.getElementById('comments-list');
+            listEl.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Cargando...</div>';
+
+            try {
+                const q = query(collection(db, 'reviews'), where('productId', '==', productId), where('status', '==', 'approved'));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    listEl.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:20px;">Aún no hay reseñas. ¡Sé el primero!</div>';
+                    return;
+                }
+
+                let html = '';
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    const stars = '★'.repeat(data.rating) + '☆'.repeat(5 - data.rating);
+                    html += `
+                        <div class="comment-item">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                                <span style="font-weight:900;">${data.userName || 'Usuario'}</span>
+                                <span style="color:var(--accent-green); font-size:12px;">${new Date(data.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div style="color:var(--accent-green); margin-bottom:8px;">${stars}</div>
+                            <div style="font-size:14px; color:var(--text-muted);">${data.content}</div>
+                        </div>
+                    `;
+                });
+                listEl.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+                listEl.innerHTML = '<div style="text-align:center; color:var(--accent-red); padding:20px;">Error al cargar reseñas.</div>';
+            }
+        };
+
+        window.setCommentRating = function(rating) {
+            document.getElementById('comments-rating').value = rating;
+            const stars = document.getElementById('comments-stars').querySelectorAll('span');
+            stars.forEach((star, index) => {
+                star.style.color = index < rating ? 'var(--accent-green)' : 'var(--border-color)';
+                star.innerText = index < rating ? '★' : '☆';
+            });
+        };
+
+        window.submitProductComment = async function() {
+            if (!currentUser) {
+                hcAlert("Debes iniciar sesión para comentar.", "warning");
+                return;
+            }
+
+            const productId = document.getElementById('comments-product-id').value;
+            const rating = parseInt(document.getElementById('comments-rating').value);
+            const content = document.getElementById('comments-text').value.trim();
+
+            if (rating === 0 || !content) {
+                hcAlert("Por favor ingresa una calificación y un comentario.", "warning");
+                return;
+            }
+
+            try {
+                const btn = document.querySelector('.comments-form .btn-add');
+                const ogText = btn.innerText;
+                btn.innerText = "Enviando...";
+                btn.disabled = true;
+
+                await addDoc(collection(db, 'reviews'), {
+                    productId: productId,
+                    uid: currentUser.uid,
+                    userName: currentUser.displayName || currentUser.email || 'Usuario',
+                    rating: rating,
+                    title: "Reseña de Producto",
+                    content: content,
+                    status: 'pending', // Requiere aprobación del admin
+                    createdAt: new Date().toISOString(),
+                    verified: true
+                });
+
+                hcAlert("✅ ¡Reseña enviada! Pendiente de aprobación.", "success");
+                document.getElementById('comments-modal').classList.remove('active');
+                
+                btn.innerText = ogText;
+                btn.disabled = false;
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error al enviar la reseña.", "error");
+            }
+        };
+
         window.addEventListener('DOMContentLoaded', initCatalog);
     </script>
 </body>
