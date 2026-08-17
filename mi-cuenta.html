@@ -883,7 +883,9 @@
             nuevo dominio.</span>
         <button class="domain-banner-close" onclick="dismissDomainBanner()" aria-label="Cerrar">✕</button>
     </div>
-    <script>(function () { if (localStorage.getItem('hc_domain_banner_v1') === '1') { var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; } })(); window.dismissDomainBanner = function () { localStorage.setItem('hc_domain_banner_v1', '1'); var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; };</script>
+    <script>
+        window.isDark = false;
+        var isDark = false;(function () { if (localStorage.getItem('hc_domain_banner_v1') === '1') { var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; } })(); window.dismissDomainBanner = function () { localStorage.setItem('hc_domain_banner_v1', '1'); var b = document.getElementById('domain-banner'); if (b) b.style.display = 'none'; };</script>
 
     <div class="side-menu" id="sideMenu">
         <a href="/index">🏠 Inicio</a>

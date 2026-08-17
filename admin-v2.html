@@ -2631,16 +2631,21 @@
         };
 
         window.performIpSearch = async function() {
-            const input = document.getElementById('ip-search-input').value.trim();
+            let input = document.getElementById('ip-search-input').value.trim();
             if (!input) return;
+            
+            const lowerInput = input.toLowerCase();
 
             const resultsTbody = document.getElementById('ip-search-results');
             const statusDiv = document.getElementById('ip-search-ban-status');
             resultsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Buscando...</td></tr>';
             statusDiv.innerHTML = '';
 
-            // Check orders locally
-            const matchingOrders = allOrders.filter(o => o.clientIp === input || o.clientDevice === input);
+            // Check orders locally (case-insensitive)
+            const matchingOrders = allOrders.filter(o => 
+                (o.clientIp && o.clientIp.toLowerCase() === lowerInput) || 
+                (o.clientDevice && o.clientDevice.toLowerCase() === lowerInput)
+            );
             
             if (matchingOrders.length > 0) {
                 resultsTbody.innerHTML = matchingOrders.map(o => `
@@ -2655,26 +2660,20 @@
                 resultsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No se encontraron pedidos.</td></tr>';
             }
 
-            // Check ban status globally using the existing checkBan API but wait, checkBan takes the caller's IP!
-            // We need a way to check if an arbitrary IP is banned. Let's do it via Firestore directly since we are Admin!
             try {
                 const bansRef = collection(db, 'banned_entities');
-                let q = query(bansRef, where('ip', '==', input));
-                let snap = await getDocs(q);
+                let snap = await getDocs(bansRef);
                 let reason = '';
                 let isBanned = false;
 
-                if (!snap.empty) {
-                    isBanned = true;
-                    reason = snap.docs[0].data().reason || 'Bloqueo manual';
-                } else {
-                    q = query(bansRef, where('device', '==', input));
-                    snap = await getDocs(q);
-                    if (!snap.empty) {
+                snap.forEach(doc => {
+                    const data = doc.data();
+                    if ((data.ip && data.ip.toLowerCase() === lowerInput) || 
+                        (data.device && data.device.toLowerCase() === lowerInput)) {
                         isBanned = true;
-                        reason = snap.docs[0].data().reason || 'Bloqueo manual';
+                        reason = data.reason || 'Bloqueo manual';
                     }
-                }
+                });
 
                 const actionsDiv = document.getElementById('ip-search-ban-actions');
                 const btnBan = document.getElementById('btn-ban-ip');
@@ -2692,7 +2691,8 @@
                     btnUnban.style.display = 'none';
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Error al buscar baneos", e);
+                statusDiv.innerHTML = `<div style="color:var(--accent-red); font-size:13px;">Error de permisos de Firestore. Intenta de nuevo.</div>`;
             }
         };
 
@@ -2705,7 +2705,7 @@
 
             try {
                 // Generamos un ID seguro para firestore
-                const safeId = input.replace(/\//g, '_');
+                const safeId = input.replace(/\//g, '_').replace(/\./g, '-');
                 await setDoc(doc(db, 'banned_entities', safeId), {
                     ip: input.includes('.') || input.includes(':') ? input : null,
                     device: !input.includes('.') && !input.includes(':') ? input : null,
@@ -2723,24 +2723,31 @@
         window.unbanCurrentIp = async function() {
             const input = document.getElementById('ip-search-input').value.trim();
             if (!input) return;
+            const lowerInput = input.toLowerCase();
 
             if (!confirm(`¿Estás seguro de DESBANEAR a: ${input}?`)) return;
 
             try {
                 const bansRef = collection(db, 'banned_entities');
-                let q = query(bansRef, where('ip', '==', input));
-                let snap = await getDocs(q);
-                if (snap.empty) {
-                    q = query(bansRef, where('device', '==', input));
-                    snap = await getDocs(q);
-                }
+                let snap = await getDocs(bansRef);
+                const batch = writeBatch(db);
+                let deletedCount = 0;
+                
+                snap.forEach(d => {
+                    const data = d.data();
+                    if ((data.ip && data.ip.toLowerCase() === lowerInput) || 
+                        (data.device && data.device.toLowerCase() === lowerInput)) {
+                        batch.delete(d.ref);
+                        deletedCount++;
+                    }
+                });
 
-                if (!snap.empty) {
-                    const batch = writeBatch(db);
-                    snap.forEach(d => batch.delete(d.ref));
+                if (deletedCount > 0) {
                     await batch.commit();
                     hcAlert("Desbaneado exitosamente.", "success");
                     performIpSearch();
+                } else {
+                    hcAlert("No se encontró en la lista de baneados.", "warning");
                 }
             } catch (e) {
                 console.error(e);

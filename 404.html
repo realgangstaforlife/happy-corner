@@ -61,7 +61,7 @@
         }
     </style>
 </head>
-<body class="bg-image-body">
+<body style="background: var(--bg-color);">
         <header>
         <a href="/index" class="logo">
             <img src="loguito.png" alt="HappyCorner" class="logo-img">
@@ -109,7 +109,10 @@
     </div>
 
     <script>
+        window.isDark = false;
+        var isDark = false;
         
+        let isDark = false;
         function toggleTheme() {
             isDark = !isDark;
             const themeBtn = document.getElementById('theme-icon');

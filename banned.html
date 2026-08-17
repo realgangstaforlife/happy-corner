@@ -87,7 +87,7 @@
         }
     </style>
 </head>
-<body class="bg-image-body">
+<body style="background: var(--bg-color);">
     <div class="banned-container">
         <div class="banned-icon">⛔</div>
         <div class="banned-title">Acceso Suspendido</div>
@@ -100,6 +100,8 @@
     </div>
 
     <script>
+        window.isDark = false;
+        var isDark = false;
         const urlParams = new URLSearchParams(window.location.search);
         const reason = urlParams.get('reason');
         if (reason) {
