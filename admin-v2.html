@@ -2500,9 +2500,27 @@
             if (Array.isArray(order.items) && order.items.length > 0) {
                 itemsHtml = order.items.map((it, idx) => {
                     if (it.refunded) return ''; // No mostrar si ya está reembolsado
+                    
+                    const qty = it.quantity || it.qty || 1;
+                    const price = parsePrice(it.price || it.precio || 0);
+                    const title = it.name || it.titulo || 'Producto';
+                    
+                    let qtyHtml = '';
+                    if (qty > 1) {
+                        qtyHtml = `
+                        <div style="margin-top:4px; margin-left:24px; display:none;" id="qty-container-${idx}">
+                            <span style="font-size:12px; color:var(--text-muted);">Cant. a reembolsar:</span>
+                            <input type="number" id="refund-qty-${idx}" min="1" max="${qty}" value="${qty}" style="width:50px; padding:2px 4px; border:1px solid var(--border-color); border-radius:4px; font-size:12px;">
+                        </div>`;
+                    }
+                    
                     return `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity || it.qty || 1}x ${it.name || it.titulo || 'Producto'} ($${(parsePrice(it.price || it.precio || 0) * (it.quantity || it.qty || 1)).toLocaleString()})</label>
+                    <div style="margin-bottom:8px;">
+                        <label style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                            <input type="checkbox" id="refund-item-${idx}" value="${idx}" onchange="document.getElementById('qty-container-${idx}') ? (document.getElementById('qty-container-${idx}').style.display = this.checked ? 'block' : 'none') : null"> 
+                            ${qty}x ${title} ($${(price * qty).toLocaleString()})
+                        </label>
+                        ${qtyHtml}
                     </div>
                 `}).join('');
                 if (!itemsHtml) itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">Todos los ítems ya fueron reembolsados.</div>`;
@@ -2516,7 +2534,7 @@
                     <button class="modal-close" onclick="document.getElementById('refund-modal').remove()">✕</button>
                     <h2 style="font-weight:900; margin-bottom:12px;">💸 Reembolsar Pedido ${order.id}</h2>
                     <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Selecciona los ítems a reembolsar:</p>
-                    <div style="margin-bottom:20px; max-height:200px; overflow-y:auto; border:1px solid var(--border-color); padding:10px; border-radius:12px;">
+                    <div style="margin-bottom:20px; max-height:300px; overflow-y:auto; border:1px solid var(--border-color); padding:10px; border-radius:12px;">
                         ${itemsHtml}
                     </div>
                     <button class="admin-btn" style="background:var(--accent-red);" onclick="submitRefund('${order.id}')">Confirmar Reembolso</button>
@@ -2537,22 +2555,58 @@
             let updatedItems = [];
             
             if (Array.isArray(order.items) && order.items.length > 0) {
-                // clone items
-                updatedItems = JSON.parse(JSON.stringify(order.items));
+                updatedItems = []; // Reconstruiremos el array para permitir división
+                
                 const checkboxes = document.querySelectorAll('[id^="refund-item-"]');
-                checkboxes.forEach(cb => {
-                    if (cb.checked) {
-                        const idx = parseInt(cb.value);
-                        const item = updatedItems[idx];
-                        const qty = item.quantity || item.qty || 1;
+                let anyChecked = false;
+                
+                // Mapa para procesar items, dividiéndolos si es reembolso parcial
+                order.items.forEach((item, idx) => {
+                    const cb = document.getElementById(`refund-item-${idx}`);
+                    if (cb && cb.checked) {
+                        anyChecked = true;
+                        const qtyInput = document.getElementById(`refund-qty-${idx}`);
+                        const originalQty = item.quantity || item.qty || 1;
+                        let refundQty = qtyInput ? parseInt(qtyInput.value) : originalQty;
+                        
+                        // Validaciones de seguridad
+                        if (refundQty > originalQty) refundQty = originalQty;
+                        if (refundQty < 1) refundQty = 1;
+
                         const price = parsePrice(item.price || item.precio || 0);
-                        refundTotal += (price * qty);
-                        itemsToRefundText.push(item.name || item.titulo);
-                        item.refunded = true; // Mark as refunded
+                        refundTotal += (price * refundQty);
+                        
+                        itemsToRefundText.push(`${refundQty}x ${item.name || item.titulo}`);
+
+                        if (refundQty < originalQty) {
+                            // Reembolso parcial: dividir el ítem en dos
+                            const remainingQty = originalQty - refundQty;
+                            
+                            // Item 1: La parte no reembolsada
+                            let keptItem = JSON.parse(JSON.stringify(item));
+                            if (keptItem.quantity !== undefined) keptItem.quantity = remainingQty;
+                            if (keptItem.qty !== undefined) keptItem.qty = remainingQty;
+                            updatedItems.push(keptItem);
+                            
+                            // Item 2: La parte reembolsada
+                            let refundedItem = JSON.parse(JSON.stringify(item));
+                            if (refundedItem.quantity !== undefined) refundedItem.quantity = refundQty;
+                            if (refundedItem.qty !== undefined) refundedItem.qty = refundQty;
+                            refundedItem.refunded = true;
+                            updatedItems.push(refundedItem);
+                        } else {
+                            // Reembolso total de este ítem
+                            let refundedItem = JSON.parse(JSON.stringify(item));
+                            refundedItem.refunded = true;
+                            updatedItems.push(refundedItem);
+                        }
+                    } else {
+                        // Ítem no seleccionado para reembolso o ya estaba reembolsado
+                        updatedItems.push(JSON.parse(JSON.stringify(item)));
                     }
                 });
 
-                if (itemsToRefundText.length === 0) {
+                if (!anyChecked) {
                     hcAlert('Selecciona al menos un ítem para reembolsar.', 'warning');
                     return;
                 }
@@ -2591,7 +2645,7 @@
                 if (order.customerEmail || order.email) {
                     try {
                         const token = await auth.currentUser.getIdToken();
-                        await fetch('https://happycorner.top/api/account?action=sendRefundEmail', {
+                        await fetch('/api/account?action=sendRefundEmail', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2641,23 +2695,57 @@
             resultsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Buscando...</td></tr>';
             statusDiv.innerHTML = '';
 
-            // Check orders locally (case-insensitive)
+            // Check orders locally (wildcard includes)
             const matchingOrders = allOrders.filter(o => 
-                (o.clientIp && o.clientIp.toLowerCase() === lowerInput) || 
-                (o.clientDevice && o.clientDevice.toLowerCase() === lowerInput)
+                (o.clientIp && o.clientIp.toLowerCase().includes(lowerInput)) || 
+                (o.clientDevice && o.clientDevice.toLowerCase().includes(lowerInput))
             );
             
-            if (matchingOrders.length > 0) {
-                resultsTbody.innerHTML = matchingOrders.map(o => `
-                    <tr>
-                        <td style="font-family:monospace; font-weight:700;">${o.id}</td>
-                        <td>${o.nombre || o.customerName || 'Cliente'}</td>
-                        <td style="color:var(--primary-color); font-weight:700;">$${(o.total || 0).toLocaleString()}</td>
-                        <td style="font-size:12px; color:var(--text-muted);">${new Date(o.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
+            // Check loginSessions (We need to fetch this globally as it's not cached like allOrders)
+            let matchingLogins = [];
+            try {
+                const loginsSnap = await getDocs(collection(db, 'loginSessions'));
+                loginsSnap.forEach(doc => {
+                    const data = doc.data();
+                    if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
+                        (data.device && data.device.toLowerCase().includes(lowerInput))) {
+                        matchingLogins.push(data);
+                    }
+                });
+            } catch (err) {
+                console.error("Error fetching loginSessions", err);
+            }
+            
+            if (matchingOrders.length > 0 || matchingLogins.length > 0) {
+                let html = '';
+                
+                if (matchingOrders.length > 0) {
+                    html += `<tr><td colspan="4" style="background:var(--surface-color); font-weight:900; font-size:12px; color:var(--text-muted);">PEDIDOS RELACIONADOS</td></tr>`;
+                    html += matchingOrders.map(o => `
+                        <tr>
+                            <td style="font-family:monospace; font-weight:700;">${o.id}</td>
+                            <td>${o.nombre || o.customerName || 'Cliente'} <br> <span style="font-size:10px; color:var(--text-muted);">${o.clientDevice || o.clientIp}</span></td>
+                            <td style="color:var(--primary-color); font-weight:700;">$${(o.total || 0).toLocaleString()}</td>
+                            <td style="font-size:12px; color:var(--text-muted);">${new Date(o.createdAt).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                if (matchingLogins.length > 0) {
+                    html += `<tr><td colspan="4" style="background:var(--surface-color); font-weight:900; font-size:12px; color:var(--text-muted);">SESIONES DE LOGIN RELACIONADAS</td></tr>`;
+                    html += matchingLogins.map(l => `
+                        <tr>
+                            <td style="font-family:monospace; font-weight:700;">UID</td>
+                            <td>${l.email || l.uid} <br> <span style="font-size:10px; color:var(--text-muted);">${l.device || l.ip}</span></td>
+                            <td style="color:var(--accent-green); font-weight:700;">LOGIN</td>
+                            <td style="font-size:12px; color:var(--text-muted);">${new Date(l.timestamp).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+                
+                resultsTbody.innerHTML = html;
             } else {
-                resultsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No se encontraron pedidos.</td></tr>';
+                resultsTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No se encontraron coincidencias.</td></tr>';
             }
 
             try {
@@ -2668,8 +2756,8 @@
 
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if ((data.ip && data.ip.toLowerCase() === lowerInput) || 
-                        (data.device && data.device.toLowerCase() === lowerInput)) {
+                    if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
+                        (data.device && data.device.toLowerCase().includes(lowerInput))) {
                         isBanned = true;
                         reason = data.reason || 'Bloqueo manual';
                     }
