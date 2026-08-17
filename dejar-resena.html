@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dejar Reseña - Happy Corner</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .review-container {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 450px;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .review-stars {
+            font-size: 40px;
+            color: var(--border-color);
+            cursor: pointer;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .review-stars span.active {
+            color: var(--accent-green);
+        }
+        .review-input {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            color: white;
+            font-family: inherit;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+        }
+        .review-input:focus {
+            outline: none;
+            border-color: var(--hp-pink);
+        }
+        .review-btn {
+            background: var(--hp-gradient);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 900;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-family: inherit;
+        }
+        .review-btn:hover {
+            transform: scale(0.98);
+        }
+        .order-info {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body class="bg-image-body">
+    <div class="review-container" id="loading-container">
+        <h2 style="font-weight:900;">Cargando...</h2>
+    </div>
+
+    <div class="review-container" id="main-container" style="display:none;">
+        <div style="font-size:40px; margin-bottom:10px;">⭐</div>
+        <h2 style="font-weight:900; margin-bottom: 10px;">¡Califica tu experiencia!</h2>
+        <p style="font-size:14px; color:var(--text-muted); margin-bottom: 20px;">Tu opinión nos ayuda a mejorar en Happy Corner.</p>
+        
+        <div class="order-info" id="order-info"></div>
+
+        <input type="text" id="review-name" class="review-input" placeholder="Tu Nombre o HappyCódigo" required>
+        
+        <div class="review-stars" id="review-stars">
+            <span onclick="setRating(1)">☆</span>
+            <span onclick="setRating(2)">☆</span>
+            <span onclick="setRating(3)">☆</span>
+            <span onclick="setRating(4)">☆</span>
+            <span onclick="setRating(5)">☆</span>
+        </div>
+        <input type="hidden" id="review-rating" value="0">
+
+        <input type="text" id="review-title" class="review-input" placeholder="Título de la reseña (Ej: ¡Delicioso!)" required>
+        <textarea id="review-content" class="review-input" placeholder="Cuéntanos más sobre tu pedido..." rows="4" style="resize:vertical;" required></textarea>
+
+        <button class="review-btn" onclick="submitReview()">Enviar Reseña 🚀</button>
+    </div>
+
+    <div class="review-container" id="success-container" style="display:none;">
+        <div style="font-size:60px; margin-bottom:10px;">💖</div>
+        <h2 style="font-weight:900; color:var(--hp-pink);">¡Gracias!</h2>
+        <p style="font-size:15px; color:var(--text-muted); margin-bottom: 20px;">Tu reseña ha sido enviada exitosamente.</p>
+        <a href="/catalogo" style="display:inline-block; padding:12px 24px; background:var(--surface-color); border:1px solid var(--border-color); color:white; text-decoration:none; border-radius:12px; font-weight:700;">Volver al Catálogo</a>
+    </div>
+
+    <script type="module">
+        import { initPromise, db, auth, onAuthStateChanged } from './firebase-auth.js';
+        import { collection, addDoc, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        let orderId = new URLSearchParams(window.location.search).get('orderId');
+        let orderVerified = false;
+        let currentUser = null;
+
+        async function init() {
+            await initPromise;
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('review-name').value = user.displayName || user.email;
+                    document.getElementById('review-name').readOnly = true;
+                    document.getElementById('review-name').style.opacity = '0.7';
+                }
+            });
+
+            if (orderId) {
+                try {
+                    const snap = await getDoc(doc(db, 'orders', orderId));
+                    if (snap.exists()) {
+                        orderVerified = true;
+                        const data = snap.data();
+                        document.getElementById('order-info').innerHTML = `<b>Pedido #${orderId}</b><br>${data.resumen || 'Sin detalles'}`;
+                    } else {
+                        document.getElementById('order-info').innerHTML = `<b>Pedido #${orderId} no encontrado</b>`;
+                    }
+                } catch(e) {
+                    document.getElementById('order-info').innerHTML = `<b>Error verificando pedido #${orderId}</b>`;
+                }
+            } else {
+                document.getElementById('order-info').style.display = 'none';
+            }
+
+            document.getElementById('loading-container').style.display = 'none';
+            document.getElementById('main-container').style.display = 'block';
+        }
+
+        window.setRating = function(rating) {
+            document.getElementById('review-rating').value = rating;
+            const stars = document.getElementById('review-stars').querySelectorAll('span');
+            stars.forEach((star, index) => {
+                star.style.color = index < rating ? 'var(--accent-green)' : 'var(--border-color)';
+                star.innerText = index < rating ? '★' : '☆';
+            });
+        }
+
+        window.submitReview = async function() {
+            const name = document.getElementById('review-name').value.trim();
+            const rating = parseInt(document.getElementById('review-rating').value);
+            const title = document.getElementById('review-title').value.trim();
+            const content = document.getElementById('review-content').value.trim();
+
+            if (!name || rating === 0 || !title || !content) {
+                alert("Por favor completa todos los campos.");
+                return;
+            }
+
+            try {
+                const btn = document.querySelector('.review-btn');
+                btn.innerText = "Enviando...";
+                btn.disabled = true;
+
+                await addDoc(collection(db, 'reviews'), {
+                    orderIds: orderId ? [orderId] : [],
+                    uid: currentUser ? currentUser.uid : null,
+                    userName: name,
+                    rating: rating,
+                    title: title,
+                    content: content,
+                    status: 'pending',
+                    createdAt: new Date().toISOString(),
+                    verified: orderVerified
+                });
+
+                document.getElementById('main-container').style.display = 'none';
+                document.getElementById('success-container').style.display = 'block';
+            } catch(e) {
+                console.error(e);
+                alert("Error al enviar. Intenta de nuevo.");
+                const btn = document.querySelector('.review-btn');
+                btn.innerText = "Enviar Reseña 🚀";
+                btn.disabled = false;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
