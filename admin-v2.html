@@ -2395,11 +2395,16 @@
             const order = allOrders.find(o => o.id === orderId);
             if (!order) return;
             
-            let itemsHtml = order.items.map((it, idx) => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity}x ${it.name} ($${(it.price * it.quantity).toLocaleString()})</label>
-                </div>
-            `).join('');
+            let itemsHtml = '';
+            if (Array.isArray(order.items) && order.items.length > 0) {
+                itemsHtml = order.items.map((it, idx) => `
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <label style="font-size:14px;"><input type="checkbox" id="refund-item-${idx}" value="${idx}"> ${it.quantity || it.qty || 1}x ${it.name || it.titulo || 'Producto'} ($${((it.price || it.precio || 0) * (it.quantity || it.qty || 1)).toLocaleString()})</label>
+                    </div>
+                `).join('');
+            } else {
+                itemsHtml = `<div style="font-size:13px; color:var(--text-muted); margin-bottom:8px;">No hay desglose de ítems. Solo se puede reembolsar el total.</div>`;
+            }
 
             const modalHtml = `
             <div class="admin-modal-overlay active" id="refund-modal">
@@ -2468,11 +2473,11 @@
         window.openBanModal = function(ip, device, orderId) {
             document.getElementById('ban-ip').value = ip;
             document.getElementById('ban-device').value = device;
-            document.getElementById('ban-modal').classList.add('open');
+            document.getElementById('ban-modal').classList.add('active');
         };
 
         window.closeBanModal = function() {
-            document.getElementById('ban-modal').classList.remove('open');
+            document.getElementById('ban-modal').classList.remove('active');
             document.getElementById('ban-reason').value = '';
         };
 
