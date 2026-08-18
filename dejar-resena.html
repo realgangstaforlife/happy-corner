@@ -228,6 +228,15 @@
                     document.getElementById('guest-invite').style.display = 'block';
                 }
                 
+                // Notificar al admin por correo
+                try {
+                    fetch('/api/account?action=notifyAdminReview', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userName: name, rating: rating, content: content })
+                    }).catch(e => console.error(e));
+                } catch (e) {}
+                
                 // Trigger confetti
                 try {
                     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ff5299', '#ff9d5c', '#ffd45e'] });
