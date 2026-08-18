@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dejar Reseña - Happy Corner</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body {
             background-color: var(--bg-color);
@@ -47,7 +48,7 @@
             border-radius: 12px;
             background: var(--surface-color);
             border: 1px solid var(--border-color);
-            color: white;
+            color: var(--text-color);
             font-family: inherit;
             margin-bottom: 16px;
             box-sizing: border-box;
@@ -58,7 +59,7 @@
         }
         .review-input:read-only {
             background: rgba(255, 255, 255, 0.05);
-            color: #ccc;
+            color: var(--text-muted);
         }
         .review-btn {
             background: var(--hp-gradient);
@@ -122,7 +123,13 @@
         <div style="font-size:60px; margin-bottom:10px;">💖</div>
         <h2 style="font-weight:900; color:var(--hp-pink);">¡Gracias!</h2>
         <p style="font-size:15px; color:var(--text-muted); margin-bottom: 20px;">Tu reseña ha sido enviada exitosamente.</p>
-        <a href="/catalogo" style="display:inline-block; padding:12px 24px; background:var(--surface-color); border:1px solid var(--border-color); color:white; text-decoration:none; border-radius:12px; font-weight:700;">Volver al Catálogo</a>
+        
+        <div id="guest-invite" style="display:none; background: rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:20px;">
+             <p style="font-size:13px; color:var(--text-color); margin-bottom:10px;">¿Sabías que al tener cuenta ganas HappyScore con cada compra?</p>
+             <a href="/login.html" style="color:var(--hp-pink); font-weight:700; text-decoration:none; font-size:14px;">Iniciar Sesión / Crear Cuenta</a>
+        </div>
+        
+        <a href="/catalogo.html" style="display:inline-block; padding:12px 24px; background:var(--surface-color); border:1px solid var(--border-color); color:var(--text-color); text-decoration:none; border-radius:12px; font-weight:700;">Volver al Catálogo</a>
     </div>
 
     <script type="module">
@@ -216,6 +223,10 @@
 
                 document.getElementById('main-container').style.display = 'none';
                 document.getElementById('success-container').style.display = 'block';
+                
+                if (!currentUser) {
+                    document.getElementById('guest-invite').style.display = 'block';
+                }
                 
                 // Trigger confetti
                 try {
