@@ -273,7 +273,7 @@
 
             try {
                 const token = await currentUser.getIdToken();
-                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=verifyOnboardingCode', {
+                const resp = await fetch('/api/account?action=verifyOnboardingCode', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',

@@ -94,7 +94,7 @@
                 return;
             }
             try {
-                const res = await fetch('https://happy-corner.vercel.app/api/account?action=checkBan');
+                const res = await fetch('/api/account?action=checkBan');
                 const data = await res.json();
                 if (data.banned) {
                     localStorage.setItem('hc_blacklist', 'true');
@@ -176,7 +176,7 @@
             const totalStr = document.getElementById('total-view').innerText;
 
             try {
-                const res = await fetch('https://happy-corner.vercel.app/api/getOrders', {
+                const res = await fetch('/api/getOrders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ nombre, whatsapp: tel, resumen, total: totalStr, items })
