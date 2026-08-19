@@ -41,7 +41,7 @@ export async function parseJsonResponse(response) {
 }
 
 // Promesa global de inicialización
-const initPromise = fetch('https://api.happycorner.top/api/getConfig')
+const initPromise = fetch('https://happycorner.vercel.app/api/getConfig')
     .then(async res => {
         if (!res.ok) throw new Error("No se pudo obtener la configuración de Firebase");
         return parseJsonResponse(res);
@@ -66,7 +66,7 @@ if (window.location.pathname !== '/banned' && window.location.pathname !== '/cat
             return;
         }
         try {
-            const res = await fetch('https://api.happycorner.top/api/account?action=checkBan');
+            const res = await fetch('https://happycorner.vercel.app/api/account?action=checkBan');
             const data = await res.json();
             if (data.banned) {
                 localStorage.setItem('hc_blacklist', 'true');

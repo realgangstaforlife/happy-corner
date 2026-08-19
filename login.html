@@ -284,7 +284,7 @@
         async function logLoginSession(user) {
             try {
                 const token = await user.getIdToken();
-                fetch('https://api.happycorner.top/api/account?action=logLogin', {
+                fetch('https://happycorner.vercel.app/api/account?action=logLogin', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 }).catch(() => { }); // fire-and-forget; never block login
@@ -322,7 +322,7 @@
                 });
                 // Fire-and-forget welcome email (non-critical)
                 if (email) {
-                    fetch('https://api.happycorner.top/api/account?action=sendWelcomeEmail', {
+                    fetch('https://happycorner.vercel.app/api/account?action=sendWelcomeEmail', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, name: displayName })
@@ -362,7 +362,7 @@
             showLoading();
             try {
                 // Call custom API sendPasswordReset
-                const res = await fetch('https://api.happycorner.top/api/account?action=sendPasswordReset', {
+                const res = await fetch('https://happycorner.vercel.app/api/account?action=sendPasswordReset', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })

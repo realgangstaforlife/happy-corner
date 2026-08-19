@@ -230,7 +230,7 @@
                 
                 // Notificar al admin por correo
                 try {
-                    fetch('https://api.happycorner.top/api/account?action=notifyAdminReview', {
+                    fetch('https://happycorner.vercel.app/api/account?action=notifyAdminReview', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ userName: name, rating: rating, content: content })
