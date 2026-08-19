@@ -169,16 +169,19 @@
         import { collection, query, where, orderBy, getDocs, limit } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
         // Night Mode toggler
+        let isDark = localStorage.getItem('hc_theme') === 'dark';
         
         window.toggleTheme = function () {
             isDark = !isDark;
             const themeBtn = document.getElementById('theme-icon');
             if (isDark) {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeBtn.innerText = '☀️';
+                localStorage.setItem('hc_theme', 'dark');
+                if(themeBtn) themeBtn.innerText = '☀️';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeBtn.innerText = '🌙';
+                localStorage.setItem('hc_theme', 'light');
+                if(themeBtn) themeBtn.innerText = '🌙';
             }
         };
 
