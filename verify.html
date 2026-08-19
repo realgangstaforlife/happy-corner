@@ -306,7 +306,7 @@
 
             try {
                 // Siempre usar enlace de vercel para evitar errores de CORS/Paths
-                const res = await fetch('/api/verifyPreorder', {
+                const res = await fetch('https://api.happycorner.top/api/verifyPreorder', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
