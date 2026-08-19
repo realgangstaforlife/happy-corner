@@ -157,7 +157,7 @@
                 const headers = {};
                 if (idToken) headers['Authorization'] = `Bearer ${idToken}`;
 
-                const response = await fetch(`https://happycorner.vercel.app/api/account?action=verifyOrder&orderId=${orderId}`, {
+                const response = await fetch(`https://happy-corner.vercel.app/api/account?action=verifyOrder&orderId=${orderId}`, {
                     method: 'GET',
                     headers
                 });

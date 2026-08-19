@@ -101,7 +101,7 @@
         window.loadContractEditor = async function () {
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/contract', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/contract', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -231,7 +231,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/account?action=updateContractText', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=updateContractText', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -760,7 +760,7 @@
                         if (orderSnap.exists()) {
                             const orderData = orderSnap.data();
                             if (orderData.customerEmail) {
-                                await fetch('https://happycorner.vercel.app/api/account?action=sendDeliveryEmail', {
+                                await fetch('https://happy-corner.vercel.app/api/account?action=sendDeliveryEmail', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -1101,7 +1101,7 @@
                 const tempId = document.getElementById('prod-id').value || 'new_' + Math.random().toString(36).substring(2, 9);
                 try {
                     const token = await auth.currentUser.getIdToken();
-                    const res = await fetch('https://happycorner.vercel.app/api/uploadProductImage', {
+                    const res = await fetch('https://happy-corner.vercel.app/api/uploadProductImage', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1359,7 +1359,7 @@
             tbody.innerHTML = '<tr><td colspan="6" style="padding:32px; text-align:center; color:var(--text-muted);">Cargando solicitudes...</td></tr>';
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/account?action=listHappyCodeRequests', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=listHappyCodeRequests', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1419,7 +1419,7 @@
             if (!confirm('¿Estás seguro de que deseas aprobar este cambio de HappyCódigo?')) return;
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/account?action=approveHappyCodeChange', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=approveHappyCodeChange', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ requestId })
@@ -1438,7 +1438,7 @@
             if (reason === null) return; // User cancelled prompt
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/account?action=rejectHappyCodeChange', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=rejectHappyCodeChange', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify({ requestId, reason })
@@ -1624,7 +1624,7 @@
                 customContainer.style.display = 'none';
                 try {
                     const token = await auth.currentUser.getIdToken();
-                    const resp = await fetch(`https://happycorner.vercel.app/api/account?action=getRecipients&filter=${filter}`, {
+                    const resp = await fetch(`https://happy-corner.vercel.app/api/account?action=getRecipients&filter=${filter}`, {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -1644,7 +1644,7 @@
             listDiv.innerHTML = '<div style="color:var(--text-muted); font-size:11px; padding:10px;">Cargando clientes...</div>';
             try {
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/account?action=getUsersList', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/account?action=getUsersList', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -1794,7 +1794,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/account?action=sendBulk', {
+                const res = await fetch('https://happy-corner.vercel.app/api/account?action=sendBulk', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1828,7 +1828,7 @@
             statusEl.textContent = '';
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/getConfig?action=updateTopProducts', {
+                const res = await fetch('https://happy-corner.vercel.app/api/getConfig?action=updateTopProducts', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2568,7 +2568,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/account?action=adminSendPasswordReset', {
+                const res = await fetch('https://happy-corner.vercel.app/api/account?action=adminSendPasswordReset', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2609,7 +2609,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/account?action=deleteAccount', {
+                const res = await fetch('https://happy-corner.vercel.app/api/account?action=deleteAccount', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2655,7 +2655,7 @@
                 }
 
                 const token = await auth.currentUser.getIdToken();
-                const resp = await fetch('https://happycorner.vercel.app/api/contract', {
+                const resp = await fetch('https://happy-corner.vercel.app/api/contract', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2847,7 +2847,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/account?action=adminCreateClient', {
+                const res = await fetch('https://happy-corner.vercel.app/api/account?action=adminCreateClient', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2906,7 +2906,7 @@
 
             try {
                 const token = await auth.currentUser.getIdToken();
-                const res = await fetch('https://happycorner.vercel.app/api/contract', {
+                const res = await fetch('https://happy-corner.vercel.app/api/contract', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
