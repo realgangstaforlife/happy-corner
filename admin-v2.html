@@ -1549,6 +1549,10 @@
                     <input type="number" id="prod-price" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: 2000" required>
                 </div>
                 <div>
+                    <label style="font-size:12px; color:var(--text-muted); font-weight:700;">COSTO ($ COP)</label>
+                    <input type="number" id="prod-cost" class="admin-input" style="width:100%; margin-top:4px;" placeholder="Ej: 1000">
+                </div>
+                <div>
                     <label style="font-size:12px; color:var(--text-muted); font-weight:700;">CATEGORÍA</label>
                     <select id="prod-category" class="admin-input" style="width:100%; margin-top:4px; background:#141414; color:#fff;">
                         <option value="dulces">Dulces 🍭</option>
@@ -2335,10 +2339,37 @@
                         <span>${c.phone || 'Sin tel'}</span>
                         <span>${c.contractSigned ? '✅ Firmado' : '⚠️ Sin Firmar'}</span>
                     </div>
+                    ${debt > 0 && c.phone ? `
+                    <button class="admin-btn" style="width:100%; margin-top:8px; font-size:12px; padding:6px; background:#25D366; color:white;" onclick="event.stopPropagation(); sendDebtReminder('${c.uid}', '${c.phone}', '${c.displayName || c.name || ''}', ${debt}, ${c.debtWarnings || 0})">
+                        💬 WhatsApp (Avisos: ${c.debtWarnings || 0})
+                    </button>
+                    ` : ''}
                 `;
                 listContainer.appendChild(card);
             });
         }
+
+        // ==============================================
+        // WHATSAPP REMINDER LOGIC
+        // ==============================================
+        window.sendDebtReminder = async function(uid, phone, name, debt, warnings) {
+            if (!phone) {
+                hcAlert('El cliente no tiene teléfono registrado', 'warning');
+                return;
+            }
+            const msg = encodeURIComponent(`Hola ${name}, te escribimos de Happy Corner. Tienes una deuda pendiente de $${debt.toLocaleString()} COP. Por favor, acércate a pagar lo antes posible.`);
+            window.open(`https://wa.me/57${phone}?text=${msg}`, '_blank');
+            
+            try {
+                const userRef = doc(db, 'users', uid);
+                await updateDoc(userRef, {
+                    debtWarnings: (warnings || 0) + 1
+                });
+                hcAlert('Aviso registrado', 'success');
+            } catch(e) {
+                console.error("Error saving warning count", e);
+            }
+        };
 
         // ==============================================
         // ORDERS TAB MODULE LOGIC
@@ -3246,6 +3277,7 @@
                             <div style="flex:1;">
                                 <div style="font-weight:900; font-size:14px; color:var(--text-color);">${p.name || 'Sin nombre'}</div>
                                 <div style="font-size:12px; color:var(--hp-pink); font-weight:800; margin-top:2px;">$${(p.price || 0).toLocaleString()}</div>
+                                ${p.costPrice ? `<div style="font-size:11px; color:var(--accent-green); margin-top:2px;">Ganancia: $${((p.price || 0) - p.costPrice).toLocaleString()}</div>` : ''}
                                 <div style="font-size:11px; color:var(--text-muted); margin-top:2px; text-transform:uppercase;">${p.category || 'dulces'}</div>
                             </div>
                         </div>
@@ -3274,6 +3306,7 @@
             document.getElementById('prod-id').value = '';
             document.getElementById('prod-name').value = '';
             document.getElementById('prod-price').value = '';
+            document.getElementById('prod-cost').value = '';
             document.getElementById('prod-category').value = 'dulces';
             document.getElementById('prod-available').checked = true;
             document.getElementById('prod-iscombo').checked = false;
@@ -3291,6 +3324,7 @@
                         document.getElementById('prod-id').value = productId;
                         document.getElementById('prod-name').value = p.name || '';
                         document.getElementById('prod-price').value = p.price || '';
+                        document.getElementById('prod-cost').value = p.costPrice || '';
                         document.getElementById('prod-category').value = p.category || 'dulces';
                         document.getElementById('prod-available').checked = p.available !== false;
                         document.getElementById('prod-iscombo').checked = p.isCombo === true;
@@ -3360,6 +3394,7 @@
             const id = document.getElementById('prod-id').value.trim() || 'prod_' + Math.random().toString(36).substring(2, 9);
             const name = document.getElementById('prod-name').value.trim();
             const price = Number(document.getElementById('prod-price').value);
+            const costPrice = Number(document.getElementById('prod-cost').value) || 0;
             const category = document.getElementById('prod-category').value;
             const available = document.getElementById('prod-available').checked;
             const isCombo = document.getElementById('prod-iscombo').checked;
@@ -3379,6 +3414,7 @@
                     id,
                     name,
                     price,
+                    costPrice,
                     category,
                     available,
                     isCombo,

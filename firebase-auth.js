@@ -14,7 +14,7 @@ window.addEventListener('unhandledrejection', (event) => {
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, RecaptchaVerifier, signInWithPhoneNumber, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, initializeFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 let app, auth, db, provider;
 
@@ -51,7 +51,7 @@ const initPromise = fetch('/api/getConfig')
         
         app = initializeApp(config);
         auth = getAuth(app);
-        db = getFirestore(app);
+        db = initializeFirestore(app, { experimentalForceLongPolling: true });
         provider = new GoogleAuthProvider();
         
         // Configurar persistencia local explícitamente

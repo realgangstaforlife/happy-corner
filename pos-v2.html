@@ -1069,6 +1069,11 @@
             const debtMovRef = doc(collection(db, 'movements'));
             const pointsMovRef = doc(collection(db, 'movements'));
 
+            // FIX: Retrieve movements before transaction to avoid read-after-write error
+            const movementsSnap = await getDocs(query(collection(db, 'movements'), where('customerUID', '==', clientUid)));
+            const allMovements = [];
+            movementsSnap.forEach(d => allMovements.push(d.data()));
+
             await runTransaction(db, async (transaction) => {
                 const userSnap = await transaction.get(userRef);
                 if (!userSnap.exists()) throw new Error('Cliente no encontrado en Firestore.');
@@ -1084,6 +1089,7 @@
                     items: cartItems,
                     resumen: cartItems.map(i => `${i.name} (${i.qty}x)`).join(', '),
                     paymentMethod: 'credit',
+                    source: 'POS',
                     createdAt: now,
                     completedAt: now
                 });
@@ -1112,9 +1118,7 @@
                 }
 
                 // 4. Retrieve movements to recalculate
-                const movementsSnap = await getDocs(query(collection(db, 'movements'), where('customerUID', '==', clientUid)));
-                const allMovements = [];
-                movementsSnap.forEach(d => allMovements.push(d.data()));
+                // (Already retrieved before transaction)
 
                 // Append newly created ones manually for calculation
                 allMovements.push({ type: 'purchase', amount: total, createdAt: now });
@@ -1248,6 +1252,7 @@
             if (clientPhone) orderData.customerPhone = clientPhone;
             if (clientEmail) orderData.customerEmail = clientEmail;
             if (isManualEntry) orderData.isManualEntry = true;
+            orderData.source = 'POS';
 
             const batch = writeBatch(db);
             batch.set(orderRef, orderData);
