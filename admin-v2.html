@@ -2650,7 +2650,7 @@
             if (!confirm(`¿Estás seguro de reembolsar $${refundTotal.toLocaleString()}?`)) return;
 
             try {
-                if (order.customerUID) {
+                if (order.customerUID && order.paymentMethod === 'Crédito') {
                     const desc = `Reembolso pedido ${order.id} (${itemsToRefundText.join(', ')})`;
                     await applyLedgerMovement(order.customerUID, 'refund', -refundTotal, desc);
                 }
@@ -2998,6 +2998,14 @@
 
         window.updateOrderStatus = async function (orderId, status) {
             try {
+                const orderRef = doc(db, 'orders', orderId);
+                const orderSnap = await getDoc(orderRef);
+                if (!orderSnap.exists()) {
+                    hcAlert('El pedido no existe.', 'error');
+                    return;
+                }
+                const orderData = orderSnap.data();
+
                 const now = new Date().toISOString();
                 const updateData = {
                     status,
@@ -3007,31 +3015,33 @@
                     updateData.completedAt = now;
                 }
 
-                await updateDoc(doc(db, 'orders', orderId), updateData);
+                await updateDoc(orderRef, updateData);
+
+                // Handle cancellation refund if it was a credit purchase
+                if (status === 'cancelled' && orderData.paymentMethod === 'Crédito' && orderData.customerUID) {
+                    const totalVal = parseInt((orderData.total || '0').toString().replace(/[^0-9]/g, '')) || 0;
+                    await applyLedgerMovement(orderData.customerUID, 'refund', -totalVal, `Cancelación de pedido ${orderId}`);
+                }
 
                 if (status === 'completed') {
                     try {
                         const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
-                        const orderSnap = await getDoc(doc(db, 'orders', orderId));
-                        if (orderSnap.exists()) {
-                            const orderData = orderSnap.data();
-                            if (orderData.customerEmail) {
-                                await fetch('/api/account?action=sendDeliveryEmail', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                    },
-                                    body: JSON.stringify({ 
-                                        orderId, 
-                                        email: orderData.customerEmail,
-                                        customerName: orderData.customerName || orderData.nombre || 'Cliente'
-                                    })
-                                });
-                                hcAlert('✅ ¡Pedido completado y correo de entrega enviado!', 'success');
-                            } else {
-                                hcAlert('✅ ¡Pedido completado! (Sin correo electrónico del cliente para notificar)', 'success');
-                            }
+                        if (orderData.customerEmail) {
+                            await fetch('/api/account?action=sendDeliveryEmail', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ 
+                                    orderId, 
+                                    email: orderData.customerEmail,
+                                    customerName: orderData.customerName || orderData.nombre || 'Cliente'
+                                })
+                            });
+                            hcAlert('✅ ¡Pedido completado y correo de entrega enviado!', 'success');
+                        } else {
+                            hcAlert('✅ ¡Pedido completado! (Sin correo electrónico del cliente para notificar)', 'success');
                         }
                     } catch (emailErr) {
                         console.error("Delivery email failed:", emailErr);

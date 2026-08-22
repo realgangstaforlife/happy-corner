@@ -1097,6 +1097,7 @@
                 // 2. Create debt movement (+)
                 transaction.set(debtMovRef, {
                     movementId: debtMovRef.id,
+                    orderId: orderRef.id,
                     customerUID: clientUid,
                     type: 'purchase',
                     amount: total,
@@ -1109,6 +1110,7 @@
                 if (points > 0) {
                     transaction.set(pointsMovRef, {
                         movementId: pointsMovRef.id,
+                        orderId: orderRef.id,
                         customerUID: clientUid,
                         type: 'points',
                         amount: points,
@@ -1261,6 +1263,7 @@
                 const pointsMovRef = doc(collection(db, 'movements'));
                 batch.set(pointsMovRef, {
                     movementId: pointsMovRef.id,
+                    orderId: orderRef.id,
                     customerUID: clientUid,
                     type: 'points',
                     amount: points,
