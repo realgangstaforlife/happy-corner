@@ -1,7 +1,7 @@
 {
   "name": "Happy Corner",
   "short_name": "Happy Corner",
-  "description": "Tu tienda favorita de snacks y Robux en SENA Cali.",
+  "description": "Tu tienda favorita de snacks y Robux.",
   "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#0b0c10",
