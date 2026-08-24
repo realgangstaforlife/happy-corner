@@ -168,12 +168,9 @@
 
                     <label class="input-label">Propina Opcional</label>
                     <select id="propina_pago" class="input-select" name="Propina_Pago" onchange="checkPropina(this)" required>
-                        <option value="" disabled selected>Selecciona una opción</option>
-                        <option value="15">15% del pedido</option>
-                        <option value="10">10% del pedido</option>
-                        <option value="5">5% del pedido</option>
+                        <option value="" disabled selected>Selecciona una opción (Requerido)</option>
+                        <option value="0">0 - Sin propina</option>
                         <option value="custom">Monto personalizado</option>
-                        <option value="0">0% - Sin propina</option>
                     </select>
                     <div id="custom-propina-container" style="display:none; margin-top:8px;">
                         <input type="number" id="propina_custom" name="Propina_Custom" class="input-select" placeholder="Monto en COP (Ej: 2000)" oninput="renderCart()" min="0">

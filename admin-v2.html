@@ -1226,6 +1226,9 @@
                             <div>
                                 <button class="admin-btn" style="background:var(--hp-gradient); padding:10px 16px;" onclick="window.open('/drop.html', '_blank')">👀 Preview Drop</button>
                             </div>
+                            <div>
+                                <button class="admin-btn" style="background:var(--accent-green); padding:10px 16px;" onclick="saveGlobalAccessSettings(); alert('Configuración Guardada!');">💾 Guardar Configuración</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1616,10 +1619,14 @@
                     </select>
                 </div>
                 
-                <div style="display:flex; gap:20px;">
+                <div style="display:flex; gap:20px; flex-wrap:wrap;">
                     <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" id="prod-available" checked>
                         Disponible para venta
+                    </label>
+                    <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="prod-show-unavailable">
+                        Mostrar aunque no esté disponible
                     </label>
                     <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" id="prod-iscombo">
@@ -1940,7 +1947,7 @@
             editorArticles.forEach((art, index) => {
                 const isOpen = openArticleIndex === index;
                 const itemDiv = document.createElement('div');
-                itemDiv.style.cssText = 'background:var(--input-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; position:relative;';
+                itemDiv.style.cssText = 'background:rgba(255,255,255,0.05); border:1px solid var(--border-color); border-radius:12px; padding:16px; position:relative;';
                 
                 const titleStr = art.title || `Artículo ${index + 1}`;
                 
@@ -1953,8 +1960,8 @@
                         <button class="admin-btn-secondary" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:4px 10px; font-size:11px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); removeEditorArticle(${index})">🗑️ Eliminar</button>
                     </div>
                     <div style="display:${isOpen ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:16px; border-top:1px dashed var(--border-color); padding-top:16px;">
-                        <input type="text" class="admin-input editor-title-input" style="width:100%; font-weight:700; padding:8px 12px;" value="${art.title}" placeholder="Título (ej: Artículo 1. Deudas...)" oninput="updateArticleData(${index}, 'title', this.value)">
-                        <textarea class="admin-input editor-body-textarea" style="width:100%; height:120px; font-size:13px; line-height:1.5; padding:8px 12px; resize:vertical;" placeholder="Cuerpo del artículo (puedes usar * para viñetas)" oninput="updateArticleData(${index}, 'body', this.value)">${art.body}</textarea>
+                        <input type="text" class="admin-input editor-title-input" style="width:100%; font-weight:700; padding:8px 12px; background:#141414; color:#fff; border:1px solid var(--border-color); border-radius:8px;" value="${art.title}" placeholder="Título (ej: Artículo 1. Deudas...)" oninput="updateArticleData(${index}, 'title', this.value)">
+                        <textarea class="admin-input editor-body-textarea" style="width:100%; height:120px; font-size:13px; line-height:1.5; padding:8px 12px; resize:vertical; background:#141414; color:#fff; border:1px solid var(--border-color); border-radius:8px;" placeholder="Cuerpo del artículo (puedes usar * para viñetas)" oninput="updateArticleData(${index}, 'body', this.value)">${art.body}</textarea>
                     </div>
                 `;
                 container.appendChild(itemDiv);
@@ -3436,6 +3443,7 @@
             document.getElementById('prod-cost').value = '';
             document.getElementById('prod-category').value = 'dulces';
             document.getElementById('prod-available').checked = true;
+            document.getElementById('prod-show-unavailable').checked = false;
             document.getElementById('prod-iscombo').checked = false;
             document.getElementById('prod-teaser').checked = false;
             document.getElementById('prod-image-url').value = '';

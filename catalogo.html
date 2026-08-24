@@ -75,16 +75,55 @@
         <h1 class="page-title">Catálogo Completo 🛒</h1>
 
         <div class="section-tag" id="tag-combos">Pizzas &amp; Combos 🍕</div>
-        <div class="grid" id="cat-combos"></div>
+        <div class="grid" id="cat-combos">
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+        </div>
 
         <div class="section-tag" id="tag-dulces">Dulces 🍭</div>
-        <div class="grid" id="cat-dulces"></div>
+        <div class="grid" id="cat-dulces">
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+        </div>
 
         <div class="section-tag" id="tag-reposteria">Galletas y Brownies 🍪</div>
-        <div class="grid" id="cat-reposteria"></div>
+        <div class="grid" id="cat-reposteria">
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+        </div>
 
         <div class="section-tag" id="tag-robux">Robux 🟢</div>
-        <div class="grid" id="cat-robux"></div>
+        <div class="grid" id="cat-robux">
+            <div class="card skeleton" style="border:none;">
+                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+            </div>
+        </div>
 
         <!-- Custom Robux card always visible below Firestore cards -->
         <div class="grid" id="cat-robux-custom-row">
@@ -420,9 +459,9 @@
 
                 snap.forEach(docSnap => {
                     const p = docSnap.data();
-                    if (p.available === false && !p.teaser) return;
+                    if (p.available === false && !p.teaser && !p.showIfUnavailable) return;
 
-                    const isTeaser = p.teaser && p.available === false;
+                    const isTeaser = p.teaser && p.available === false && !p.showIfUnavailable;
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.id = docSnap.id;

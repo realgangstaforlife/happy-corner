@@ -627,6 +627,9 @@ header {
 .upsell-banner {
     background: linear-gradient(135deg, rgba(255,157,92,0.1), rgba(255,82,153,0.1));
     border: 1px solid var(--hp-orange);
+.upsell-banner {
+    background: linear-gradient(135deg, rgba(255,157,92,0.1), rgba(255,82,153,0.1));
+    border: 1px solid var(--hp-orange);
     border-radius: 16px;
     padding: 15px;
     display: flex;
@@ -635,6 +638,27 @@ header {
     margin-top: 15px;
     animation: slideIn 0.5s ease;
 }
+
+/* --- SKELETON LOADING --- */
+.skeleton-img, .skeleton-text {
+    background: linear-gradient(90deg, #181818 25%, #2a2a2a 50%, #181818 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+.skeleton-img {
+    height: 140px;
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+.skeleton-text {
+    border-radius: 6px;
+}
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 .upsell-banner img { width: 40px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
 
 .total-row {

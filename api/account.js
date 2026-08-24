@@ -962,9 +962,9 @@ export default async function handler(req, res) {
                 
                 try {
                     await resend.emails.send({
-                        from: 'Happy Corner <admin@email.happycorner.top>',
-                        reply_to: 'happycorner.com@gmail.com',
-                        to: ['happycorner.com@gmail.com'],
+                        from: 'Happy Corner <noreply@email.happycorner.top>',
+                        reply_to: 'somos@happycorner.top',
+                        to: ['somos@happycorner.top'],
                         subject: `⭐ Nueva Reseña Pendiente: ${rating} estrellas de ${userName || 'Cliente'}`,
                         html: getEmailTemplate(emailContent, 'Moderacion de Reseñas')
                     });
@@ -1325,7 +1325,7 @@ export default async function handler(req, res) {
 
                             const resend = new Resend(resendKey);
                             const emailPromise = resend.emails.send({
-                                from: 'Happy Corner <no-reply@alertas.happycorner.top>',
+                                from: 'Happy Corner <no-reply@email.happycorner.top>',
                                 to: [cleanEmail],
                                 subject: '⚠️ Actualización Obligatoria: Acuerdo de Responsabilidad',
                                 html: `
@@ -1480,7 +1480,7 @@ export default async function handler(req, res) {
                 for (let i = 0; i < emails.length; i += BATCH_SIZE) {
                     const batch = emails.slice(i, i + BATCH_SIZE);
                     await Promise.all(batch.map(to =>
-                        resend.emails.send({ from: 'Happy Corner <no-reply@alertas.happycorner.top>', to: [to], subject, html: htmlTemplate })
+                        resend.emails.send({ from: 'Happy Corner <no-reply@email.happycorner.top>', to: [to], subject, html: htmlTemplate })
                             .catch(err => console.error(`Error sending to ${to}:`, err.message))
                     ));
                     sent += batch.length;
@@ -1544,7 +1544,7 @@ export default async function handler(req, res) {
                             const { Resend } = await import('resend');
                             const resend = new Resend(resendKey);
                             await resend.emails.send({
-                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                from: 'Happy Corner <noreply@email.happycorner.top>',
                                 to: [reqData.userEmail],
                                 subject: '✅ Tu nuevo HappyCode fue aprobado',
                                 html: getEmailTemplate(`
@@ -1590,7 +1590,7 @@ export default async function handler(req, res) {
                             const { Resend } = await import('resend');
                             const resend = new Resend(resendKey);
                             await resend.emails.send({
-                                from: 'Happy Corner <noreply@alertas.happycorner.top>',
+                                from: 'Happy Corner <noreply@email.happycorner.top>',
                                 to: [reqData.userEmail],
                                 subject: '❌ Tu solicitud de HappyCode no fue aprobada',
                                 html: getEmailTemplate(`

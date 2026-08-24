@@ -74,7 +74,7 @@ initPromise.then(() => {
             const currentPath = window.location.pathname;
             
             const isDropPage = currentPath.includes('/drop.html');
-            const isAccountPage = currentPath.includes('/mi-cuenta.html');
+            const isAccountPage = currentPath.includes('/mi-cuenta') || currentPath.includes('/login');
             const isAdminPage = currentPath.includes('/admin-v2.html');
             
             // Wait for auth to resolve to check admin role
@@ -94,7 +94,7 @@ initPromise.then(() => {
                         window.location.href = '/drop.html';
                     }
                 } else if (data.adminOnlyMode) {
-                    if (!isAdmin && !isDropPage) {
+                    if (!isAdmin && !isAccountPage && !isDropPage) {
                         window.location.href = '/drop.html';
                     }
                 } else {
@@ -102,6 +102,13 @@ initPromise.then(() => {
                     if (isDropPage) {
                         window.location.href = '/pos-v2.html';
                     }
+                }
+                
+                // Hide preloader if it exists
+                const preloader = document.getElementById('drop-preloader');
+                if (preloader) {
+                    preloader.style.opacity = '0';
+                    setTimeout(() => preloader.remove(), 300);
                 }
             });
         }

@@ -133,9 +133,9 @@
 <body class="theme-normal">
 
     <div class="drop-container">
-        <img src="/happyfavicon.png" alt="Happy Corner Logo" class="logo">
+        <img src="/happylogo.png" alt="Happy Corner Logo" class="logo">
         <h1 class="title" id="drop-title">Preparando algo increíble...</h1>
-        <p class="subtitle" id="drop-subtitle">La tienda estará de vuelta pronto.</p>
+        <p class="subtitle" id="drop-subtitle">La tienda estará de vuelta pronto. ¿Necesitas pedir algo? Hazlo por WhatsApp al +57 (escribe el número).</p>
         
         <div id="timer-container" class="timer">
             <div class="time-box">
@@ -167,22 +167,23 @@
     </div>
 
     <script type="module">
-        import { db, doc, onSnapshot, auth, onAuthStateChanged, getDoc } from './firebase-auth.js';
+        import { db, doc, onSnapshot, auth, onAuthStateChanged, getDoc, initPromise } from './firebase-auth.js';
 
         let countdownInterval;
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const userSnap = await getDoc(doc(db, 'users', user.uid));
-                if (userSnap.exists() && userSnap.data().role === 'admin') {
-                    document.getElementById('adminBtn').style.display = 'inline-block';
+        initPromise.then(() => {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    const userSnap = await getDoc(doc(db, 'users', user.uid));
+                    if (userSnap.exists() && userSnap.data().role === 'admin') {
+                        document.getElementById('adminBtn').style.display = 'inline-block';
+                    }
                 }
-            }
-        });
+            });
 
-        // Escuchar configuración global
-        onSnapshot(doc(db, 'storeSettings', 'general'), (docSnap) => {
-            if (docSnap.exists()) {
+            // Escuchar configuración global
+            onSnapshot(doc(db, 'storeSettings', 'general'), (docSnap) => {
+                if (docSnap.exists()) {
                 const data = docSnap.data();
                 
                 // Si no hay drop mode ni admin mode, redirigir al inicio
@@ -213,6 +214,7 @@
                 }
 
             }
+        });
         });
 
         function startTimer(dropDateStr) {
