@@ -37,7 +37,7 @@
             <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
                 <span id="theme-icon">🌙</span>
             </button>
-            <a href="/login.html" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+            <a href="/mi-cuenta" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
@@ -408,7 +408,7 @@
             renderCart();
         };
 
-        // --- EASTER EGG SAD VIOLIN ---
+
         window.checkPropina = function (selectEl) {
             const customContainer = document.getElementById('custom-propina-container');
             if (selectEl.value === 'custom') {
@@ -567,7 +567,7 @@
                     const p = docSnap.data();
                     if (p.available !== false) {
                         const imgSrc = p.image && p.image.startsWith('http') ? p.image : (p.image || 'loguito.png');
-                        catalogItems.push({ id: docSnap.id, name: p.name, price: p.price, img: imgSrc });
+                        window.catalogItems.push({ id: docSnap.id, name: p.name, price: p.price, img: imgSrc });
                     }
                 });
             } catch (err) {

@@ -1182,8 +1182,41 @@
                 <h2 style="font-weight:900; margin-bottom:8px;">⚙️ Configuración del Sistema</h2>
                 <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Ajustes generales y parámetros operativos.</p>
 
+<!-- Collapsible Contract Panel -->
+                <div id="contract-panel-container" style="display:block; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:var(--hp-pink);">📝 Editor del Acuerdo de Responsabilidad</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
+                    
+                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                        <!-- Dinámico: inputs de artículos -->
+                    </div>
+
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
+                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
+                    </div>
+
+                    <!-- Vista Previa / Preview -->
+                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
+                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
+                        
+                        <!-- Mini Preview similar al modal -->
+                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
+                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
+                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
+                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
+                                    <!-- bullets -->
+                                </ul>
+                            </div>
+                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
+                                (Escribe artículos arriba para ver la vista previa)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 <!-- GLOBAL ACCESS CONTROLS (DROP / MAINTENANCE) -->
-                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; margin-top:24px; max-width:800px;">
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:800px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
                         <div>
                             <h3 style="font-weight:900; font-size:18px; margin-bottom:4px;">🔒 Control de Acceso Global</h3>
@@ -1233,38 +1266,6 @@
                     </div>
                 </div>
 
-<!-- Collapsible Contract Panel -->
-                <div id="contract-panel-container" style="display:block; margin-top:24px; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px;">
-                    <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:var(--hp-pink);">📝 Editor del Acuerdo de Responsabilidad</div>
-                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
-                    
-                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
-                        <!-- Dinámico: inputs de artículos -->
-                    </div>
-
-                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
-                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
-                    </div>
-
-                    <!-- Vista Previa / Preview -->
-                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
-                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
-                        
-                        <!-- Mini Preview similar al modal -->
-                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
-                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
-                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
-                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
-                                    <!-- bullets -->
-                                </ul>
-                            </div>
-                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
-                                (Escribe artículos arriba para ver la vista previa)
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
 
                 <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px;">
@@ -1953,15 +1954,15 @@
                 
                 itemDiv.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleArticle(${index})">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span style="font-weight:700; font-size:13px; color:var(--text-color);">${titleStr}</span>
+                        <div style="display:flex; align-items:center; gap:8px; width:80%;">
+                            <span style="font-weight:700; font-size:13px; color:var(--text-color); white-space: normal; overflow-wrap: break-word;">${titleStr}</span>
                             <span style="color:var(--text-muted); font-size:12px;">${isOpen ? '▲' : '▼'}</span>
                         </div>
-                        <button class="admin-btn-secondary" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:4px 10px; font-size:11px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); removeEditorArticle(${index})">🗑️ Eliminar</button>
+                        <button class="admin-btn-secondary" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:6px 12px; font-size:11px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); removeEditorArticle(${index})">🗑️ Eliminar</button>
                     </div>
-                    <div style="display:${isOpen ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:16px; border-top:1px dashed var(--border-color); padding-top:16px;">
-                        <input type="text" class="admin-input editor-title-input" style="width:100%; font-weight:700; padding:8px 12px; background:#141414; color:#fff; border:1px solid var(--border-color); border-radius:8px;" value="${art.title}" placeholder="Título (ej: Artículo 1. Deudas...)" oninput="updateArticleData(${index}, 'title', this.value)">
-                        <textarea class="admin-input editor-body-textarea" style="width:100%; height:120px; font-size:13px; line-height:1.5; padding:8px 12px; resize:vertical; background:#141414; color:#fff; border:1px solid var(--border-color); border-radius:8px;" placeholder="Cuerpo del artículo (puedes usar * para viñetas)" oninput="updateArticleData(${index}, 'body', this.value)">${art.body}</textarea>
+                    <div style="display:${isOpen ? 'flex' : 'none'}; flex-direction:column; gap:12px; margin-top:16px; border-top:1px dashed var(--border-color); padding-top:16px;">
+                        <textarea class="admin-input editor-title-input" style="width:100%; min-height:45px; font-weight:700; padding:10px 12px; background:var(--input-bg); color:var(--text-color); border:1px solid var(--border-color); border-radius:8px; resize:vertical;" placeholder="Título (ej: Artículo 1. Deudas...)" oninput="updateArticleData(${index}, 'title', this.value)">${art.title}</textarea>
+                        <textarea class="admin-input editor-body-textarea" style="width:100%; min-height:160px; font-size:13px; line-height:1.6; padding:12px; resize:vertical; background:var(--input-bg); color:var(--text-color); border:1px solid var(--border-color); border-radius:8px;" placeholder="Cuerpo del artículo (puedes usar * para viñetas)" oninput="updateArticleData(${index}, 'body', this.value)">${art.body}</textarea>
                     </div>
                 `;
                 container.appendChild(itemDiv);

@@ -14,7 +14,7 @@
             padding: 0;
             min-height: 100vh;
             font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-color);
+            background-color: #0b0c10;
             color: var(--text-color);
             display: flex;
             align-items: center;
@@ -23,17 +23,17 @@
         }
 
         /* Themes */
-        html.theme-normal, body.theme-normal {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        .drop-container.theme-normal {
+            background: linear-gradient(135deg, rgba(15, 12, 41, 0.9), rgba(48, 43, 99, 0.9), rgba(36, 36, 62, 0.9));
         }
-        html.theme-navidad, body.theme-navidad {
-            background: linear-gradient(135deg, #0d3224, #1b5e20, #0a1f16);
+        .drop-container.theme-navidad {
+            background: linear-gradient(135deg, rgba(13, 50, 36, 0.9), rgba(27, 94, 32, 0.9), rgba(10, 31, 22, 0.9));
         }
-        html.theme-halloween, body.theme-halloween {
-            background: linear-gradient(135deg, #1c0000, #4a0000, #ff4500);
+        .drop-container.theme-halloween {
+            background: linear-gradient(135deg, rgba(28, 0, 0, 0.9), rgba(74, 0, 0, 0.9), rgba(255, 69, 0, 0.6));
         }
-        html.theme-aniversario, body.theme-aniversario {
-            background: linear-gradient(135deg, #2a0845, #6441a5, #ff007f);
+        .drop-container.theme-aniversario {
+            background: linear-gradient(135deg, rgba(42, 8, 69, 0.9), rgba(100, 65, 165, 0.9), rgba(255, 0, 127, 0.6));
         }
 
         .drop-container {
@@ -125,19 +125,37 @@
             transform: translateY(-2px);
         }
         
+        .wa-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 15px;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .wa-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.6);
+        }
+        
         #message-container {
             display: none;
         }
     </style>
 </head>
-<body class="theme-normal">
+<body>
 
-    <div class="drop-container">
+    <div class="drop-container theme-normal">
         <img src="/happylogo.png" alt="Happy Corner Logo" class="logo">
         <h1 class="title" id="drop-title" style="margin-bottom: 5px;">Modo Mantenimiento</h1>
         <p class="subtitle" id="drop-subtitle" style="opacity:0.8; margin-bottom: 20px;">
             La tienda estará de vuelta pronto.<br><br>
-            ¿Necesitas pedir algo? Hazlo por WhatsApp al <a href="https://wa.me/573112871046" style="color:var(--hp-orange); text-decoration:none; font-weight:bold;" target="_blank">+57 311 287 1046</a>
+            <a href="https://wa.me/573112871046" class="wa-btn" target="_blank">Contactar por WhatsApp</a>
         </p>
         
         <div id="timer-container" class="timer">
@@ -197,8 +215,7 @@
 
                 // Theme
                  if (data.dropTheme) {
-                    document.body.className = `theme-${data.dropTheme}`;
-                    document.documentElement.className = `theme-${data.dropTheme}`;
+                    document.querySelector('.drop-container').className = `drop-container theme-${data.dropTheme}`;
                 } 
                 
                 // Textos
@@ -207,7 +224,7 @@
                     document.getElementById('drop-title').style.marginBottom = "5px";
                     document.getElementById('drop-subtitle').innerHTML = `
                         La tienda estará de vuelta pronto.<br><br>
-                        ¿Necesitas pedir algo? Hazlo por WhatsApp al <a href="https://wa.me/573112871046" style="color:var(--hp-orange); text-decoration:none; font-weight:bold;" target="_blank">+57 311 287 1046</a>
+                        <a href="https://wa.me/573112871046" class="wa-btn" target="_blank">Contactar por WhatsApp</a>
                     `;
                     document.getElementById('drop-subtitle').style.opacity = "0.8";
                     document.getElementById('drop-subtitle').style.marginBottom = "20px";

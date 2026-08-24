@@ -103,7 +103,6 @@ initPromise.then(() => {
                         window.location.href = '/pos-v2.html';
                     }
                 }
-                }
             });
         }
     });

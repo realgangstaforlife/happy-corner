@@ -41,7 +41,7 @@
             <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
                 <span id="theme-icon">🌙</span>
             </button>
-            <a href="/login.html" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+            <a href="/mi-cuenta" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
@@ -461,21 +461,22 @@
                     if (p.available === false && !p.teaser && !p.showIfUnavailable) return;
 
                     const isTeaser = p.teaser && p.available === false && !p.showIfUnavailable;
+                    const isAgotado = p.available === false && p.showIfUnavailable === true;
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.id = docSnap.id;
 
-                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : (isTeaser ? `<div class="badge-top" style="background:#4a6cf7;">PRÓXIMAMENTE</div>` : '');
+                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : (isTeaser ? `<div class="badge-top" style="background:#4a6cf7;">PRÓXIMAMENTE</div>` : (isAgotado ? `<div class="badge-top" style="background:#808080;">AGOTADO</div>` : ''));
                     const imgSrc = (p.image || 'Robux_icon.png').startsWith('http')
                         ? (p.image || 'Robux_icon.png')
                         : '/' + (p.image || 'Robux_icon.png');
 
                     card.innerHTML = `
                         ${badgeHtml}
-                        <div class="img-container" ${isTeaser ? 'style="opacity:0.6; filter:grayscale(100%);"' : ''}><img src="${imgSrc}" alt="${p.name}"></div>
+                        <div class="img-container" ${isTeaser || isAgotado ? 'style="opacity:0.6; filter:grayscale(100%);"' : ''}><img src="${imgSrc}" alt="${p.name}"></div>
                         <div class="product-name">${p.name}</div>
                         <div class="price">${isTeaser ? '??? COP' : '$' + p.price.toLocaleString('es-CO')}</div>
-                        ${!isTeaser ? `
+                        ${(!isTeaser && !isAgotado) ? `
                         <div class="qty-row">
                             <button class="qty-btn" onclick="changeQty('${docSnap.id}', -1)">-</button>
                             <span class="qty-num">1</span>
@@ -483,7 +484,7 @@
                         </div>
                         <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
                         ` : `
-                        <button class="btn-add" style="background:var(--surface-color); color:var(--text-muted); cursor:not-allowed;" disabled>No Disponible</button>
+                        <button class="btn-add" style="background:var(--surface-color); color:var(--text-muted); cursor:not-allowed;" disabled>${isAgotado ? '🚫 Agotado' : 'No Disponible'}</button>
                         `}
                         <button class="btn-comments" onclick="openProductComments('${docSnap.id}', '${p.name}')" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px; border-radius:12px; margin-top:8px; width:100%; font-family:inherit; font-weight:700; cursor:pointer; font-size:12px;">💬 Ver Reseñas</button>
                     `;
