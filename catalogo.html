@@ -389,10 +389,22 @@
                 robux:      document.getElementById('cat-robux')
             };
 
-            // Loading states
+            // Loading states (Skeletons)
             ['combos','dulces','reposteria','robux'].forEach(cat => {
                 const el = containers[cat];
-                if (el) el.innerHTML = '<div style="color:var(--text-muted); font-size:13px; padding:20px 0; width:100%; text-align:center;">Cargando...</div>';
+                if (el) {
+                    el.innerHTML = '';
+                    for(let i = 0; i < 4; i++) {
+                        el.innerHTML += `
+                            <div class="card skeleton" style="border:none;">
+                                <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                                <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                                <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+                                <div class="skeleton-text" style="width:90%; height:36px; margin:16px; border-radius:12px;"></div>
+                            </div>
+                        `;
+                    }
+                }
             });
 
             try {
@@ -408,28 +420,33 @@
 
                 snap.forEach(docSnap => {
                     const p = docSnap.data();
-                    if (p.available === false) return;
+                    if (p.available === false && !p.teaser) return;
 
+                    const isTeaser = p.teaser && p.available === false;
                     const card = document.createElement('div');
                     card.className = 'card';
                     card.id = docSnap.id;
 
-                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : (isTeaser ? `<div class="badge-top" style="background:#4a6cf7;">PRÓXIMAMENTE</div>` : '');
                     const imgSrc = (p.image || 'Robux_icon.png').startsWith('http')
                         ? (p.image || 'Robux_icon.png')
                         : '/' + (p.image || 'Robux_icon.png');
 
                     card.innerHTML = `
                         ${badgeHtml}
-                        <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                        <div class="img-container" ${isTeaser ? 'style="opacity:0.6; filter:grayscale(100%);"' : ''}><img src="${imgSrc}" alt="${p.name}"></div>
                         <div class="product-name">${p.name}</div>
-                        <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                        <div class="price">${isTeaser ? '??? COP' : '$' + p.price.toLocaleString('es-CO')}</div>
+                        ${!isTeaser ? `
                         <div class="qty-row">
                             <button class="qty-btn" onclick="changeQty('${docSnap.id}', -1)">-</button>
                             <span class="qty-num">1</span>
                             <button class="qty-btn" onclick="changeQty('${docSnap.id}', 1)">+</button>
                         </div>
                         <button class="btn-add" onclick="addToCart('${docSnap.id}', event)">Añadir a Carrito</button>
+                        ` : `
+                        <button class="btn-add" style="background:var(--surface-color); color:var(--text-muted); cursor:not-allowed;" disabled>No Disponible</button>
+                        `}
                         <button class="btn-comments" onclick="openProductComments('${docSnap.id}', '${p.name}')" style="background:transparent; border:1px solid var(--border-color); color:var(--text-muted); padding:8px; border-radius:12px; margin-top:8px; width:100%; font-family:inherit; font-weight:700; cursor:pointer; font-size:12px;">💬 Ver Reseñas</button>
                     `;
 

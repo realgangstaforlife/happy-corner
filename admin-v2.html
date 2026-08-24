@@ -743,6 +743,54 @@
                     </div>
                 </div>
 
+                <!-- GLOBAL ACCESS CONTROLS (DROP / MAINTENANCE) -->
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; margin-top:24px; max-width:800px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <h3 style="font-weight:900; font-size:18px; margin-bottom:4px;">🔒 Control de Acceso Global</h3>
+                            <p style="color:var(--text-muted); font-size:13px; margin:0;">Controla quién puede acceder a la tienda en este momento. Los administradores siempre pueden entrar.</p>
+                        </div>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
+                                <label style="font-size:13px; font-weight:700;">Modo Admin</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-admin-mode" onchange="saveGlobalAccessSettings()">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div style="background:rgba(255,82,153,0.1); border:1px solid var(--hp-pink); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
+                                <label style="font-size:13px; font-weight:700; color:var(--hp-pink);">Modo Drop</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-drop-mode" onchange="saveGlobalAccessSettings()">
+                                    <span class="slider round" style="background-color: var(--hp-pink);"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="drop-mode-settings" style="display:none; padding:16px; background:rgba(0,0,0,0.2); border-radius:12px; border:1px dashed var(--border-color);">
+                        <div style="font-weight:700; margin-bottom:12px; color:var(--hp-pink);">Configuración del Drop</div>
+                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Tema del Drop</label>
+                                <select id="drop-theme" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
+                                    <option value="normal">Normal</option>
+                                    <option value="navidad">Navidad 🎄</option>
+                                    <option value="halloween">Halloween 🎃</option>
+                                    <option value="aniversario">Aniversario 🎉</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Fecha y Hora de Apertura (Timer)</label>
+                                <input type="datetime-local" id="drop-date" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
+                            </div>
+                            <div>
+                                <button class="admin-btn" style="background:var(--hp-gradient); padding:10px 16px;" onclick="window.open('/drop.html', '_blank')">👀 Preview Drop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Quick access -->
                 <div class="quick-access">
                     <a href="https://happycorner.top" target="_blank" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);">🏠 happycorner.top</a>
@@ -1019,7 +1067,8 @@
                         <p style="color:var(--text-muted); font-size:13px; margin:0;">Agrega, edita y controla la disponibilidad de los productos del catálogo.</p>
                     </div>
                     <div style="display:flex; gap:10px;">
-                        <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-robux" onclick="toggleRobuxPanel()">🎮 Manage Robux Pricing</button>
+                        <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-robux" onclick="toggleRobuxPanel()">🎮 Manage Robux</button>
+                        <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-contract" onclick="toggleContractPanel()">📝 Acuerdo de Responsabilidad</button>
                         <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openProductFormModal(null)">➕ Nuevo Producto</button>
                     </div>
                 </div>
@@ -1045,6 +1094,39 @@
                                 <!-- Populated dynamically -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- Collapsible Contract Panel -->
+                <div id="contract-panel-container" style="display:none; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px;">
+                    <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:var(--hp-pink);">📝 Editor del Acuerdo de Responsabilidad</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
+                    
+                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                        <!-- Dinámico: inputs de artículos -->
+                    </div>
+
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
+                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
+                    </div>
+
+                    <!-- Vista Previa / Preview -->
+                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
+                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
+                        
+                        <!-- Mini Preview similar al modal -->
+                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
+                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
+                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
+                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
+                                    <!-- bullets -->
+                                </ul>
+                            </div>
+                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
+                                (Escribe artículos arriba para ver la vista previa)
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1186,38 +1268,7 @@
                     <a href="/pos-v2" class="admin-btn" style="text-decoration:none; display:inline-block;">🛒 Abrir POS Terminal</a>
                 </div>
 
-                <!-- Editor de Contrato / Acuerdo de Responsabilidad -->
-                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:700px; margin-top:24px;">
-                    <div style="font-size:16px; font-weight:800; margin-bottom:6px;">📝 Editor del Acuerdo de Responsabilidad</div>
-                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
-                    
-                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
-                        <!-- Dinámico: inputs de artículos -->
-                    </div>
 
-                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
-                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
-                    </div>
-
-                    <!-- Vista Previa / Preview -->
-                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
-                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
-                        
-                        <!-- Mini Preview similar al modal -->
-                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
-                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
-                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
-                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
-                                    <!-- bullets -->
-                                </ul>
-                            </div>
-                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
-                                (Escribe artículos arriba para ver la vista previa)
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Top 3 Productos del Index -->
                 <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px; margin-top:24px;">
@@ -1571,6 +1622,10 @@
                     <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
                         <input type="checkbox" id="prod-iscombo">
                         Es un Combo
+                    </label>
+                    <label style="font-size:13px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="prod-teaser">
+                        Mostrar como Teaser
                     </label>
                 </div>
 
@@ -2275,6 +2330,7 @@
             setupOrdersListener();
             setupContractsListener();
             setupLeaderboardListener();
+            setupGlobalSettingsListener();
 
             // Setup search typing helper
             document.getElementById('client-search-input').addEventListener('input', (e) => {
@@ -2284,6 +2340,48 @@
             const osi = document.getElementById('orders-search-input');
             if (osi) osi.addEventListener('input', () => renderOrdersTable());
         }
+
+        // Global Settings listener
+        function setupGlobalSettingsListener() {
+            onSnapshot(doc(db, 'storeSettings', 'general'), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const toggleAdmin = document.getElementById('toggle-admin-mode');
+                    const toggleDrop = document.getElementById('toggle-drop-mode');
+                    const dropSettings = document.getElementById('drop-mode-settings');
+                    const dropTheme = document.getElementById('drop-theme');
+                    const dropDate = document.getElementById('drop-date');
+
+                    if (toggleAdmin) toggleAdmin.checked = !!data.adminOnlyMode;
+                    if (toggleDrop) {
+                        toggleDrop.checked = !!data.dropMode;
+                        dropSettings.style.display = data.dropMode ? 'block' : 'none';
+                    }
+                    if (dropTheme) dropTheme.value = data.dropTheme || 'normal';
+                    if (dropDate) dropDate.value = data.dropDate || '';
+                }
+            });
+        }
+        
+        window.saveGlobalAccessSettings = async function() {
+            const adminMode = document.getElementById('toggle-admin-mode').checked;
+            const dropMode = document.getElementById('toggle-drop-mode').checked;
+            const theme = document.getElementById('drop-theme').value;
+            const date = document.getElementById('drop-date').value;
+            
+            try {
+                await setDoc(doc(db, 'storeSettings', 'general'), {
+                    adminOnlyMode: adminMode,
+                    dropMode: dropMode,
+                    dropTheme: theme,
+                    dropDate: date
+                }, { merge: true });
+                // We don't need alert, visually checked toggle is enough
+            } catch (err) {
+                console.error("Error saving global settings", err);
+                hcAlert("Error al guardar la configuración global", "error");
+            }
+        };
 
         // Users listener
         function setupClientsListener() {
@@ -3320,6 +3418,7 @@
             document.getElementById('prod-category').value = 'dulces';
             document.getElementById('prod-available').checked = true;
             document.getElementById('prod-iscombo').checked = false;
+            document.getElementById('prod-teaser').checked = false;
             document.getElementById('prod-image-url').value = '';
             document.getElementById('prod-image-preview-box').innerHTML = '<span style="font-size:24px; color:var(--text-muted);">📷</span>';
             currentUploadedImageUrl = '';
@@ -3338,6 +3437,7 @@
                         document.getElementById('prod-category').value = p.category || 'dulces';
                         document.getElementById('prod-available').checked = p.available !== false;
                         document.getElementById('prod-iscombo').checked = p.isCombo === true;
+                        document.getElementById('prod-teaser').checked = p.teaser === true;
                         document.getElementById('prod-image-url').value = p.image || '';
                         currentUploadedImageUrl = p.image || '';
 
@@ -3408,6 +3508,7 @@
             const category = document.getElementById('prod-category').value;
             const available = document.getElementById('prod-available').checked;
             const isCombo = document.getElementById('prod-iscombo').checked;
+            const teaser = document.getElementById('prod-teaser').checked;
             const image = document.getElementById('prod-image-url').value.trim();
 
             if (!name || isNaN(price) || price <= 0) {
@@ -3428,6 +3529,7 @@
                     category,
                     available,
                     isCombo,
+                    teaser,
                     image,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
@@ -3741,6 +3843,12 @@
             if (!isShowing) {
                 loadRobuxTab();
             }
+        };
+
+        window.toggleContractPanel = function () {
+            const panel = document.getElementById('contract-panel-container');
+            const isShowing = panel.style.display !== 'none';
+            panel.style.display = isShowing ? 'none' : 'block';
         };
 
         window.loadRobuxTab = async function () {

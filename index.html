@@ -453,7 +453,17 @@
             }
 
             const grid = document.getElementById('index-products-grid');
-            grid.innerHTML = '<div style="color:var(--text-muted); font-size:13px; text-align:center; width:100%; padding:20px 0;">Cargando catálogo...</div>';
+            grid.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                grid.innerHTML += `
+                    <div class="card skeleton" style="border:none;">
+                        <div class="img-container skeleton-img" style="border-radius:12px;"></div>
+                        <div class="skeleton-text" style="width:70%; height:20px; margin:16px 16px 8px;"></div>
+                        <div class="skeleton-text" style="width:40%; height:16px; margin:0 16px 16px;"></div>
+                        <div class="skeleton-text" style="width:90%; height:36px; margin:16px; border-radius:12px;"></div>
+                    </div>
+                `;
+            }
             try {
                 // Fetch top 3 product IDs from config
                 const configSnap = await getDoc(doc(db, 'config', 'topProducts'));
@@ -496,20 +506,25 @@
                     card.className = 'card';
                     card.id = docId;
 
-                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : '';
+                    const isTeaser = p.teaser && p.available === false;
+                    const badgeHtml = p.isCombo ? `<div class="badge-top">COMBO</div>` : (isTeaser ? `<div class="badge-top" style="background:#4a6cf7;">PRÓXIMAMENTE</div>` : '');
                     const imgSrc = p.image.startsWith('http') ? p.image : '/' + p.image;
 
                     card.innerHTML = `
                         ${badgeHtml}
-                        <div class="img-container"><img src="${imgSrc}" alt="${p.name}"></div>
+                        <div class="img-container" ${isTeaser ? 'style="opacity:0.6; filter:grayscale(100%);"' : ''}><img src="${imgSrc}" alt="${p.name}"></div>
                         <div class="product-name">${p.name}</div>
-                        <div class="price">$${p.price.toLocaleString('es-CO')}</div>
+                        <div class="price">${isTeaser ? '??? COP' : '$' + p.price.toLocaleString('es-CO')}</div>
+                        ${!isTeaser ? `
                         <div class="qty-row">
                             <button class="qty-btn" onclick="qty('${docId}',-1)">-</button>
                             <span class="qty-num">1</span>
                             <button class="qty-btn" onclick="qty('${docId}',1)">+</button>
                         </div>
                         <button class="btn-add" onclick="add('${docId}', event)">Añadir a Carrito</button>
+                        ` : `
+                        <button class="btn-add" style="background:var(--surface-color); color:var(--text-muted); cursor:not-allowed;" disabled>No Disponible</button>
+                        `}
                     `;
                     grid.appendChild(card);
                 });

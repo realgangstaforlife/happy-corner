@@ -1,4 +1,4 @@
-import { initPromise, auth, onAuthStateChanged, db, doc, getDoc } from './firebase-auth.js';
+import { initPromise, auth, onAuthStateChanged, db, doc, getDoc, onSnapshot } from './firebase-auth.js';
 
 document.addEventListener("DOMContentLoaded", () => {
     initPromise.then(() => {
@@ -63,5 +63,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
         });
+    });
+});
+
+// Listener Global para Modo Drop y Mantenimiento
+initPromise.then(() => {
+    onSnapshot(doc(db, 'storeSettings', 'general'), (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            const currentPath = window.location.pathname;
+            
+            const isDropPage = currentPath.includes('/drop.html');
+            const isAccountPage = currentPath.includes('/mi-cuenta.html');
+            const isAdminPage = currentPath.includes('/admin-v2.html');
+            
+            // Wait for auth to resolve to check admin role
+            onAuthStateChanged(auth, async (user) => {
+                let isAdmin = false;
+                if (user) {
+                    try {
+                        const userSnap = await getDoc(doc(db, 'users', user.uid));
+                        if (userSnap.exists() && userSnap.data().role === 'admin') {
+                            isAdmin = true;
+                        }
+                    } catch (e) { }
+                }
+                
+                if (data.dropMode) {
+                    if (!isAdmin && !isAccountPage && !isDropPage) {
+                        window.location.href = '/drop.html';
+                    }
+                } else if (data.adminOnlyMode) {
+                    if (!isAdmin && !isDropPage) {
+                        window.location.href = '/drop.html';
+                    }
+                } else {
+                    // Si no hay modo activo y está en drop, redirigir al inicio
+                    if (isDropPage) {
+                        window.location.href = '/pos-v2.html';
+                    }
+                }
+            });
+        }
     });
 });

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Product Drop | Happy Corner</title>
+    <link rel="icon" href="/faviconwwhitebackground.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="firebase-auth.js"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Themes */
+        body.theme-normal {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        }
+        body.theme-navidad {
+            background: linear-gradient(135deg, #0d3224, #1b5e20, #0a1f16);
+        }
+        body.theme-halloween {
+            background: linear-gradient(135deg, #1c0000, #4a0000, #ff4500);
+        }
+        body.theme-aniversario {
+            background: linear-gradient(135deg, #2a0845, #6441a5, #ff007f);
+        }
+
+        .drop-container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(25, 25, 30, 0.7);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
+            z-index: 10;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 10px rgba(255, 107, 107, 0.5));
+            border-radius: 50%;
+        }
+
+        .title {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: var(--hp-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: #ccc;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .timer {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .time-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            min-width: 70px;
+        }
+
+        .time-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+        }
+
+        .time-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+
+        .btnPrimary {
+            display: inline-block;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btnPrimary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        #message-container {
+            display: none;
+        }
+    </style>
+</head>
+<body class="theme-normal">
+
+    <div class="drop-container">
+        <img src="/happyfavicon.png" alt="Happy Corner Logo" class="logo">
+        <h1 class="title" id="drop-title">Preparando algo increíble...</h1>
+        <p class="subtitle" id="drop-subtitle">La tienda estará de vuelta pronto.</p>
+        
+        <div id="timer-container" class="timer">
+            <div class="time-box">
+                <div class="time-value" id="days">00</div>
+                <div class="time-label">Días</div>
+            </div>
+            <div class="time-box">
+                <div class="time-value" id="hours">00</div>
+                <div class="time-label">Horas</div>
+            </div>
+            <div class="time-box">
+                <div class="time-value" id="minutes">00</div>
+                <div class="time-label">Min</div>
+            </div>
+            <div class="time-box">
+                <div class="time-value" id="seconds">00</div>
+                <div class="time-label">Seg</div>
+            </div>
+        </div>
+        
+        <div id="message-container">
+            <p class="subtitle" style="color: var(--hp-pink); font-weight: 700; font-size: 20px;">¡Ya casi está listo!</p>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+            <a href="/mi-cuenta" class="btnPrimary">Ir a mi cuenta</a>
+            <a href="/admin-v2" class="btnPrimary" id="adminBtn" style="display:none;">Panel Admin</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, doc, onSnapshot, auth, onAuthStateChanged, getDoc } from './firebase-auth.js';
+
+        let countdownInterval;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userSnap = await getDoc(doc(db, 'users', user.uid));
+                if (userSnap.exists() && userSnap.data().role === 'admin') {
+                    document.getElementById('adminBtn').style.display = 'inline-block';
+                }
+            }
+        });
+
+        // Escuchar configuración global
+        onSnapshot(doc(db, 'storeSettings', 'general'), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                
+                // Si no hay drop mode ni admin mode, redirigir al inicio
+                if (!data.dropMode && !data.adminOnlyMode) {
+                    window.location.href = '/pos-v2.html';
+                    return;
+                }
+
+                // Theme
+                const theme = data.dropTheme || 'normal';
+                document.body.className = `theme-${theme}`;
+
+                // Textos
+                if (data.adminOnlyMode && !data.dropMode) {
+                    document.getElementById('drop-title').innerText = "Modo Mantenimiento";
+                    document.getElementById('drop-subtitle').innerText = "Solo administradores pueden acceder en este momento.";
+                    document.getElementById('timer-container').style.display = 'none';
+                } else if (data.dropMode) {
+                    document.getElementById('drop-title').innerText = "Próximo Drop";
+                    document.getElementById('drop-subtitle').innerText = "Estamos preparando cosas geniales. ¡Vuelve pronto!";
+                    
+                    if (data.dropDate) {
+                        document.getElementById('timer-container').style.display = 'flex';
+                        startTimer(data.dropDate);
+                    } else {
+                        document.getElementById('timer-container').style.display = 'none';
+                    }
+                }
+
+            }
+        });
+
+        function startTimer(dropDateStr) {
+            clearInterval(countdownInterval);
+            const dropDate = new Date(dropDateStr).getTime();
+            
+            countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = dropDate - now;
+
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('timer-container').style.display = 'none';
+                    document.getElementById('message-container').style.display = 'block';
+                    // Check if it should reload? It will reload when admin disables dropMode
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                document.getElementById("days").innerText = days.toString().padStart(2, '0');
+                document.getElementById("hours").innerText = hours.toString().padStart(2, '0');
+                document.getElementById("minutes").innerText = minutes.toString().padStart(2, '0');
+                document.getElementById("seconds").innerText = seconds.toString().padStart(2, '0');
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

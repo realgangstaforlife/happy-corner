@@ -20,7 +20,7 @@
 <body>
 
     <!-- Audios -->
-    <audio id="sadViolin" src="https://www.myinstants.com/media/sounds/sad-violin.mp3" preload="auto"></audio>
+
 
     <!-- HEADER NUEVO -->
     <header>
@@ -166,13 +166,18 @@
                         <option value="tarjeta">Tarjeta (contáctanos)</option>
                     </select>
 
-                    <label class="input-label">Propina Opcional</label>
-                    <select id="propina_pago" class="input-select" name="Propina_Pago" onchange="checkPropina(this)">
+                    <label class="input-label">Propina (Requerido)</label>
+                    <select id="propina_pago" class="input-select" name="Propina_Pago" onchange="checkPropina(this)" required>
+                        <option value="" disabled selected>Selecciona una opción</option>
+                        <option value="15">15% del pedido</option>
                         <option value="10">10% del pedido</option>
                         <option value="5">5% del pedido</option>
-                        <option value="15">15% del pedido</option>
-                        <option value="0">0% - Sin propina :(</option>
+                        <option value="custom">Monto personalizado</option>
+                        <option value="0">0% - Sin propina</option>
                     </select>
+                    <div id="custom-propina-container" style="display:none; margin-top:8px;">
+                        <input type="number" id="propina_custom" name="Propina_Custom" class="input-select" placeholder="Monto en COP (Ej: 2000)" oninput="renderCart()" min="0">
+                    </div>
 
                     <input type="hidden" name="Resumen_Pedido" id="hidden-summary">
                     <input type="hidden" name="Total_Pagar" id="hidden-total">
@@ -355,7 +360,11 @@
             // Totales
             const propinaSelect = document.getElementById('propina_pago').value;
             let propinaAmount = 0;
-            propinaAmount = Math.round(subtotal * (parseInt(propinaSelect) / 100));
+            if (propinaSelect === 'custom') {
+                propinaAmount = parseInt(document.getElementById('propina_custom').value) || 0;
+            } else if (propinaSelect && propinaSelect !== '') {
+                propinaAmount = Math.round(subtotal * (parseInt(propinaSelect) / 100));
+            }
 
             const total = subtotal + propinaAmount;
 
@@ -408,11 +417,13 @@
 
         // --- EASTER EGG SAD VIOLIN ---
         window.checkPropina = function (selectEl) {
-            if (selectEl.value === "0") {
-                const sadAudio = document.getElementById('sadViolin');
-                sadAudio.volume = 0.5;
-                sadAudio.play().catch(e => console.log('Audio autoplay blocked', e));
-                hcAlert("¿0% de propina? 💔 ... Entendido, estamos llorando un poquito por dentro, pero tu pedido sigue en pie.", "info");
+            const customContainer = document.getElementById('custom-propina-container');
+            if (selectEl.value === 'custom') {
+                customContainer.style.display = 'block';
+                document.getElementById('propina_custom').required = true;
+            } else {
+                customContainer.style.display = 'none';
+                document.getElementById('propina_custom').required = false;
             }
             renderCart();
         };
