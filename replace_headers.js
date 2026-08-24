@@ -9,7 +9,6 @@ const headerTemplate = `    <header>
             <a href="/index">Inicio</a>
             <a href="/catalogo">Catálogo</a>
             <a href="/order">HappyOrder</a>
-            <a href="/track">Rastrear Pedido</a>
         </nav>
         <div style="display:flex; align-items:center; gap:10px;">
             <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
@@ -32,7 +31,6 @@ const sideMenuTemplate = `    <div class="overlay" id="overlay"></div>
         <a href="/index">Inicio</a>
         <a href="/catalogo">Catálogo</a>
         <a href="/order">HappyOrder</a>
-        <a href="/track">Rastrear Pedido</a>
         <a href="/terminos">Términos</a>
         <a href="/wallet">Happy Passes</a>
         <a href="/login.html" class="login-mobile-link" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>

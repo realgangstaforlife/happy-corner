@@ -245,7 +245,6 @@
               <a href="/index">🏠 Inicio</a>
               <a href="/catalogo">🛍️ Catálogo</a>
               <a href="/order">📝 HappyOrder</a>
-              <a href="/track">📦 Rastrear Pedido</a>
               <a href="/mi-cuenta">👤 Mi Cuenta</a>
               <a href="/loyalty">⭐ Happy Passes</a>
               <a href="/reviews">💬 Reseñas</a>

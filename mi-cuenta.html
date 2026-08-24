@@ -851,7 +851,7 @@
 <body data-theme="dark">
 
     <!-- HEADER -->
-    <header>
+            <header>
         <a href="/index" class="logo">
             <img src="loguito.png" alt="HappyCorner" class="logo-img">
         </a>
@@ -859,21 +859,20 @@
             <a href="/index">Inicio</a>
             <a href="/catalogo">Catálogo</a>
             <a href="/order">HappyOrder</a>
-            <a href="/track">Rastrear</a>
         </nav>
         <div style="display:flex; align-items:center; gap:10px;">
-            <button class="theme-toggle" onclick="toggleTheme()" title="Tema">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
                 <span id="theme-icon">🌙</span>
             </button>
-            <a href="/login.html" id="auth-icon-desktop"
-                style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+            <a href="/login.html" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
             </a>
-            <div class="menu-btn" id="menuBtn"><span></span><span></span><span></span></div>
+            <div class="menu-btn" id="menuBtn">
+                <span></span><span></span><span></span>
+            </div>
         </div>
     </header>
 

@@ -963,8 +963,8 @@ export default async function handler(req, res) {
                 try {
                     await resend.emails.send({
                         from: 'Happy Corner <noreply@email.happycorner.top>',
-                        reply_to: 'somos@happycorner.top',
-                        to: ['somos@happycorner.top'],
+                        reply_to: 'happycorner.com@gmail.com',
+                        to: ['happycorner.com@gmail.com'],
                         subject: `⭐ Nueva Reseña Pendiente: ${rating} estrellas de ${userName || 'Cliente'}`,
                         html: getEmailTemplate(emailContent, 'Moderacion de Reseñas')
                     });

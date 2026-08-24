@@ -56,6 +56,13 @@ const initPromise = fetch('/api/getConfig')
         
         // Configurar persistencia local explícitamente
         await setPersistence(auth, browserLocalPersistence);
+        
+        // Hide preloader if it exists
+        const preloader = document.getElementById('drop-preloader');
+        if (preloader) {
+            preloader.style.opacity = '0';
+            setTimeout(() => preloader.remove(), 300);
+        }
     });
 
 // --- 🛡️ SISTEMA DE SEGURIDAD GLOBAL ---

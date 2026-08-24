@@ -18,12 +18,13 @@
 </head>
 
 <body>
+    <div id="drop-preloader" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-color, #fafbfa); z-index:99999; display:flex; align-items:center; justify-content:center; transition:opacity 0.3s;"><img src="/happylogo.png" alt="Cargando..." style="width:60px; height:60px; animation: pulse 1.5s infinite;"></div>
 
     <!-- Audios -->
 
 
     <!-- HEADER NUEVO -->
-    <header>
+            <header>
         <a href="/index" class="logo">
             <img src="loguito.png" alt="HappyCorner" class="logo-img">
         </a>
@@ -31,16 +32,13 @@
             <a href="/index">Inicio</a>
             <a href="/catalogo">Catálogo</a>
             <a href="/order">HappyOrder</a>
-            <a href="/track">Rastrear Pedido</a>
         </nav>
         <div style="display:flex; align-items:center; gap:10px;">
             <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
                 <span id="theme-icon">🌙</span>
             </button>
-            <a href="/login.html" id="auth-icon-desktop"
-                style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
+            <a href="/login.html" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                     <circle cx="12" cy="7" r="4"></circle>
                 </svg>
@@ -60,16 +58,14 @@
         window.isDark = false;
         var isDark = false;(function(){if(localStorage.getItem('hc_domain_banner_v1')==='1'){var b=document.getElementById('domain-banner');if(b)b.style.display='none';}})();window.dismissDomainBanner=function(){localStorage.setItem('hc_domain_banner_v1','1');var b=document.getElementById('domain-banner');if(b)b.style.display='none';};</script>
 
-    <div class="overlay" id="overlay"></div>
+            <div class="overlay" id="overlay"></div>
     <nav class="side-menu" id="sideMenu">
         <a href="/index">Inicio</a>
         <a href="/catalogo">Catálogo</a>
         <a href="/order">HappyOrder</a>
-        <a href="/track">Rastrear Pedido</a>
         <a href="/terminos">Términos</a>
         <a href="/wallet">Happy Passes</a>
-        <a href="/login.html" class="login-mobile-link"
-            style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
+        <a href="/login.html" class="login-mobile-link" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
     </nav>
 
     <main class="showcase-container">

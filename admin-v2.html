@@ -3463,6 +3463,7 @@
                         document.getElementById('prod-cost').value = p.costPrice || '';
                         document.getElementById('prod-category').value = p.category || 'dulces';
                         document.getElementById('prod-available').checked = p.available !== false;
+                        document.getElementById('prod-show-unavailable').checked = p.showIfUnavailable === true;
                         document.getElementById('prod-iscombo').checked = p.isCombo === true;
                         document.getElementById('prod-teaser').checked = p.teaser === true;
                         document.getElementById('prod-image-url').value = p.image || '';
@@ -3536,6 +3537,7 @@
             const available = document.getElementById('prod-available').checked;
             const isCombo = document.getElementById('prod-iscombo').checked;
             const teaser = document.getElementById('prod-teaser').checked;
+            const showIfUnavailable = document.getElementById('prod-show-unavailable').checked;
             const image = document.getElementById('prod-image-url').value.trim();
 
             if (!name || isNaN(price) || price <= 0) {
@@ -3557,6 +3559,7 @@
                     available,
                     isCombo,
                     teaser,
+                    showIfUnavailable,
                     image,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });

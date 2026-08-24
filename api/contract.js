@@ -679,7 +679,7 @@ export default async function handler(req, res) {
             // Fetch logo
             let logoBuffer = null;
             try {
-                const logoRes = await fetch('https://happycorner.top/Happylogo.png');
+                const logoRes = await fetch('https://happycorner.top/happylogo.png');
                 if (logoRes.ok) logoBuffer = Buffer.from(await logoRes.arrayBuffer());
             } catch (err) { console.error('Logo fetch failed:', err.message); }
 
@@ -825,7 +825,7 @@ export default async function handler(req, res) {
             // Fetch logo
             let logoBuffer = null;
             try {
-                const logoRes = await fetch('https://happycorner.top/Happylogo.png');
+                const logoRes = await fetch('https://happycorner.top/happylogo.png');
                 if (logoRes.ok) logoBuffer = Buffer.from(await logoRes.arrayBuffer());
             } catch (err) { console.error('Logo fetch failed:', err.message); }
 

@@ -23,16 +23,16 @@
         }
 
         /* Themes */
-        body.theme-normal {
+        html.theme-normal, body.theme-normal {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
         }
-        body.theme-navidad {
+        html.theme-navidad, body.theme-navidad {
             background: linear-gradient(135deg, #0d3224, #1b5e20, #0a1f16);
         }
-        body.theme-halloween {
+        html.theme-halloween, body.theme-halloween {
             background: linear-gradient(135deg, #1c0000, #4a0000, #ff4500);
         }
-        body.theme-aniversario {
+        html.theme-aniversario, body.theme-aniversario {
             background: linear-gradient(135deg, #2a0845, #6441a5, #ff007f);
         }
 
@@ -134,8 +134,11 @@
 
     <div class="drop-container">
         <img src="/happylogo.png" alt="Happy Corner Logo" class="logo">
-        <h1 class="title" id="drop-title">Preparando algo increíble...</h1>
-        <p class="subtitle" id="drop-subtitle">La tienda estará de vuelta pronto. ¿Necesitas pedir algo? Hazlo por WhatsApp al +57 (escribe el número).</p>
+        <h1 class="title" id="drop-title" style="margin-bottom: 5px;">Modo Mantenimiento</h1>
+        <p class="subtitle" id="drop-subtitle" style="opacity:0.8; margin-bottom: 20px;">
+            La tienda estará de vuelta pronto.<br><br>
+            ¿Necesitas pedir algo? Hazlo por WhatsApp al <a href="https://wa.me/573112871046" style="color:var(--hp-orange); text-decoration:none; font-weight:bold;" target="_blank">+57 311 287 1046</a>
+        </p>
         
         <div id="timer-container" class="timer">
             <div class="time-box">
@@ -193,13 +196,21 @@
                 }
 
                 // Theme
-                const theme = data.dropTheme || 'normal';
-                document.body.className = `theme-${theme}`;
-
+                 if (data.dropTheme) {
+                    document.body.className = `theme-${data.dropTheme}`;
+                    document.documentElement.className = `theme-${data.dropTheme}`;
+                } 
+                
                 // Textos
                 if (data.adminOnlyMode && !data.dropMode) {
-                    document.getElementById('drop-title').innerText = "Modo Mantenimiento";
-                    document.getElementById('drop-subtitle').innerText = "Solo administradores pueden acceder en este momento.";
+                    document.getElementById('drop-title').innerHTML = "Modo Mantenimiento";
+                    document.getElementById('drop-title').style.marginBottom = "5px";
+                    document.getElementById('drop-subtitle').innerHTML = `
+                        La tienda estará de vuelta pronto.<br><br>
+                        ¿Necesitas pedir algo? Hazlo por WhatsApp al <a href="https://wa.me/573112871046" style="color:var(--hp-orange); text-decoration:none; font-weight:bold;" target="_blank">+57 311 287 1046</a>
+                    `;
+                    document.getElementById('drop-subtitle').style.opacity = "0.8";
+                    document.getElementById('drop-subtitle').style.marginBottom = "20px";
                     document.getElementById('timer-container').style.display = 'none';
                 } else if (data.dropMode) {
                     document.getElementById('drop-title').innerText = "Próximo Drop";
