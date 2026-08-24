@@ -743,54 +743,6 @@
                     </div>
                 </div>
 
-                <!-- GLOBAL ACCESS CONTROLS (DROP / MAINTENANCE) -->
-                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; margin-top:24px; max-width:800px;">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
-                        <div>
-                            <h3 style="font-weight:900; font-size:18px; margin-bottom:4px;">🔒 Control de Acceso Global</h3>
-                            <p style="color:var(--text-muted); font-size:13px; margin:0;">Controla quién puede acceder a la tienda en este momento. Los administradores siempre pueden entrar.</p>
-                        </div>
-                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                            <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
-                                <label style="font-size:13px; font-weight:700;">Modo Admin</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-admin-mode" onchange="saveGlobalAccessSettings()">
-                                    <span class="slider round"></span>
-                                </label>
-                            </div>
-                            <div style="background:rgba(255,82,153,0.1); border:1px solid var(--hp-pink); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
-                                <label style="font-size:13px; font-weight:700; color:var(--hp-pink);">Modo Drop</label>
-                                <label class="switch">
-                                    <input type="checkbox" id="toggle-drop-mode" onchange="saveGlobalAccessSettings()">
-                                    <span class="slider round" style="background-color: var(--hp-pink);"></span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div id="drop-mode-settings" style="display:none; padding:16px; background:rgba(0,0,0,0.2); border-radius:12px; border:1px dashed var(--border-color);">
-                        <div style="font-weight:700; margin-bottom:12px; color:var(--hp-pink);">Configuración del Drop</div>
-                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
-                            <div style="flex:1; min-width:200px;">
-                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Tema del Drop</label>
-                                <select id="drop-theme" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
-                                    <option value="normal">Normal</option>
-                                    <option value="navidad">Navidad 🎄</option>
-                                    <option value="halloween">Halloween 🎃</option>
-                                    <option value="aniversario">Aniversario 🎉</option>
-                                </select>
-                            </div>
-                            <div style="flex:1; min-width:200px;">
-                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Fecha y Hora de Apertura (Timer)</label>
-                                <input type="datetime-local" id="drop-date" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
-                            </div>
-                            <div>
-                                <button class="admin-btn" style="background:var(--hp-gradient); padding:10px 16px;" onclick="window.open('/drop.html', '_blank')">👀 Preview Drop</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Quick access -->
                 <div class="quick-access">
                     <a href="https://happycorner.top" target="_blank" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);">🏠 happycorner.top</a>
@@ -1068,7 +1020,7 @@
                     </div>
                     <div style="display:flex; gap:10px;">
                         <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-robux" onclick="toggleRobuxPanel()">🎮 Manage Robux</button>
-                        <button class="admin-btn-secondary" style="padding:10px 16px; border:1px solid var(--border-color); background:rgba(255,255,255,0.05); color:var(--text-color);" id="btn-toggle-contract" onclick="toggleContractPanel()">📝 Acuerdo de Responsabilidad</button>
+                        
                         <button class="admin-btn" style="background:var(--hp-gradient);" onclick="openProductFormModal(null)">➕ Nuevo Producto</button>
                     </div>
                 </div>
@@ -1094,39 +1046,6 @@
                                 <!-- Populated dynamically -->
                             </tbody>
                         </table>
-                    </div>
-                </div>
-
-                <!-- Collapsible Contract Panel -->
-                <div id="contract-panel-container" style="display:none; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px;">
-                    <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:var(--hp-pink);">📝 Editor del Acuerdo de Responsabilidad</div>
-                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
-                    
-                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
-                        <!-- Dinámico: inputs de artículos -->
-                    </div>
-
-                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
-                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
-                    </div>
-
-                    <!-- Vista Previa / Preview -->
-                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
-                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
-                        
-                        <!-- Mini Preview similar al modal -->
-                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
-                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
-                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
-                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
-                                    <!-- bullets -->
-                                </ul>
-                            </div>
-                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
-                                (Escribe artículos arriba para ver la vista previa)
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -1262,6 +1181,89 @@
 
                 <h2 style="font-weight:900; margin-bottom:8px;">⚙️ Configuración del Sistema</h2>
                 <p style="color:var(--text-muted); font-size:13px; margin-bottom:24px;">Ajustes generales y parámetros operativos.</p>
+
+<!-- GLOBAL ACCESS CONTROLS (DROP / MAINTENANCE) -->
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; margin-top:24px; max-width:800px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
+                        <div>
+                            <h3 style="font-weight:900; font-size:18px; margin-bottom:4px;">🔒 Control de Acceso Global</h3>
+                            <p style="color:var(--text-muted); font-size:13px; margin:0;">Controla quién puede acceder a la tienda en este momento. Los administradores siempre pueden entrar.</p>
+                        </div>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                            <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border-color); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
+                                <label style="font-size:13px; font-weight:700;">Modo Admin</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-admin-mode" onchange="saveGlobalAccessSettings()">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                            <div style="background:rgba(255,82,153,0.1); border:1px solid var(--hp-pink); padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:10px;">
+                                <label style="font-size:13px; font-weight:700; color:var(--hp-pink);">Modo Drop</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-drop-mode" onchange="saveGlobalAccessSettings()">
+                                    <span class="slider round" style="background-color: var(--hp-pink);"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="drop-mode-settings" style="display:none; padding:16px; background:rgba(0,0,0,0.2); border-radius:12px; border:1px dashed var(--border-color);">
+                        <div style="font-weight:700; margin-bottom:12px; color:var(--hp-pink);">Configuración del Drop</div>
+                        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Tema del Drop</label>
+                                <select id="drop-theme" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
+                                    <option value="normal">Normal</option>
+                                    <option value="navidad">Navidad 🎄</option>
+                                    <option value="halloween">Halloween 🎃</option>
+                                    <option value="aniversario">Aniversario 🎉</option>
+                                </select>
+                            </div>
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:4px; display:block;">Fecha y Hora de Apertura (Timer)</label>
+                                <input type="datetime-local" id="drop-date" class="admin-input" style="width:100%;" onchange="saveGlobalAccessSettings()">
+                            </div>
+                            <div>
+                                <button class="admin-btn" style="background:var(--hp-gradient); padding:10px 16px;" onclick="window.open('/drop.html', '_blank')">👀 Preview Drop</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Collapsible Contract Panel -->
+                <div id="contract-panel-container" style="display:block; margin-top:24px; margin-bottom:28px; padding:20px; background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px;">
+                    <div style="font-size:16px; font-weight:800; margin-bottom:6px; color:var(--hp-pink);">📝 Editor del Acuerdo de Responsabilidad</div>
+                    <div style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Edita los artículos del contrato. Guardar cambios incrementará la versión e iniciará el proceso de re-firma obligatoria para todos los clientes (plazo de 7 días).</div>
+                    
+                    <div id="editor-articles-list" style="display:flex; flex-direction:column; gap:16px; margin-bottom:20px;">
+                        <!-- Dinámico: inputs de artículos -->
+                    </div>
+
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <button class="admin-btn-secondary" style="padding:10px 16px;" onclick="addEditorArticle()">➕ Agregar Artículo</button>
+                        <button class="admin-btn" style="background:var(--primary-color); padding:10px 20px;" id="save-contract-btn" onclick="saveContractText()">💾 Guardar y Re-firmar</button>
+                    </div>
+
+                    <!-- Vista Previa / Preview -->
+                    <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--border-color);">
+                        <div style="font-size:14px; font-weight:700; margin-bottom:12px; color:var(--hp-pink);">👀 Vista Previa (Modal del Cliente)</div>
+                        
+                        <!-- Mini Preview similar al modal -->
+                        <div style="border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; background: rgba(0,0,0,0.15);">
+                            <div id="preview-summary-box" style="display: none; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); border-radius: 12px; padding: 12px; margin-bottom: 12px; font-size: 12px; line-height: 1.5; color: var(--text-color);">
+                                <strong style="color: var(--hp-pink);">💡 Resumen Rápido (Artículo 5):</strong>
+                                <ul id="preview-summary-bullets" style="margin: 4px 0 0 0; padding-left: 16px; color: var(--text-muted);">
+                                    <!-- bullets -->
+                                </ul>
+                            </div>
+                            <div class="contract-text" id="preview-text-container" style="max-height: 200px; overflow-y: auto; font-size:12px; padding:12px; background:var(--input-bg); border-radius:8px;">
+                                (Escribe artículos arriba para ver la vista previa)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
                 <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:600px;">
                     <div style="font-size:14px; font-weight:700; margin-bottom:6px;">Terminal POS</div>
                     <div style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Acceso directo y configuración de la caja registradora.</div>
@@ -1920,20 +1922,37 @@
             }
         };
 
+        let openArticleIndex = -1;
+        window.toggleArticle = function(index) {
+            if (openArticleIndex === index) {
+                openArticleIndex = -1;
+            } else {
+                openArticleIndex = index;
+            }
+            renderEditorArticles();
+        };
+
         function renderEditorArticles() {
             const container = document.getElementById('editor-articles-list');
             if (!container) return;
             container.innerHTML = '';
 
             editorArticles.forEach((art, index) => {
+                const isOpen = openArticleIndex === index;
                 const itemDiv = document.createElement('div');
                 itemDiv.style.cssText = 'background:var(--input-bg); border:1px solid var(--border-color); border-radius:12px; padding:16px; position:relative;';
+                
+                const titleStr = art.title || `Artículo ${index + 1}`;
+                
                 itemDiv.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-weight:700; font-size:13px; color:var(--text-muted);">ARTÍCULO ${index + 1}</span>
-                        <button class="admin-btn-secondary" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:4px 10px; font-size:11px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="removeEditorArticle(${index})">🗑️ Eliminar</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleArticle(${index})">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:700; font-size:13px; color:var(--text-color);">${titleStr}</span>
+                            <span style="color:var(--text-muted); font-size:12px;">${isOpen ? '▲' : '▼'}</span>
+                        </div>
+                        <button class="admin-btn-secondary" style="background:rgba(239,68,68,0.1); color:#ef4444; border:none; padding:4px 10px; font-size:11px; font-weight:800; border-radius:6px; cursor:pointer;" onclick="event.stopPropagation(); removeEditorArticle(${index})">🗑️ Eliminar</button>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:${isOpen ? 'flex' : 'none'}; flex-direction:column; gap:10px; margin-top:16px; border-top:1px dashed var(--border-color); padding-top:16px;">
                         <input type="text" class="admin-input editor-title-input" style="width:100%; font-weight:700; padding:8px 12px;" value="${art.title}" placeholder="Título (ej: Artículo 1. Deudas...)" oninput="updateArticleData(${index}, 'title', this.value)">
                         <textarea class="admin-input editor-body-textarea" style="width:100%; height:120px; font-size:13px; line-height:1.5; padding:8px 12px; resize:vertical;" placeholder="Cuerpo del artículo (puedes usar * para viñetas)" oninput="updateArticleData(${index}, 'body', this.value)">${art.body}</textarea>
                     </div>
@@ -3386,7 +3405,7 @@
                                 <div style="font-weight:900; font-size:14px; color:var(--text-color);">${p.name || 'Sin nombre'}</div>
                                 <div style="font-size:12px; color:var(--hp-pink); font-weight:800; margin-top:2px;">$${(p.price || 0).toLocaleString()}</div>
                                 ${p.costPrice ? `<div style="font-size:11px; color:var(--accent-green); margin-top:2px;">Ganancia: $${((p.price || 0) - p.costPrice).toLocaleString()}</div>` : ''}
-                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px; text-transform:uppercase;">${p.category || 'dulces'}</div>
+                                <div style="font-size:11px; color:var(--text-muted); margin-top:2px; text-transform:uppercase;">${p.category || 'dulces'} ${p.teaser ? '<span style="color:var(--hp-pink); background:rgba(255,82,153,0.1); padding:2px 4px; border-radius:4px; margin-left:4px;">TEASER</span>' : ''}</div>
                             </div>
                         </div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; border-top:1px solid var(--border-color); padding-top:12px;">

@@ -117,6 +117,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // storeSettings collection rules (public read, admin write)
+    match /storeSettings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // banned_entities collection rules
     match /banned_entities/{entityId} {
       allow read, write: if isAdmin();
