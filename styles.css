@@ -7,6 +7,7 @@
     /* Light Theme (Pastel & Vibrant) */
     --bg-color: #fafbfa;
     --surface-color: #ffffff;
+    --header-bg: rgba(255, 255, 255, 0.85);
     --text-color: #2d3436;
     --text-muted: #636e72;
     
@@ -17,8 +18,8 @@
     
     --hp-gradient: linear-gradient(135deg, var(--hp-pink) 0%, var(--hp-orange) 100%);
     --border-color: rgba(0,0,0,0.05);
-    --shadow-sm: 0 4px 15px rgba(0,0,0,0.04);
-    --shadow-lg: 0 10px 30px rgba(0,0,0,0.08);
+    --shadow-sm: 0 6px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.08);
     
     --input-bg: #f5f6fa;
     --input-border: #dcdde1;
@@ -29,6 +30,7 @@
     /* Candy / Neon Dark Mode */
     --bg-color: #0b0c10;
     --surface-color: #1a1b24;
+    --header-bg: rgba(26, 27, 36, 0.85);
     --surface-card: #252736;
     --text-color: #ffffff;
     --text-muted: #a0a5b5;
@@ -38,8 +40,8 @@
     --hp-orange: #ff8533;
     
     --border-color: rgba(255,255,255,0.05);
-    --shadow-sm: 0 4px 15px rgba(0,0,0,0.3);
-    --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+    --shadow-sm: 0 6px 16px rgba(0,0,0,0.3);
+    --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
     
     --input-bg: #252736;
     --input-border: #35384e;
@@ -70,7 +72,9 @@ body {
    2. HEADER DINÁMICO 
    ========================================= */
 header {
-    background: var(--surface-color);
+    background: var(--header-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 15px 30px;
     display: flex;
     justify-content: space-between;
@@ -82,8 +86,8 @@ header {
     width: calc(100% - 30px);
     max-width: 1200px;
     margin: 0 auto;
-    border-radius: 20px;
-    transition: background 0.4s ease;
+    border-radius: 24px;
+    transition: background 0.4s ease, border-radius 0.4s ease;
     border: 1px solid var(--border-color);
 }
 
@@ -261,7 +265,7 @@ header {
     text-align: center;
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow-sm);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -269,8 +273,8 @@ header {
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 35px var(--hp-pink-glow);
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px var(--hp-pink-glow);
     border-color: var(--hp-pink);
 }
 
@@ -364,19 +368,19 @@ header {
     color: white;
     border: none;
     padding: 12px;
-    border-radius: 14px;
+    border-radius: 16px;
     font-weight: 700;
     font-size: 14px;
     width: 100%;
     cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
     position: relative;
     overflow: hidden;
 }
 
 .btn-add:hover {
-    transform: scale(1.03);
-    box-shadow: 0 8px 20px var(--hp-pink-glow);
+    transform: scale(1.05);
+    box-shadow: 0 12px 25px var(--hp-pink-glow);
 }
 .btn-add:active { transform: scale(0.95); }
 
@@ -402,7 +406,9 @@ header {
 .cart-fixed, .wa-fixed {
     position: fixed;
     bottom: 25px;
-    background: var(--surface-color);
+    background: var(--header-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     width: 65px; height: 65px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
@@ -410,11 +416,11 @@ header {
     text-decoration: none;
     z-index: 999;
     border: 2px solid var(--border-color);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
     font-size: 24px;
 }
 .cart-fixed { right: 25px; }
-.wa-fixed { left: 25px; border-color: #25D366; background: #25D366; color: white; }
+.wa-fixed { left: 25px; border-color: rgba(37,211,102,0.5); background: rgba(37,211,102,0.85); color: white; }
 .cart-fixed:hover, .wa-fixed:hover { transform: scale(1.1) rotate(5deg); }
 .cart-fixed:hover { border-color: var(--hp-pink); }
 .wa-fixed:hover { background: #1ebd5a; }
