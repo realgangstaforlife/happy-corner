@@ -29,11 +29,12 @@ function saveData() {
 // ==========================================
 const path = window.location.pathname;
 
-if (path.includes('dashboard.html')) {
+if (path.includes('dashboard')) {
     initDashboard();
-} else if (path.includes('subject.html')) {
+} else if (path.includes('subject')) {
     initSubject();
-} else if (path.includes('index.html') || path.includes('index2.html') || path === '/' || path.endsWith('/notas-corner/')) {
+} else {
+    // Default to index if not on dashboard or subject
     initIndex();
 }
 
@@ -76,14 +77,14 @@ function initIndex() {
     const btnLogin = document.getElementById('btnLogin');
     if (btnLogin) {
         btnLogin.addEventListener('click', () => {
-            window.location.href = '../login.html';
+            window.location.href = 'https://happycorner.top/login.html';
         });
     }
 
     const btnRegister = document.getElementById('btnRegister');
     if (btnRegister) {
         btnRegister.addEventListener('click', () => {
-            window.location.href = '../login.html?mode=register';
+            window.location.href = 'https://happycorner.top/login.html?mode=register';
         });
     }
 }
