@@ -65,12 +65,26 @@ function initIndex() {
             reader.readAsText(file);
         });
         
-        const btnUpload = document.querySelector('.btn-secondary'); // The upload button
-        if(btnUpload) {
+        const btnUpload = document.getElementById('btnUpload');
+        if (btnUpload) {
             btnUpload.addEventListener('click', () => {
                 fileInput.click();
             });
         }
+    }
+    
+    const btnLogin = document.getElementById('btnLogin');
+    if (btnLogin) {
+        btnLogin.addEventListener('click', () => {
+            window.location.href = '../login.html';
+        });
+    }
+
+    const btnRegister = document.getElementById('btnRegister');
+    if (btnRegister) {
+        btnRegister.addEventListener('click', () => {
+            window.location.href = '../login.html?mode=register';
+        });
     }
 }
 

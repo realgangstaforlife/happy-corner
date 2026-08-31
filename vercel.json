@@ -29,6 +29,16 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/index.html"
+    },
+    {
       "source": "/(.*)",
       "has": [
         {
