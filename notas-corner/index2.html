@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HappyNotas - Tu colegio, tus reglas (Blue)</title>
+    <link rel="stylesheet" href="styles-blue.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../happyfavicon.png">
+</head>
+<body>
+
+<header>
+    <a href="#" class="logo">
+        <i class="fa-solid fa-graduation-cap"></i> <span>HappyNotas</span>
+    </a>
+    <div class="theme-toggle">
+        <i class="fa-solid fa-moon"></i>
+    </div>
+</header>
+
+<div class="container text-center mt-4">
+    <h1 style="font-size: 32px; margin-bottom: 10px;">¡Bienvenido a <span style="color: var(--hp-pink);">HappyNotas!</span></h1>
+    <p style="color: var(--text-muted); margin-bottom: 40px; font-size: 16px;">Toma el control de tus calificaciones de forma fácil y 100% privada.</p>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 900px; margin: 0 auto;">
+        
+        <!-- Opción 1: Iniciar Sesión -->
+        <div class="card">
+            <div style="font-size: 40px; color: var(--hp-pink); margin-bottom: 15px;">
+                <i class="fa-solid fa-user-check"></i>
+            </div>
+            <h3 style="margin-bottom: 10px;">Iniciar Sesión</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                Conecta con tu cuenta de HappyCorner. Tus notas se encriptarán y se guardarán en la nube de forma segura.
+            </p>
+            <button class="btn-primary" style="width: 100%;">Entrar con HappyCorner</button>
+        </div>
+
+        <!-- Opción 2: Archivo Local -->
+        <div class="card">
+            <div style="font-size: 40px; color: var(--hp-orange); margin-bottom: 15px;">
+                <i class="fa-solid fa-file-shield"></i>
+            </div>
+            <h3 style="margin-bottom: 10px;">Subir Archivo</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                No necesitas cuenta. Sube tu archivo <strong>.happyc</strong> para cargar tus notas y seguir trabajando.
+            </p>
+            <button class="btn-secondary" style="width: 100%;">Cargar .happyc</button>
+            <input type="file" id="fileInput" accept=".happyc" style="display: none;">
+        </div>
+
+        <!-- Opción 3: Registro -->
+        <div class="card">
+            <div style="font-size: 40px; color: var(--hp-yellow); margin-bottom: 15px;">
+                <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <h3 style="margin-bottom: 10px;">Crear Cuenta</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+                Únete a HappyCorner para disfrutar del sistema de notas y muchos otros beneficios exclusivos.
+            </p>
+            <button class="btn-secondary" style="width: 100%;">Registrarme</button>
+        </div>
+        
+    </div>
+
+    <div class="encryption-notice mt-4">
+        <i class="fa-solid fa-lock"></i>
+        <span><strong>Privacidad garantizada:</strong> Todas tus notas son encriptadas localmente. Nadie, ni siquiera los administradores, pueden verlas.</span>
+    </div>
+</div>
+
+</body>
+</html>

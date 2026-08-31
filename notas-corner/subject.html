@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detalles de Materia - HappyNotas</title>
+    <link rel="stylesheet" href="styles-red.css" id="theme-stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" type="image/png" href="../happyfavicon.png">
+    <style>
+        .grade-section { background: var(--surface-color); border-radius: 24px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+        .grade-section h3 { margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .grade-item { display: flex; justify-content: space-between; align-items: center; background: var(--input-bg); padding: 10px 15px; border-radius: 12px; margin-bottom: 10px; }
+        .grade-input { width: 70px; padding: 8px; border: 2px solid var(--input-border); border-radius: 8px; text-align: center; font-weight: bold; font-size: 16px; background: var(--surface-color); color: var(--text-color); }
+        .grade-input:focus { border-color: var(--hp-pink); outline: none; }
+        
+        .final-grade-card { background: var(--hp-gradient); color: white; padding: 25px; border-radius: 28px; text-align: center; box-shadow: 0 10px 20px var(--hp-pink-glow); margin-bottom: 30px; }
+        .final-grade-card h2 { font-size: 18px; margin-bottom: 5px; font-weight: 500; }
+        .final-grade-card .grade { font-size: 64px; font-weight: 900; line-height: 1; margin-bottom: 5px; }
+        
+        .add-grade-btn { background: transparent; border: 2px dashed var(--input-border); color: var(--text-muted); width: 100%; padding: 12px; border-radius: 12px; font-weight: bold; transition: 0.2s; }
+        .add-grade-btn:hover { border-color: var(--hp-pink); color: var(--hp-pink); }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="dashboard.html" class="logo" style="color: var(--text-color);">
+        <i class="fa-solid fa-chevron-left"></i> <span id="subjectTitle" style="background: none; -webkit-text-fill-color: var(--text-color);">Cargando...</span>
+    </a>
+</header>
+
+<div class="container mt-4">
+    <div class="final-grade-card">
+        <h2>Nota Final Aproximada</h2>
+        <div class="grade" id="finalGrade">0.0</div>
+        <p style="font-size: 14px; opacity: 0.9;">¡Sigue esforzándote!</p>
+    </div>
+
+    <!-- Saber Section -->
+    <div class="grade-section">
+        <h3>
+            <span><i class="fa-solid fa-brain" style="color: var(--hp-pink);"></i> Saber <span style="font-size: 12px; color: var(--text-muted);" id="percSaberLabel">(50%)</span></span>
+            <span style="font-size: 18px; color: var(--hp-pink);" id="avgSaber">0.0</span>
+        </h3>
+        <div id="listSaber"></div>
+        <button class="add-grade-btn mt-4" onclick="addGrade('saber')"><i class="fa-solid fa-plus"></i> Agregar Nota (Saber)</button>
+    </div>
+
+    <!-- Hacer Section -->
+    <div class="grade-section">
+        <h3>
+            <span><i class="fa-solid fa-pencil" style="color: var(--hp-orange);"></i> Hacer <span style="font-size: 12px; color: var(--text-muted);" id="percHacerLabel">(40%)</span></span>
+            <span style="font-size: 18px; color: var(--hp-orange);" id="avgHacer">0.0</span>
+        </h3>
+        <div id="listHacer"></div>
+        <button class="add-grade-btn mt-4" onclick="addGrade('hacer')"><i class="fa-solid fa-plus"></i> Agregar Nota (Hacer)</button>
+    </div>
+
+    <!-- Ser Section -->
+    <div class="grade-section">
+        <h3>
+            <span><i class="fa-solid fa-heart" style="color: var(--hp-yellow);"></i> Ser <span style="font-size: 12px; color: var(--text-muted);" id="percSerLabel">(10%)</span></span>
+            <span style="font-size: 18px; color: var(--hp-yellow);" id="avgSer">0.0</span>
+        </h3>
+        <div id="listSer"></div>
+        <button class="add-grade-btn mt-4" onclick="addGrade('ser')"><i class="fa-solid fa-plus"></i> Agregar Nota (Ser)</button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
