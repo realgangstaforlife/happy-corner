@@ -30,36 +30,6 @@
   "rewrites": [
     {
       "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "notas.happycorner.top"
-        }
-      ],
-      "destination": "/notas-corner/index.html"
-    },
-    {
-      "source": "/index",
-      "has": [
-        {
-          "type": "host",
-          "value": "notas.happycorner.top"
-        }
-      ],
-      "destination": "/notas-corner/index.html"
-    },
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "notas.happycorner.top"
-        }
-      ],
-      "destination": "/notas-corner/$1"
-    },
-    {
-      "source": "/",
       "destination": "/index.html"
     },
     {
