@@ -119,6 +119,16 @@
     {
       "source": "/robots.txt",
       "destination": "/robots.txt"
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/$1"
     }
   ],
   "redirects": [
