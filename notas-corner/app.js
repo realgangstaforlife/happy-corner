@@ -77,14 +77,14 @@ function initIndex() {
     const btnLogin = document.getElementById('btnLogin');
     if (btnLogin) {
         btnLogin.addEventListener('click', () => {
-            window.location.href = 'https://happycorner.top/login.html';
+            window.location.href = 'https://happycorner.top/login.html?returnUrl=https://notas.happycorner.top/dashboard.html';
         });
     }
 
     const btnRegister = document.getElementById('btnRegister');
     if (btnRegister) {
         btnRegister.addEventListener('click', () => {
-            window.location.href = 'https://happycorner.top/login.html?mode=register';
+            window.location.href = 'https://happycorner.top/login.html?mode=register&returnUrl=https://notas.happycorner.top/dashboard.html';
         });
     }
 }

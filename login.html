@@ -326,6 +326,14 @@
                     }).catch(err => console.warn('Welcome email skipped:', err));
                 }
                 logLoginSession(user);
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnUrl = urlParams.get('returnUrl');
+                if (returnUrl && (returnUrl.startsWith('/') || returnUrl.startsWith('https://notas.happycorner.top'))) {
+                    window.location.href = returnUrl;
+                    return;
+                }
+                
                 window.location.href = '/onboarding';
             } else {
                 const userData = userSnap.data();
@@ -339,6 +347,14 @@
                 }
 
                 logLoginSession(user);
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const returnUrl = urlParams.get('returnUrl');
+                if (returnUrl && (returnUrl.startsWith('/') || returnUrl.startsWith('https://notas.happycorner.top'))) {
+                    window.location.href = returnUrl;
+                    return;
+                }
+
                 if (!userData.customerCode) {
                     window.location.href = '/onboarding';
                 } else {
