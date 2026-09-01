@@ -82,9 +82,16 @@ class App {
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
-                if (isDashboard || isSettings) {
-                    window.location.href = 'https://auth.happycorner.top?client_id=notas&redirect_uri=' + 
-                        encodeURIComponent(window.location.origin + window.location.pathname);
+                // Not logged in -> ALWAYS redirect to auth unless shared
+                const authUrl = 'https://auth.happycorner.top?client_id=notas&redirect_uri=' + 
+                    encodeURIComponent(window.location.origin + (path === '/' ? '/dashboard' : path));
+                
+                // If local testing without subdomains, we can just redirect to /auth
+                if (window.location.hostname === 'localhost') {
+                    window.location.href = '/auth?client_id=notas&redirect_uri=' + 
+                        encodeURIComponent(window.location.origin + '/notas-corner' + (path === '/' ? '/dashboard' : path));
+                } else {
+                    window.location.href = authUrl;
                 }
             }
         });

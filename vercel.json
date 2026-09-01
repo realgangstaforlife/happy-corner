@@ -35,10 +35,16 @@
     { "source": "/api/getConfig", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/api/getConfig.js" },
     { "source": "/happylogo.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happylogo.png" },
     { "source": "/happyfavicon.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happyfavicon.png" },
+    { "source": "/(.*\\.(js|css|woff2?|png|svg|jpg|jpeg|gif))", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/$1" },
 
     { "source": "/", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
     { "source": "/logout", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
     { "source": "/api/auth/:path*", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/auth/:path*" },
+    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/notas-corner/api/getConfig.js" },
+    { "source": "/(.*\\.(js|css|woff2?|png|svg|jpg|jpeg|gif))", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/$1" },
+    
+    { "source": "/auth", "destination": "/auth/index.html" },
+    { "source": "/auth/:path*", "destination": "/auth/:path*" },
 
     { "source": "/", "destination": "/index.html" },
     { "source": "/index", "destination": "/index.html" },
