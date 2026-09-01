@@ -2,150 +2,127 @@ import { initPromise, auth, onAuthStateChanged } from './modules/auth.js';
 import { UIManager } from './modules/ui-manager.js';
 import { NotesService } from './modules/notes-service.js';
 
+// Apply theme IMMEDIATELY — zero flicker
+(function() {
+    const stored = localStorage.getItem('notas_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', stored);
+})();
+
 class App {
     constructor() {
         this.init();
     }
     
     async init() {
+        this.setupTheme();
         try {
-            await initPromise; // Wait for Firebase config to load
+            await initPromise;
             this.handleRouting();
-            this.setupTheme();
         } catch (error) {
-            console.error("App initialization failed", error);
-            UIManager.showToast("Error de conexión. Trabajando offline.", "error");
+            console.warn("Firebase not available:", error.message);
+            this.handleRouting();
         }
     }
     
     setupTheme() {
         const toggleBtn = document.getElementById('theme-toggle');
         if (!toggleBtn) return;
-        
-        // 1. Check local storage
-        let theme = localStorage.getItem('notas_theme');
-        if (!theme) {
-            // 2. Check OS preference
-            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        
-        document.documentElement.setAttribute('data-theme', theme);
-        this.updateThemeIcon(theme);
-        
+        const stored = localStorage.getItem('notas_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', stored);
+        this.updateThemeIcon(stored);
         toggleBtn.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('notas_theme', newTheme);
-            this.updateThemeIcon(newTheme);
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('notas_theme', next);
+            this.updateThemeIcon(next);
         });
     }
     
     updateThemeIcon(theme) {
-        const icon = document.querySelector('#theme-toggle i') || document.querySelector('#theme-toggle');
-        if (icon && icon.tagName === 'I') {
-            icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-        } else if (icon) {
-            icon.textContent = theme === 'dark' ? '🌙' : '☀️';
-        }
+        const i = document.querySelector('#theme-toggle i');
+        if (i) i.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
     }
     
     handleRouting() {
         const path = window.location.pathname;
         
-        // Handle Shared links (e.g. /notas-corner/shared/1234-abcd)
+        // Shared note view — no auth
         if (path.includes('/shared/')) {
             const publicId = path.split('/shared/')[1];
-            if (publicId) {
-                this.renderSharedNote(publicId);
-                return;
-            }
+            if (publicId) { this.renderSharedNote(publicId); return; }
         }
         
-        // Normal Auth routing
+        if (!auth) return; // Firebase not available, landing page handles its own auth UI
+
         onAuthStateChanged(auth, (user) => {
             const isDashboard = path.includes('dashboard');
-            const isSettings = path.includes('settings');
-            const isIndex = path.endsWith('notas-corner/') || path.endsWith('index.html');
+            const isSettings  = path.includes('settings');
+            const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
             
             if (user) {
-                // Logged in
-                if (isIndex) {
-                    window.location.href = '/notas-corner/dashboard';
-                } else if (isDashboard) {
-                    import('./dashboard-controller.js').then(module => module.initDashboard(user));
-                } else if (isSettings) {
-                    import('./settings-controller.js').then(module => module.initSettings(user));
-                }
+                if (isIndex)      window.location.href = '/notas-corner/dashboard';
+                else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
+                else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
-                // Not logged in
-                if (isDashboard || isSettings) {
-                    window.location.href = '/notas-corner/';
-                } else if (isIndex) {
-                    import('./auth-controller.js').then(module => module.initAuth());
-                }
+                if (isDashboard || isSettings) window.location.href = '/notas-corner/';
             }
         });
     }
     
     async renderSharedNote(publicId) {
-        // Change body to simple read-only view
         document.body.innerHTML = `
-            <div class="shared-container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
-                <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                    <a href="/notas-corner/" style="text-decoration:none; color:var(--hp-pink); font-weight:bold; display:flex; align-items:center; gap:8px;">
+            <div style="max-width:800px;margin:40px auto;padding:20px;font-family:'Outfit',sans-serif;">
+                <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+                    <a href="/notas-corner/" style="text-decoration:none;color:var(--hp-pink);font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px;">
                         <i class="fa-solid fa-graduation-cap"></i> Notas Corner
                     </a>
-                    <span class="trust-badge confiable"><i class="fa-solid fa-link"></i> Nota Compartida Pública</span>
+                    <span style="font-size:12px;padding:5px 12px;background:rgba(46,213,115,0.1);color:#2ed573;border:1px solid rgba(46,213,115,0.3);border-radius:999px;font-weight:700;">
+                        <i class="fa-solid fa-link"></i> Vista pública
+                    </span>
                 </header>
-                <div id="shared-content-area" class="card" style="text-align:left; padding: 30px;">
-                    <div style="text-align:center; padding: 50px;">
-                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--hp-pink);"></i>
-                        <p style="margin-top:15px; color: var(--text-muted);">Cargando nota...</p>
+                <div id="shared-area" class="card" style="padding:36px;text-align:left;">
+                    <div style="text-align:center;padding:40px;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:30px;color:var(--hp-pink);"></i>
+                        <p style="margin-top:15px;color:var(--text-muted);">Cargando nota...</p>
                     </div>
                 </div>
             </div>
         `;
-        
         try {
+            await initPromise;
             const note = await NotesService.getSharedNote(publicId);
-            const container = document.getElementById('shared-content-area');
-            
+            const area = document.getElementById('shared-area');
             if (note) {
-                const dateStr = new Date(note.updatedAt).toLocaleDateString('es-ES', {
-                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-                
-                container.innerHTML = `
-                    <h1 style="margin-bottom:10px; font-size:28px;">${note.title}</h1>
-                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:25px; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
-                        <i class="fa-regular fa-clock"></i> Última actualización: ${dateStr}
-                    </div>
-                    <div style="line-height:1.6; white-space:pre-wrap; font-size: 16px;">${note.content || '<em>Sin contenido</em>'}</div>
+                const dateStr = new Date(note.updatedAt).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+                area.innerHTML = `
+                    <h1 style="font-size:28px;font-weight:900;margin-bottom:10px;color:var(--text-color);">${note.title}</h1>
+                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border-color);">
+                        <i class="fa-regular fa-clock"></i> Actualizado: ${dateStr}
+                    </p>
+                    <div style="line-height:1.7;white-space:pre-wrap;font-size:16px;color:var(--text-color);">${note.content || '<em style="color:var(--text-muted)">Sin contenido</em>'}</div>
                 `;
             } else {
-                container.innerHTML = `
-                    <div style="text-align:center; padding: 40px 20px;">
-                        <i class="fa-solid fa-file-circle-xmark" style="font-size:40px; color:var(--error); margin-bottom:15px;"></i>
-                        <h2>Nota no encontrada</h2>
-                        <p style="color:var(--text-muted); margin-top:10px;">El enlace puede haber expirado o la nota fue eliminada por su propietario.</p>
-                        <br>
-                        <a href="/notas-corner/" class="btn-primary" style="display:inline-block; text-decoration:none;">Crear mi propia nota</a>
+                area.innerHTML = `
+                    <div style="text-align:center;padding:40px;">
+                        <i class="fa-solid fa-file-circle-xmark" style="font-size:40px;color:#ef4444;margin-bottom:15px;"></i>
+                        <h2 style="font-weight:900;margin-bottom:10px;">Nota no encontrada</h2>
+                        <p style="color:var(--text-muted);">El enlace puede haber expirado o la nota fue eliminada.</p>
+                        <br><a href="/notas-corner/" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Notas Corner</a>
                     </div>
                 `;
             }
-        } catch (error) {
-            document.getElementById('shared-content-area').innerHTML = `
-                <div style="text-align:center; padding: 40px 20px;">
+        } catch (err) {
+            document.getElementById('shared-area').innerHTML = `
+                <div style="text-align:center;padding:40px;">
                     <h2>Error de conexión</h2>
-                    <p>No pudimos cargar la nota. Revisa tu conexión a internet.</p>
+                    <p style="color:var(--text-muted)">No se pudo cargar la nota.</p>
                 </div>
             `;
         }
     }
 }
 
-// Initialize App
 document.addEventListener('DOMContentLoaded', () => {
     window.notasApp = new App();
 });

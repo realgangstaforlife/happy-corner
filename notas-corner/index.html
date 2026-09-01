@@ -1,97 +1,650 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="light">
+<html lang="es" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Notas Corner | Tus notas, organizadas y tuyas</title>
+    <title>Notas Corner — Tus notas, organizadas y tuyas</title>
+    <meta name="description" content="Notas Corner: crea, guarda y comparte tus notas de manera segura desde Happy Corner.">
     
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <link rel="stylesheet" href="styles/global.css">
-    <link rel="stylesheet" href="styles/landing.css">
+    <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="../happyfavicon.png">
+
+    <style>
+        /* ---- LANDING OVERRIDES ---- */
+        body { padding-bottom: 0; }
+
+        .landing-wrapper {
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        /* HERO */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 20px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Gradient orb background */
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -120px; left: 50%;
+            transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(255,82,153,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,82,153,0.12);
+            border: 1px solid rgba(255,82,153,0.3);
+            color: var(--hp-pink);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 16px;
+            border-radius: 999px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .hero-title {
+            font-size: clamp(42px, 8vw, 80px);
+            font-weight: 900;
+            line-height: 1.05;
+            margin-bottom: 20px;
+            animation: fadeUp 0.6s ease 0.1s both;
+        }
+        .hero-title .gradient-text {
+            background: var(--hp-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+            font-weight: 300;
+            color: var(--text-muted);
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 48px;
+            animation: fadeUp 0.6s ease 0.2s both;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: fadeUp 0.6s ease 0.3s both;
+        }
+
+        .btn-hero-primary {
+            background: var(--hp-gradient);
+            color: white;
+            border: none;
+            padding: 16px 36px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275), box-shadow 0.3s;
+            box-shadow: 0 8px 24px var(--hp-pink-glow);
+            min-height: 52px;
+        }
+        .btn-hero-primary:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 16px 40px var(--hp-pink-glow);
+        }
+        .btn-hero-primary:active { transform: scale(0.96); }
+
+        .btn-hero-secondary {
+            background: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 16px 36px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-height: 52px;
+        }
+        .btn-hero-secondary:hover {
+            border-color: var(--hp-pink);
+            color: var(--hp-pink);
+            background: rgba(255,82,153,0.06);
+        }
+
+        /* BENEFITS */
+        .benefits-section {
+            padding: 0 20px 80px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            animation: fadeUp 0.6s ease 0.4s both;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .benefits-grid { grid-template-columns: 1fr; }
+        }
+
+        .benefit-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 28px 24px;
+            text-align: left;
+            transition: border-color 0.3s, transform 0.3s;
+        }
+        .benefit-card:hover {
+            border-color: var(--hp-pink);
+            transform: translateY(-4px);
+        }
+        .benefit-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: rgba(255,82,153,0.1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            color: var(--hp-pink);
+            margin-bottom: 16px;
+        }
+        .benefit-title {
+            font-size: 16px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+        .benefit-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* FOOTER */
+        .landing-footer {
+            padding: 24px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .landing-footer a { color: var(--hp-pink); text-decoration: none; font-weight: 700; }
+
+        /* AUTH MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1050;
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--surface-color);
+            padding: 36px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 420px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            animation: fadeUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 28px;
+        }
+        .modal-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--text-color);
+        }
+        .modal-close-btn {
+            background: var(--input-bg);
+            border: none;
+            color: var(--text-muted);
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .modal-close-btn:hover { background: var(--hp-pink); color: white; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-color);
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s;
+            outline: none;
+            font-family: 'Outfit', sans-serif;
+        }
+        .form-group input:focus {
+            border-color: var(--hp-pink);
+            background: var(--surface-color);
+            box-shadow: 0 0 0 4px var(--hp-pink-glow);
+        }
+
+        .auth-error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            color: #ef4444;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .btn-full {
+            width: 100%;
+            background: var(--hp-gradient);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 6px 20px var(--hp-pink-glow);
+            min-height: 50px;
+        }
+        .btn-full:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--hp-pink-glow); }
+        .btn-full:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .btn-google {
+            width: 100%;
+            background: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 13px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            min-height: 50px;
+        }
+        .btn-google:hover { border-color: var(--hp-pink); color: var(--hp-pink); background: rgba(255,82,153,0.05); }
+
+        .auth-switch-text {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .auth-switch-text a {
+            color: var(--hp-pink);
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .auth-switch-text a:hover { text-decoration: underline; }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header for landing */
+        .landing-header {
+            background: transparent;
+            backdrop-filter: none;
+            border: none;
+            box-shadow: none;
+            position: relative;
+            top: 0;
+            width: 100%;
+            max-width: 100%;
+            border-radius: 0;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .landing-header .logo-text {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .landing-header .logo-text i { color: var(--hp-pink); }
+    </style>
 </head>
 <body>
 
+<div class="landing-wrapper">
     <!-- HEADER -->
-    <header>
-        <a href="/notas-corner/" class="logo">
-            <i class="fa-solid fa-graduation-cap" style="color: var(--hp-pink); font-size: 24px;"></i> 
-            <span style="font-weight: 900; font-size: 20px;">Notas Corner</span>
+    <header class="landing-header">
+        <a href="/notas-corner/" class="logo-text">
+            <i class="fa-solid fa-graduation-cap"></i>
+            Notas Corner
         </a>
-        <div style="display:flex; align-items:center; gap:10px;">
-            <button class="theme-toggle" id="theme-toggle" title="Night Mode">
-                <i class="fa-solid fa-moon"></i>
-            </button>
-        </div>
+        <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
+            <i class="fa-solid fa-moon"></i>
+        </button>
     </header>
 
-    <!-- HERO SECTION -->
-    <main class="hero-container">
-        <div class="hero-content">
-            <div class="hero-icon">
-                <i class="fa-solid fa-book-bookmark"></i>
-            </div>
-            <h1 class="page-title" style="margin-top: 20px; font-size: 42px;">Notas Corner</h1>
-            <p class="hero-subtitle">Tus notas, organizadas y tuyas</p>
-            
-            <ul class="benefits-list">
-                <li><i class="fa-solid fa-check" style="color: var(--hp-pink);"></i> Carga ultra rápida</li>
-                <li><i class="fa-solid fa-check" style="color: var(--hp-orange);"></i> Funciona sin conexión</li>
-                <li><i class="fa-solid fa-check" style="color: var(--hp-pink);"></i> Privacidad garantizada</li>
-            </ul>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-badge">
+            <i class="fa-solid fa-star"></i>
+            Parte del ecosistema Happy Corner
+        </div>
 
-            <div class="hero-actions">
-                <button class="btn-primary btn-add" style="font-size: 16px; padding: 15px;" onclick="window.notasAppAuth.openAuthModal('login')">
-                    Iniciar Sesión
-                </button>
-                <button class="btn-secondary" style="font-size: 16px; padding: 15px; width: 100%;" onclick="window.notasAppAuth.openAuthModal('register')">
-                    Crear Cuenta
-                </button>
+        <h1 class="hero-title">
+            Tus notas,<br>
+            <span class="gradient-text">siempre contigo.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Guarda ideas, apuntes y recordatorios. Accede desde cualquier dispositivo, incluso sin conexión.
+        </p>
+
+        <div class="hero-cta">
+            <button id="btn-login" class="btn-hero-primary" onclick="openAuthModal('login')">
+                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+            </button>
+            <button id="btn-register" class="btn-hero-secondary" onclick="openAuthModal('register')">
+                <i class="fa-solid fa-user-plus"></i> Crear Cuenta
+            </button>
+        </div>
+
+        <!-- Benefits section inline with hero -->
+        <div class="benefits-section" style="margin-top: 70px;">
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <div class="benefit-title">Ultra rápido</div>
+                    <div class="benefit-desc">Interfaz instantánea. Tus notas cargan en menos de un segundo.</div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fa-solid fa-wifi-slash"></i></div>
+                    <div class="benefit-title">Sin conexión</div>
+                    <div class="benefit-desc">Funciona offline gracias al caché local. Siempre accesible.</div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon"><i class="fa-solid fa-share-nodes"></i></div>
+                    <div class="benefit-title">Comparte fácil</div>
+                    <div class="benefit-desc">Genera un enlace público de solo lectura con un clic.</div>
+                </div>
             </div>
         </div>
-    </main>
+    </section>
 
     <!-- FOOTER -->
-    <footer class="footer-admin">
-        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 10px;">Parte del ecosistema Happy Corner</p>
-        <a href="https://happycorner.top" target="_blank">Volver a la tienda principal</a>
+    <footer class="landing-footer">
+        &copy; 2026 <a href="https://happycorner.top" target="_blank">Happy Corner</a> — Hecho con 💖 en Cali, Colombia
     </footer>
+</div>
 
-    <!-- AUTH MODAL -->
-    <div class="modal" id="auth-modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="window.notasAppAuth.closeAuthModal()"><i class="fa-solid fa-xmark"></i></span>
-            
-            <h2 id="auth-title" style="margin-bottom: 25px; font-weight: 900;">Iniciar Sesión</h2>
-            
-            <form id="auth-form" onsubmit="window.notasAppAuth.handleAuthSubmit(event)">
-                <label class="input-label">Correo electrónico</label>
-                <input type="email" id="auth-email" class="input-text" placeholder="tu@correo.com" required>
-                
-                <label class="input-label">Contraseña</label>
-                <input type="password" id="auth-password" class="input-text" placeholder="Mínimo 6 caracteres" minlength="6" required>
-                
-                <p id="auth-error" style="color: var(--error); font-size: 13px; margin-bottom: 15px; display: none;"></p>
-                
-                <button type="submit" id="auth-submit-btn" class="btn-add">Continuar</button>
-            </form>
-            
-            <div style="text-align: center; margin: 20px 0;">
-                <span style="color: var(--text-muted); font-size: 13px;">O</span>
-            </div>
-            
-            <button class="btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;" onclick="window.notasAppAuth.handleGoogleLogin()">
-                <i class="fa-brands fa-google"></i> Continuar con Google
-            </button>
-            
-            <div style="margin-top: 25px; text-align: center; font-size: 13px;">
-                <a href="#" id="auth-switch-link" style="color: var(--hp-pink); text-decoration: none; font-weight: 700;">¿No tienes cuenta? Crear una</a>
-            </div>
+<!-- AUTH MODAL -->
+<div class="modal" id="auth-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="modal-title" id="auth-modal-title">Iniciar Sesión</span>
+            <button class="modal-close-btn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-    </div>
 
-    <script type="module" src="app.js"></script>
+        <div class="auth-error" id="auth-error"></div>
+
+        <form id="auth-form" onsubmit="handleFormSubmit(event)">
+            <div class="form-group">
+                <label>Correo electrónico</label>
+                <input type="email" id="auth-email" placeholder="tu@correo.com" required>
+            </div>
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" minlength="6" required>
+            </div>
+
+            <button type="submit" class="btn-full" id="auth-submit-btn">
+                <i class="fa-solid fa-right-to-bracket"></i> Continuar
+            </button>
+        </form>
+
+        <div class="divider">O</div>
+
+        <button class="btn-google" onclick="handleGoogleLogin()">
+            <i class="fa-brands fa-google"></i>
+            Continuar con Google
+        </button>
+
+        <p class="auth-switch-text">
+            <span id="auth-switch-text-inner">¿No tienes cuenta?</span>
+            <a id="auth-switch-link" onclick="toggleAuthMode()">Crear una</a>
+        </p>
+    </div>
+</div>
+
+<script>
+    // ---- THEME SETUP (without Firebase) ----
+    (function() {
+        let stored = localStorage.getItem('notas_theme');
+        if (!stored) stored = 'dark'; // default dark
+        document.documentElement.setAttribute('data-theme', stored);
+        const icon = document.querySelector('#theme-toggle i');
+        if (icon) icon.className = stored === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    })();
+
+    document.getElementById('theme-toggle').addEventListener('click', function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('notas_theme', next);
+        const icon = this.querySelector('i');
+        icon.className = next === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    });
+</script>
+
+<script type="module">
+    import { initPromise, auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, onAuthStateChanged, provider } from './modules/auth.js';
+    import { db } from './modules/auth.js';
+    import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    let isLoginMode = true;
+    let firebaseReady = false;
+
+    // Attempt Firebase init
+    initPromise.then(() => {
+        firebaseReady = true;
+        // Check if user is already logged in
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                window.location.href = '/notas-corner/dashboard';
+            }
+        });
+    }).catch((err) => {
+        // Firebase not available (local dev without vercel)
+        console.warn('Firebase not available. Running in degraded mode.', err);
+        const errorDiv = document.getElementById('auth-error');
+        // Don't show error on load — only when user tries to login
+    });
+
+    function showError(msg) {
+        const el = document.getElementById('auth-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function hideError() {
+        const el = document.getElementById('auth-error');
+        el.style.display = 'none';
+    }
+
+    function setLoading(isLoading) {
+        const btn = document.getElementById('auth-submit-btn');
+        btn.disabled = isLoading;
+        btn.innerHTML = isLoading
+            ? '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...'
+            : (isLoginMode
+                ? '<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión'
+                : '<i class="fa-solid fa-user-plus"></i> Crear Cuenta');
+    }
+
+    window.openAuthModal = function(mode) {
+        isLoginMode = mode === 'login';
+        document.getElementById('auth-modal-title').textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
+        document.getElementById('auth-switch-text-inner').textContent = isLoginMode ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
+        document.getElementById('auth-switch-link').textContent = isLoginMode ? 'Crear una' : 'Iniciar sesión';
+        document.getElementById('auth-submit-btn').innerHTML = isLoginMode
+            ? '<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión'
+            : '<i class="fa-solid fa-user-plus"></i> Crear Cuenta';
+        document.getElementById('auth-form').reset();
+        hideError();
+        document.getElementById('auth-modal').classList.add('active');
+        setTimeout(() => document.getElementById('auth-email').focus(), 150);
+    };
+
+    window.closeAuthModal = function() {
+        document.getElementById('auth-modal').classList.remove('active');
+    };
+
+    window.toggleAuthMode = function() {
+        window.openAuthModal(isLoginMode ? 'register' : 'login');
+    };
+
+    window.handleFormSubmit = async function(e) {
+        e.preventDefault();
+        if (!firebaseReady) {
+            showError('No hay conexión con el servidor. Intenta de nuevo en unos segundos.');
+            return;
+        }
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        hideError();
+        setLoading(true);
+
+        try {
+            if (isLoginMode) {
+                await signInWithEmailAndPassword(auth, email, password);
+            } else {
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                await setDoc(doc(db, 'users', cred.user.uid), {
+                    uid: cred.user.uid,
+                    email: cred.user.email,
+                    createdAt: Date.now(),
+                    preferences: { theme: 'dark', allowSharing: true }
+                }, { merge: true });
+            }
+            window.location.href = '/notas-corner/dashboard';
+        } catch (err) {
+            setLoading(false);
+            showError(getReadableError(err.code));
+        }
+    };
+
+    window.handleGoogleLogin = async function() {
+        if (!firebaseReady) {
+            showError('No hay conexión con el servidor. Intenta de nuevo en unos segundos.');
+            return;
+        }
+        try {
+            const cred = await signInWithPopup(auth, provider);
+            await setDoc(doc(db, 'users', cred.user.uid), {
+                uid: cred.user.uid,
+                email: cred.user.email,
+                displayName: cred.user.displayName,
+                createdAt: Date.now(),
+                preferences: { theme: 'dark', allowSharing: true }
+            }, { merge: true });
+            window.location.href = '/notas-corner/dashboard';
+        } catch (err) {
+            showError(getReadableError(err.code));
+        }
+    };
+
+    function getReadableError(code) {
+        const map = {
+            'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+            'auth/user-not-found': 'No existe una cuenta con ese correo.',
+            'auth/wrong-password': 'Contraseña incorrecta.',
+            'auth/email-already-in-use': 'Este correo ya está registrado.',
+            'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+            'auth/popup-closed-by-user': 'Cerraste la ventana de Google. Intenta de nuevo.',
+            'auth/network-request-failed': 'Error de red. Revisa tu conexión.',
+        };
+        return map[code] || 'Ocurrió un error inesperado. Intenta de nuevo.';
+    }
+
+    // Close modal clicking outside
+    document.getElementById('auth-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeAuthModal();
+    });
+</script>
 </body>
 </html>

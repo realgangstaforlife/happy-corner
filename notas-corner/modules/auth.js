@@ -8,54 +8,44 @@ import {
     signOut, 
     onAuthStateChanged, 
     setPersistence, 
-    browserLocalPersistence 
+    browserLocalPersistence,
+    updateProfile,
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, initializeFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-let app, auth, db, provider;
+// Mutable references — filled once initPromise resolves
+export let auth = null;
+export let db = null;
+export let provider = null;
 
-// Helper to safely parse JSON
 async function parseJsonResponse(response) {
-    try {
-        const text = await response.text();
-        if (!text) throw new Error('Empty response from server');
-        return JSON.parse(text);
-    } catch (e) {
-        throw new Error(`Invalid server response: ${e.message}`);
-    }
+    const text = await response.text();
+    if (!text) throw new Error('Empty response');
+    return JSON.parse(text);
 }
 
-const initPromise = fetch('/api/getConfig')
-    .then(async res => {
-        if (!res.ok) throw new Error("No se pudo obtener la configuración de Firebase");
-        return parseJsonResponse(res);
-    })
-    .then(async (config) => {
-        if (!config.apiKey) throw new Error("API Key no definida en variables de entorno");
-        
-        app = initializeApp(config);
-        auth = getAuth(app);
-        db = initializeFirestore(app, { experimentalForceLongPolling: true });
-        provider = new GoogleAuthProvider();
-        
-        // Configurar persistencia local explícitamente
-        await setPersistence(auth, browserLocalPersistence);
-        
-        return { app, auth, db, provider };
-    })
-    .catch(err => {
-        console.error("Firebase init error:", err);
-        throw err;
-    });
+export const initPromise = (async () => {
+    const res = await fetch('/api/getConfig');
+    if (!res.ok) throw new Error('No se pudo obtener la configuración de Firebase');
+    const config = await parseJsonResponse(res);
+    if (!config.apiKey) throw new Error('API Key no definida');
 
-export { 
-    initPromise, 
-    auth, 
-    db, 
-    provider,
+    const app = initializeApp(config);
+    auth = getAuth(app);
+    db = initializeFirestore(app, { experimentalForceLongPolling: true });
+    provider = new GoogleAuthProvider();
+    await setPersistence(auth, browserLocalPersistence);
+    return { auth, db, provider };
+})();
+
+// Re-export Firebase Auth functions for convenience
+export {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signInWithPopup,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    updateProfile,
+    sendPasswordResetEmail
 };
