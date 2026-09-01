@@ -1,0 +1,9 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/settings", "destination": "/settings.html" },
+    { "source": "/shared/:uuid", "destination": "/index.html" }
+  ]
+}
