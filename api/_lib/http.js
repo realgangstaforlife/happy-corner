@@ -1,6 +1,7 @@
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://happycorner.top",
   "https://www.happycorner.top",
+  "https://notas.happycorner.top",
   "https://happycorner.lol",
   "https://www.happycorner.lol",
   "https://happy-corner.vercel.app",

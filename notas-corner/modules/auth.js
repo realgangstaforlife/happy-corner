@@ -25,8 +25,14 @@ async function parseJsonResponse(response) {
     return JSON.parse(text);
 }
 
+// ⚠️ URL absoluta — la API vive en happycorner.top sin importar desde qué subdominio se sirva esta página
+const CONFIG_URL = window.location.hostname.includes('localhost')
+    ? '/api/getConfig'
+    : 'https://happycorner.top/api/getConfig';
+
 export const initPromise = (async () => {
-    const res = await fetch('/api/getConfig');
+    const res = await fetch(CONFIG_URL);
+
     if (!res.ok) throw new Error('No se pudo obtener la configuración de Firebase');
     const config = await parseJsonResponse(res);
     if (!config.apiKey) throw new Error('API Key no definida');
