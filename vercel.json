@@ -36,6 +36,10 @@
     { "source": "/happylogo.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happylogo.png" },
     { "source": "/happyfavicon.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happyfavicon.png" },
 
+    { "source": "/", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
+    { "source": "/logout", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
+    { "source": "/api/auth/:path*", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/auth/:path*" },
+
     { "source": "/", "destination": "/index.html" },
     { "source": "/index", "destination": "/index.html" },
     {

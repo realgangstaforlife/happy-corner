@@ -10,8 +10,7 @@ import {
     setPersistence, 
     browserLocalPersistence,
     updateProfile,
-    sendPasswordResetEmail,
-    signInWithCustomToken
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -45,16 +44,6 @@ export const initPromise = (async () => {
     return { auth, db, provider };
 })();
 
-export async function signInWithCustomTokenSSO(token) {
-    try {
-        await signInWithCustomToken(auth, token);
-        return true;
-    } catch (error) {
-        console.error('Custom token sign in failed:', error);
-        return false;
-    }
-}
-
 // Re-export Firebase Auth functions for convenience
 export {
     signInWithEmailAndPassword,
@@ -63,7 +52,5 @@ export {
     signOut,
     onAuthStateChanged,
     updateProfile,
-    sendPasswordResetEmail,
-    signInWithCustomToken,
-    signInWithCustomTokenSSO
+    sendPasswordResetEmail
 };

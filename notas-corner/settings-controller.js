@@ -35,6 +35,7 @@ export function initSettings(user) {
         try {
             await signOut(auth);
             StorageService.clearCache();
+            window.location.href = 'https://auth.happycorner.top/logout';
         } catch (error) {
             console.error("Logout error", error);
         }

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Autenticación - Happy Corner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="https://happycorner.top/happyfavicon.png">
+
+    <style>
+        body { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh;
+            margin: 0;
+            background: var(--bg-color);
+        }
+        
+        .modal-box {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 36px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+            animation: popIn 0.25s ease;
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.96) translateY(10px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+
+        .modal-top {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 28px;
+            text-align: center;
+        }
+        .modal-top img {
+            width: 48px;
+            margin-bottom: 12px;
+        }
+        .modal-h2 {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--text-color);
+        }
+
+        .field { margin-bottom: 16px; }
+        .field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 7px;
+        }
+        .field input {
+            width: 100%;
+            padding: 13px 15px;
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            border-radius: 11px;
+            color: var(--text-color);
+            font-size: 15px;
+            font-weight: 500;
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input:focus {
+            border-color: var(--hp-pink);
+            box-shadow: 0 0 0 3px rgba(255,82,153,0.2);
+        }
+
+        .auth-err {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
+            color: #ef4444;
+            padding: 11px 14px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: none;
+        }
+
+        .btn-main {
+            width: 100%;
+            background: var(--hp-gradient);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            min-height: 48px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(255,82,153,0.25);
+        }
+        .btn-main:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,82,153,0.35); }
+        .btn-main:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .or-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 18px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .or-row::before, .or-row::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .btn-google {
+            width: 100%;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 13px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            min-height: 48px;
+            transition: all 0.2s;
+        }
+        .btn-google:hover { border-color: var(--hp-pink); color: var(--hp-pink); }
+
+        .switch-txt {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .switch-txt a {
+            color: var(--hp-pink);
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .switch-txt a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="modal-box">
+        <div class="modal-top">
+            <img src="https://happycorner.top/happylogo.png" alt="Happy Corner">
+            <span class="modal-h2" id="modal-title">Iniciar Sesión</span>
+            <div id="subtitle" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Accede a todas las apps de Happy Corner</div>
+        </div>
+
+        <div class="auth-err" id="auth-err"></div>
+
+        <form id="auth-form" onsubmit="submitForm(event)">
+            <div class="field">
+                <label>Correo electrónico</label>
+                <input type="email" id="f-email" placeholder="tu@correo.com" required autocomplete="email">
+            </div>
+            <div class="field">
+                <label>Contraseña</label>
+                <input type="password" id="f-pass" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn-main" id="btn-submit">
+                Iniciar Sesión
+            </button>
+        </form>
+
+        <div class="or-row">O</div>
+
+        <button class="btn-google" onclick="googleLogin()">
+            <i class="fa-brands fa-google"></i>
+            Continuar con Google
+        </button>
+
+        <p class="switch-txt">
+            <span id="switch-txt">¿No tienes cuenta?</span>
+            <a onclick="toggleMode()" id="switch-link">Crear una</a>
+        </p>
+    </div>
+
+    <!-- Theme init -->
+    <script>
+        (function(){
+            var t = localStorage.getItem('notas_theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
+    <!-- App logic -->
+    <script type="module" src="app.js"></script>
+
+</body>
+</html>

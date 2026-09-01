@@ -641,9 +641,6 @@ header {
 .upsell-banner {
     background: linear-gradient(135deg, rgba(255,157,92,0.1), rgba(255,82,153,0.1));
     border: 1px solid var(--hp-orange);
-.upsell-banner {
-    background: linear-gradient(135deg, rgba(255,157,92,0.1), rgba(255,82,153,0.1));
-    border: 1px solid var(--hp-orange);
     border-radius: 16px;
     padding: 15px;
     display: flex;

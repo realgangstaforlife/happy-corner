@@ -15,8 +15,21 @@ class App {
     
     async init() {
         this.setupTheme();
+        
+        const params = new URLSearchParams(window.location.search);
+        const ssoToken = params.get('token');
+
         try {
             await initPromise;
+            
+            if (ssoToken) {
+                const { signInWithCustomTokenSSO } = await import('./modules/auth.js');
+                const success = await signInWithCustomTokenSSO(ssoToken);
+                if (success) {
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+            }
+            
             this.handleRouting();
         } catch (error) {
             console.warn("Firebase not available:", error.message);
@@ -61,11 +74,18 @@ class App {
             const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
             
             if (user) {
-                if (isIndex)      window.location.href = '/notas-corner/dashboard';
+                if (isIndex) {
+                    // Update: use absolute path based on subdomain or fallback to /notas-corner/
+                    const isSubdomain = window.location.hostname === 'notas.happycorner.top';
+                    window.location.href = isSubdomain ? '/dashboard' : '/notas-corner/dashboard';
+                }
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
-                if (isDashboard || isSettings) window.location.href = '/notas-corner/';
+                if (isDashboard || isSettings) {
+                    window.location.href = 'https://auth.happycorner.top?client_id=notas&redirect_uri=' + 
+                        encodeURIComponent(window.location.origin + window.location.pathname);
+                }
             }
         });
     }
