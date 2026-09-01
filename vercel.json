@@ -120,22 +120,15 @@
       "source": "/robots.txt",
       "destination": "/robots.txt"
     },
-    {
-      "source": "/notas-corner",
-      "destination": "/notas-corner/index.html"
-    },
-    {
-      "source": "/notas-corner/dashboard",
-      "destination": "/notas-corner/dashboard.html"
-    },
-    {
-      "source": "/notas-corner/settings",
-      "destination": "/notas-corner/settings.html"
-    },
-    {
-      "source": "/notas-corner/shared/:uuid",
-      "destination": "/notas-corner/index.html"
-    }
+    { "source": "/notas-corner", "destination": "/notas-corner/index.html" },
+    { "source": "/notas-corner/dashboard", "destination": "/notas-corner/dashboard.html" },
+    { "source": "/notas-corner/settings", "destination": "/notas-corner/settings.html" },
+    { "source": "/notas-corner/shared/:uuid", "destination": "/notas-corner/index.html" },
+
+    { "source": "/", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/index.html" },
+    { "source": "/dashboard", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/dashboard.html" },
+    { "source": "/settings", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/settings.html" },
+    { "source": "/shared/:uuid", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/index.html" }
   ],
   "redirects": [
     {
