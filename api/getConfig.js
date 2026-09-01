@@ -6,6 +6,12 @@ export default async function handler(req, res) {
 
     // ── GET: retorna la configuración pública de Firebase ─────────────────────
     if (req.method === 'GET') {
+        // Firebase client config is intentionally public — security is enforced by Firestore Rules
+        // Allow any origin so notas.happycorner.top (and any future subdomain) can fetch it
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        if (req.method === 'OPTIONS') { return res.status(200).end(); }
+
         return res.status(200).json({
             apiKey: process.env.FIREBASE_API_KEY,
             authDomain: process.env.FIREBASE_AUTH_DOMAIN,

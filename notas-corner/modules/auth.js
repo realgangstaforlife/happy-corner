@@ -25,13 +25,18 @@ async function parseJsonResponse(response) {
     return JSON.parse(text);
 }
 
-// ⚠️ URL absoluta — la API vive en happycorner.top sin importar desde qué subdominio se sirva esta página
-const CONFIG_URL = window.location.hostname.includes('localhost')
+// URL absoluta — apunta a happycorner.top (CORS abierto para GET de config pública)
+const CONFIG_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? '/api/getConfig'
     : 'https://happycorner.top/api/getConfig';
 
 export const initPromise = (async () => {
-    const res = await fetch(CONFIG_URL);
+    // Intentamos la URL canónica; si redirige (308), probamos con www
+    let res = await fetch(CONFIG_URL, { redirect: 'follow' });
+    if (!res.ok) {
+        // Fallback: intenta www
+        res = await fetch('https://www.happycorner.top/api/getConfig', { redirect: 'follow' });
+    }
 
     if (!res.ok) throw new Error('No se pudo obtener la configuración de Firebase');
     const config = await parseJsonResponse(res);
