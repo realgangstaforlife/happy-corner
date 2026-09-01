@@ -3,314 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Notas Corner — Tus notas, organizadas y tuyas</title>
-    <meta name="description" content="Notas Corner: crea, guarda y comparte tus notas de manera segura desde Happy Corner.">
-    
+    <title>HappyNotas — Tus notas, organizadas y tuyas</title>
+    <meta name="description" content="HappyNotas: crea, guarda y comparte tus notas de manera segura desde Happy Corner.">
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="../happyfavicon.png">
 
     <style>
-        /* ---- LANDING OVERRIDES ---- */
         body { padding-bottom: 0; }
 
-        .landing-wrapper {
-            min-height: 100vh;
-            display: grid;
-            grid-template-rows: auto 1fr auto;
+        /* ---- HEADER ---- */
+        .landing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: var(--header-bg);
         }
 
-        /* HERO */
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .logo-area img {
+            height: 36px;
+            width: auto;
+        }
+        .logo-area .logo-name {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--text-color);
+        }
+        .logo-area .logo-name span {
+            color: var(--hp-pink);
+        }
+
+        /* ---- HERO ---- */
         .hero {
+            padding: 80px 20px 60px;
+            text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 60px 20px 80px;
-            position: relative;
-            overflow: hidden;
         }
 
-        /* Gradient orb background */
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -120px; left: 50%;
-            transform: translateX(-50%);
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(255,82,153,0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        .hero-badge {
+        .hero-eyebrow {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255,82,153,0.12);
-            border: 1px solid rgba(255,82,153,0.3);
+            background: rgba(255,82,153,0.08);
+            border: 1px solid rgba(255,82,153,0.2);
             color: var(--hp-pink);
             font-size: 12px;
             font-weight: 700;
             padding: 6px 16px;
             border-radius: 999px;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
-            margin-bottom: 28px;
-            animation: fadeUp 0.5s ease both;
+            margin-bottom: 32px;
         }
 
         .hero-title {
-            font-size: clamp(42px, 8vw, 80px);
+            font-size: clamp(36px, 7vw, 68px);
             font-weight: 900;
-            line-height: 1.05;
-            margin-bottom: 20px;
-            animation: fadeUp 0.6s ease 0.1s both;
+            line-height: 1.08;
+            color: var(--text-color);
+            margin-bottom: 18px;
+            max-width: 700px;
         }
-        .hero-title .gradient-text {
-            background: var(--hp-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+        .hero-title .pink { color: var(--hp-pink); }
 
-        .hero-subtitle {
-            font-size: 18px;
-            font-weight: 300;
+        .hero-sub {
+            font-size: 17px;
+            font-weight: 400;
             color: var(--text-muted);
-            max-width: 480px;
-            line-height: 1.6;
-            margin-bottom: 48px;
-            animation: fadeUp 0.6s ease 0.2s both;
+            max-width: 420px;
+            line-height: 1.65;
+            margin-bottom: 44px;
         }
 
-        .hero-cta {
+        .cta-group {
             display: flex;
-            gap: 16px;
+            gap: 14px;
             flex-wrap: wrap;
             justify-content: center;
-            animation: fadeUp 0.6s ease 0.3s both;
+            margin-bottom: 70px;
         }
 
-        .btn-hero-primary {
+        .btn-cta-primary {
             background: var(--hp-gradient);
             color: white;
             border: none;
-            padding: 16px 36px;
+            padding: 15px 32px;
             border-radius: 14px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 800;
             font-family: 'Outfit', sans-serif;
             cursor: pointer;
-            transition: transform 0.3s cubic-bezier(0.175,0.885,0.32,1.275), box-shadow 0.3s;
-            box-shadow: 0 8px 24px var(--hp-pink-glow);
-            min-height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 50px;
+            transition: transform 0.25s, box-shadow 0.25s;
+            box-shadow: 0 6px 20px rgba(255,82,153,0.3);
         }
-        .btn-hero-primary:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 16px 40px var(--hp-pink-glow);
+        .btn-cta-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(255,82,153,0.4);
         }
-        .btn-hero-primary:active { transform: scale(0.96); }
+        .btn-cta-primary:active { transform: scale(0.97); }
 
-        .btn-hero-secondary {
+        .btn-cta-secondary {
             background: var(--surface-color);
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            padding: 16px 36px;
+            padding: 15px 32px;
             border-radius: 14px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             font-family: 'Outfit', sans-serif;
             cursor: pointer;
-            transition: all 0.3s;
-            min-height: 52px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 50px;
+            transition: all 0.25s;
         }
-        .btn-hero-secondary:hover {
+        .btn-cta-secondary:hover {
             border-color: var(--hp-pink);
             color: var(--hp-pink);
-            background: rgba(255,82,153,0.06);
         }
 
-        /* BENEFITS */
-        .benefits-section {
-            padding: 0 20px 80px;
-            max-width: 900px;
-            margin: 0 auto;
-            width: 100%;
-            animation: fadeUp 0.6s ease 0.4s both;
-        }
-
-        .benefits-grid {
+        /* ---- BENEFITS ---- */
+        .benefits {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 16px;
+            max-width: 860px;
+            width: 100%;
         }
 
         @media (max-width: 640px) {
-            .benefits-grid { grid-template-columns: 1fr; }
+            .benefits { grid-template-columns: 1fr; }
+            .hero { padding: 50px 20px 40px; }
         }
 
-        .benefit-card {
+        .benefit {
             background: var(--surface-color);
             border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 28px 24px;
+            border-radius: 18px;
+            padding: 24px;
             text-align: left;
-            transition: border-color 0.3s, transform 0.3s;
+            transition: border-color 0.25s, transform 0.25s;
         }
-        .benefit-card:hover {
-            border-color: var(--hp-pink);
-            transform: translateY(-4px);
+        .benefit:hover {
+            border-color: rgba(255,82,153,0.4);
+            transform: translateY(-3px);
         }
         .benefit-icon {
-            width: 44px; height: 44px;
-            border-radius: 12px;
-            background: rgba(255,82,153,0.1);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 20px;
+            font-size: 22px;
             color: var(--hp-pink);
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
         .benefit-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             color: var(--text-color);
         }
-        .benefit-desc {
+        .benefit-text {
             font-size: 13px;
             color: var(--text-muted);
             line-height: 1.5;
         }
 
-        /* FOOTER */
+        /* ---- FOOTER ---- */
         .landing-footer {
-            padding: 24px;
             text-align: center;
+            padding: 28px 20px;
             border-top: 1px solid var(--border-color);
             font-size: 13px;
             color: var(--text-muted);
         }
-        .landing-footer a { color: var(--hp-pink); text-decoration: none; font-weight: 700; }
+        .landing-footer a {
+            color: var(--hp-pink);
+            text-decoration: none;
+            font-weight: 700;
+        }
 
-        /* AUTH MODAL */
+        /* ---- AUTH MODAL ---- */
         .modal {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1050;
-            backdrop-filter: blur(6px);
+            background: rgba(0,0,0,0.65);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
             align-items: center;
             justify-content: center;
         }
         .modal.active { display: flex; }
 
-        .modal-content {
+        .modal-box {
             background: var(--surface-color);
-            padding: 36px;
-            border-radius: 24px;
-            width: 90%;
-            max-width: 420px;
             border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 36px;
+            width: 90%;
+            max-width: 400px;
             box-shadow: var(--shadow-lg);
-            animation: fadeUp 0.3s ease;
+            animation: popIn 0.25s ease;
         }
 
-        .modal-header {
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.96) translateY(10px); }
+            to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+
+        .modal-top {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             margin-bottom: 28px;
         }
-        .modal-title {
-            font-size: 24px;
+        .modal-h2 {
+            font-size: 22px;
             font-weight: 900;
             color: var(--text-color);
         }
-        .modal-close-btn {
+        .modal-x {
             background: var(--input-bg);
             border: none;
             color: var(--text-muted);
-            width: 36px; height: 36px;
-            border-radius: 10px;
+            width: 34px; height: 34px;
+            border-radius: 9px;
             cursor: pointer;
-            font-size: 16px;
             display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
             transition: all 0.2s;
         }
-        .modal-close-btn:hover { background: var(--hp-pink); color: white; }
+        .modal-x:hover { background: var(--hp-pink); color: white; }
 
-        .form-group { margin-bottom: 18px; }
-        .form-group label {
+        .field { margin-bottom: 16px; }
+        .field label {
             display: block;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
-            color: var(--text-muted);
-            margin-bottom: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 7px;
         }
-        .form-group input {
+        .field input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 13px 15px;
             background: var(--input-bg);
             border: 2px solid var(--input-border);
-            border-radius: 12px;
+            border-radius: 11px;
             color: var(--text-color);
             font-size: 15px;
             font-weight: 500;
-            transition: all 0.3s;
-            outline: none;
             font-family: 'Outfit', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .form-group input:focus {
+        .field input:focus {
             border-color: var(--hp-pink);
-            background: var(--surface-color);
-            box-shadow: 0 0 0 4px var(--hp-pink-glow);
+            box-shadow: 0 0 0 3px rgba(255,82,153,0.2);
         }
 
-        .auth-error {
-            background: rgba(239,68,68,0.1);
-            border: 1px solid rgba(239,68,68,0.3);
+        .auth-err {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.25);
             color: #ef4444;
-            padding: 12px 16px;
-            border-radius: 10px;
+            padding: 11px 14px;
+            border-radius: 9px;
             font-size: 13px;
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: none;
         }
 
-        .btn-full {
+        .btn-main {
             width: 100%;
             background: var(--hp-gradient);
             color: white;
             border: none;
-            padding: 15px;
+            padding: 14px;
             border-radius: 12px;
             font-size: 15px;
             font-weight: 800;
             font-family: 'Outfit', sans-serif;
             cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-            box-shadow: 0 6px 20px var(--hp-pink-glow);
-            min-height: 50px;
+            min-height: 48px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 16px rgba(255,82,153,0.25);
         }
-        .btn-full:hover { transform: translateY(-2px); box-shadow: 0 12px 30px var(--hp-pink-glow); }
-        .btn-full:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-main:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,82,153,0.35); }
+        .btn-main:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .divider {
+        .or-row {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin: 20px 0;
+            gap: 10px;
+            margin: 18px 0;
             color: var(--text-muted);
             font-size: 12px;
             font-weight: 600;
         }
-        .divider::before, .divider::after {
+        .or-row::before, .or-row::after {
             content: '';
             flex: 1;
             height: 1px;
@@ -319,7 +331,7 @@
 
         .btn-google {
             width: 100%;
-            background: var(--surface-color);
+            background: var(--input-bg);
             color: var(--text-color);
             border: 1px solid var(--border-color);
             padding: 13px;
@@ -328,275 +340,239 @@
             font-weight: 700;
             font-family: 'Outfit', sans-serif;
             cursor: pointer;
-            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            min-height: 50px;
+            gap: 9px;
+            min-height: 48px;
+            transition: all 0.2s;
         }
-        .btn-google:hover { border-color: var(--hp-pink); color: var(--hp-pink); background: rgba(255,82,153,0.05); }
+        .btn-google:hover { border-color: var(--hp-pink); color: var(--hp-pink); }
 
-        .auth-switch-text {
+        .switch-txt {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 18px;
             font-size: 13px;
             color: var(--text-muted);
         }
-        .auth-switch-text a {
+        .switch-txt a {
             color: var(--hp-pink);
             font-weight: 700;
             text-decoration: none;
             cursor: pointer;
         }
-        .auth-switch-text a:hover { text-decoration: underline; }
-
-        /* Animations */
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Header for landing */
-        .landing-header {
-            background: transparent;
-            backdrop-filter: none;
-            border: none;
-            box-shadow: none;
-            position: relative;
-            top: 0;
-            width: 100%;
-            max-width: 100%;
-            border-radius: 0;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .landing-header .logo-text {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-        }
-        .landing-header .logo-text i { color: var(--hp-pink); }
+        .switch-txt a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
 
-<div class="landing-wrapper">
-    <!-- HEADER -->
-    <header class="landing-header">
-        <a href="/notas-corner/" class="logo-text">
-            <i class="fa-solid fa-graduation-cap"></i>
-            Notas Corner
-        </a>
-        <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
-            <i class="fa-solid fa-moon"></i>
+<!-- HEADER -->
+<header class="landing-header">
+    <a href="/notas-corner/" class="logo-area">
+        <img src="../happylogo.png" alt="HappyNotas">
+        <span class="logo-name">Happy<span>Notas</span></span>
+    </a>
+    <button class="theme-toggle" id="theme-toggle" title="Cambiar tema">
+        <i class="fa-solid fa-moon"></i>
+    </button>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-eyebrow">
+        <i class="fa-solid fa-star"></i>
+        Parte de Happy Corner
+    </div>
+
+    <h1 class="hero-title">
+        Tus notas,<br>
+        <span class="pink">siempre contigo.</span>
+    </h1>
+
+    <p class="hero-sub">
+        Escribe, guarda y comparte apuntes. Funciona sin conexión y tu información es tuya.
+    </p>
+
+    <div class="cta-group">
+        <button class="btn-cta-primary" id="btn-login" onclick="openModal('login')">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            Iniciar Sesión
         </button>
-    </header>
+        <button class="btn-cta-secondary" id="btn-register" onclick="openModal('register')">
+            <i class="fa-solid fa-user-plus"></i>
+            Crear Cuenta
+        </button>
+    </div>
 
-    <!-- HERO -->
-    <section class="hero">
-        <div class="hero-badge">
-            <i class="fa-solid fa-star"></i>
-            Parte del ecosistema Happy Corner
+    <!-- BENEFITS -->
+    <div class="benefits">
+        <div class="benefit">
+            <div class="benefit-icon"><i class="fa-solid fa-bolt"></i></div>
+            <div class="benefit-title">Acceso rápido</div>
+            <div class="benefit-text">Tus notas cargan al instante en cualquier dispositivo.</div>
         </div>
-
-        <h1 class="hero-title">
-            Tus notas,<br>
-            <span class="gradient-text">siempre contigo.</span>
-        </h1>
-
-        <p class="hero-subtitle">
-            Guarda ideas, apuntes y recordatorios. Accede desde cualquier dispositivo, incluso sin conexión.
-        </p>
-
-        <div class="hero-cta">
-            <button id="btn-login" class="btn-hero-primary" onclick="openAuthModal('login')">
-                <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
-            </button>
-            <button id="btn-register" class="btn-hero-secondary" onclick="openAuthModal('register')">
-                <i class="fa-solid fa-user-plus"></i> Crear Cuenta
-            </button>
+        <div class="benefit">
+            <div class="benefit-icon"><i class="fa-solid fa-wifi-slash"></i></div>
+            <div class="benefit-title">Sin conexión</div>
+            <div class="benefit-text">Guarda tus notas localmente como archivo .happyc.</div>
         </div>
-
-        <!-- Benefits section inline with hero -->
-        <div class="benefits-section" style="margin-top: 70px;">
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fa-solid fa-bolt"></i></div>
-                    <div class="benefit-title">Ultra rápido</div>
-                    <div class="benefit-desc">Interfaz instantánea. Tus notas cargan en menos de un segundo.</div>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fa-solid fa-wifi-slash"></i></div>
-                    <div class="benefit-title">Sin conexión</div>
-                    <div class="benefit-desc">Funciona offline gracias al caché local. Siempre accesible.</div>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon"><i class="fa-solid fa-share-nodes"></i></div>
-                    <div class="benefit-title">Comparte fácil</div>
-                    <div class="benefit-desc">Genera un enlace público de solo lectura con un clic.</div>
-                </div>
-            </div>
+        <div class="benefit">
+            <div class="benefit-icon"><i class="fa-solid fa-share-nodes"></i></div>
+            <div class="benefit-title">Comparte fácil</div>
+            <div class="benefit-text">Genera un enlace de solo lectura con un clic.</div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <!-- FOOTER -->
-    <footer class="landing-footer">
-        &copy; 2026 <a href="https://happycorner.top" target="_blank">Happy Corner</a> — Hecho con 💖 en Cali, Colombia
-    </footer>
-</div>
+<!-- FOOTER -->
+<footer class="landing-footer">
+    &copy; 2026 <a href="https://happycorner.top" target="_blank">Happy Corner</a> &mdash; Hecho con 💖 en Cali, Colombia
+</footer>
 
 <!-- AUTH MODAL -->
 <div class="modal" id="auth-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <span class="modal-title" id="auth-modal-title">Iniciar Sesión</span>
-            <button class="modal-close-btn" onclick="closeAuthModal()"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-box">
+        <div class="modal-top">
+            <span class="modal-h2" id="modal-title">Iniciar Sesión</span>
+            <button class="modal-x" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
 
-        <div class="auth-error" id="auth-error"></div>
+        <div class="auth-err" id="auth-err"></div>
 
-        <form id="auth-form" onsubmit="handleFormSubmit(event)">
-            <div class="form-group">
+        <form id="auth-form" onsubmit="submitForm(event)">
+            <div class="field">
                 <label>Correo electrónico</label>
-                <input type="email" id="auth-email" placeholder="tu@correo.com" required>
+                <input type="email" id="f-email" placeholder="tu@correo.com" required autocomplete="email">
             </div>
-            <div class="form-group">
+            <div class="field">
                 <label>Contraseña</label>
-                <input type="password" id="auth-password" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                <input type="password" id="f-pass" placeholder="Mínimo 6 caracteres" minlength="6" required autocomplete="current-password">
             </div>
-
-            <button type="submit" class="btn-full" id="auth-submit-btn">
-                <i class="fa-solid fa-right-to-bracket"></i> Continuar
+            <button type="submit" class="btn-main" id="btn-submit">
+                Iniciar Sesión
             </button>
         </form>
 
-        <div class="divider">O</div>
+        <div class="or-row">O</div>
 
-        <button class="btn-google" onclick="handleGoogleLogin()">
+        <button class="btn-google" onclick="googleLogin()">
             <i class="fa-brands fa-google"></i>
             Continuar con Google
         </button>
 
-        <p class="auth-switch-text">
-            <span id="auth-switch-text-inner">¿No tienes cuenta?</span>
-            <a id="auth-switch-link" onclick="toggleAuthMode()">Crear una</a>
+        <p class="switch-txt">
+            <span id="switch-txt">¿No tienes cuenta?</span>
+            <a onclick="toggleMode()" id="switch-link">Crear una</a>
         </p>
     </div>
 </div>
 
+<!-- Theme toggle (runs immediately, no Firebase needed) -->
 <script>
-    // ---- THEME SETUP (without Firebase) ----
-    (function() {
-        let stored = localStorage.getItem('notas_theme');
-        if (!stored) stored = 'dark'; // default dark
-        document.documentElement.setAttribute('data-theme', stored);
-        const icon = document.querySelector('#theme-toggle i');
-        if (icon) icon.className = stored === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    (function(){
+        var t = localStorage.getItem('notas_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', t);
     })();
 
-    document.getElementById('theme-toggle').addEventListener('click', function() {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
+    document.getElementById('theme-toggle').addEventListener('click', function(){
+        var cur = document.documentElement.getAttribute('data-theme');
+        var next = cur === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('notas_theme', next);
-        const icon = this.querySelector('i');
-        icon.className = next === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        var i = this.querySelector('i');
+        i.className = next === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
     });
+
+    // Init icon to match stored theme
+    (function(){
+        var t = localStorage.getItem('notas_theme') || 'dark';
+        var i = document.querySelector('#theme-toggle i');
+        if (i) i.className = t === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+    })();
 </script>
 
+<!-- Auth logic (module, loads async after page renders) -->
 <script type="module">
     import { initPromise, auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, onAuthStateChanged, provider } from './modules/auth.js';
     import { db } from './modules/auth.js';
     import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    let isLoginMode = true;
-    let firebaseReady = false;
+    let isLogin = true;
+    let firebaseOk = false;
 
-    // Attempt Firebase init
-    initPromise.then(() => {
-        firebaseReady = true;
-        // Check if user is already logged in
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                window.location.href = '/notas-corner/dashboard';
-            }
+    initPromise
+        .then(() => {
+            firebaseOk = true;
+            onAuthStateChanged(auth, user => {
+                if (user) window.location.href = '/notas-corner/dashboard';
+            });
+        })
+        .catch(() => {
+            // silently degrade — user will see error when they try to log in
         });
-    }).catch((err) => {
-        // Firebase not available (local dev without vercel)
-        console.warn('Firebase not available. Running in degraded mode.', err);
-        const errorDiv = document.getElementById('auth-error');
-        // Don't show error on load — only when user tries to login
-    });
 
-    function showError(msg) {
-        const el = document.getElementById('auth-error');
+    function setErr(msg) {
+        var el = document.getElementById('auth-err');
         el.textContent = msg;
-        el.style.display = 'block';
+        el.style.display = msg ? 'block' : 'none';
     }
 
-    function hideError() {
-        const el = document.getElementById('auth-error');
-        el.style.display = 'none';
-    }
-
-    function setLoading(isLoading) {
-        const btn = document.getElementById('auth-submit-btn');
-        btn.disabled = isLoading;
-        btn.innerHTML = isLoading
+    function setLoading(on) {
+        var btn = document.getElementById('btn-submit');
+        btn.disabled = on;
+        btn.innerHTML = on
             ? '<i class="fa-solid fa-spinner fa-spin"></i> Cargando...'
-            : (isLoginMode
-                ? '<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión'
-                : '<i class="fa-solid fa-user-plus"></i> Crear Cuenta');
+            : (isLogin ? 'Iniciar Sesión' : 'Crear Cuenta');
     }
 
-    window.openAuthModal = function(mode) {
-        isLoginMode = mode === 'login';
-        document.getElementById('auth-modal-title').textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
-        document.getElementById('auth-switch-text-inner').textContent = isLoginMode ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
-        document.getElementById('auth-switch-link').textContent = isLoginMode ? 'Crear una' : 'Iniciar sesión';
-        document.getElementById('auth-submit-btn').innerHTML = isLoginMode
-            ? '<i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión'
-            : '<i class="fa-solid fa-user-plus"></i> Crear Cuenta';
+    function errMsg(code) {
+        var m = {
+            'auth/invalid-credential'  : 'Correo o contraseña incorrectos.',
+            'auth/user-not-found'      : 'No existe una cuenta con ese correo.',
+            'auth/wrong-password'      : 'Contraseña incorrecta.',
+            'auth/email-already-in-use': 'Este correo ya está registrado.',
+            'auth/weak-password'       : 'La contraseña debe tener al menos 6 caracteres.',
+            'auth/popup-closed-by-user': 'Cerraste la ventana de Google. Intenta de nuevo.',
+            'auth/network-request-failed': 'Sin conexión. Revisa tu red.',
+        };
+        return m[code] || 'Error inesperado. Intenta de nuevo.';
+    }
+
+    window.openModal = function(mode) {
+        isLogin = mode === 'login';
+        document.getElementById('modal-title').textContent = isLogin ? 'Iniciar Sesión' : 'Crear Cuenta';
+        document.getElementById('btn-submit').textContent  = isLogin ? 'Iniciar Sesión' : 'Crear Cuenta';
+        document.getElementById('switch-txt').textContent  = isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
+        document.getElementById('switch-link').textContent = isLogin ? 'Crear una' : 'Iniciar sesión';
         document.getElementById('auth-form').reset();
-        hideError();
+        setErr('');
         document.getElementById('auth-modal').classList.add('active');
-        setTimeout(() => document.getElementById('auth-email').focus(), 150);
+        setTimeout(() => document.getElementById('f-email').focus(), 120);
     };
 
-    window.closeAuthModal = function() {
+    window.closeModal = function() {
         document.getElementById('auth-modal').classList.remove('active');
     };
 
-    window.toggleAuthMode = function() {
-        window.openAuthModal(isLoginMode ? 'register' : 'login');
-    };
+    window.toggleMode = function() { window.openModal(isLogin ? 'register' : 'login'); };
 
-    window.handleFormSubmit = async function(e) {
+    window.submitForm = async function(e) {
         e.preventDefault();
-        if (!firebaseReady) {
-            showError('No hay conexión con el servidor. Intenta de nuevo en unos segundos.');
+        if (!firebaseOk) {
+            setErr('No hay conexión con el servidor. Inténtalo de nuevo en unos segundos.');
             return;
         }
-        const email = document.getElementById('auth-email').value;
-        const password = document.getElementById('auth-password').value;
-        hideError();
+        var email = document.getElementById('f-email').value.trim();
+        var pass  = document.getElementById('f-pass').value;
+        setErr('');
         setLoading(true);
-
         try {
-            if (isLoginMode) {
-                await signInWithEmailAndPassword(auth, email, password);
+            if (isLogin) {
+                await signInWithEmailAndPassword(auth, email, pass);
             } else {
-                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                var cred = await createUserWithEmailAndPassword(auth, email, pass);
                 await setDoc(doc(db, 'users', cred.user.uid), {
-                    uid: cred.user.uid,
-                    email: cred.user.email,
+                    uid: cred.user.uid, email: cred.user.email,
                     createdAt: Date.now(),
                     preferences: { theme: 'dark', allowSharing: true }
                 }, { merge: true });
@@ -604,47 +580,35 @@
             window.location.href = '/notas-corner/dashboard';
         } catch (err) {
             setLoading(false);
-            showError(getReadableError(err.code));
+            setErr(errMsg(err.code));
         }
     };
 
-    window.handleGoogleLogin = async function() {
-        if (!firebaseReady) {
-            showError('No hay conexión con el servidor. Intenta de nuevo en unos segundos.');
+    window.googleLogin = async function() {
+        if (!firebaseOk) {
+            setErr('No hay conexión con el servidor.');
+            document.getElementById('auth-modal').classList.add('active');
             return;
         }
         try {
-            const cred = await signInWithPopup(auth, provider);
+            var cred = await signInWithPopup(auth, provider);
             await setDoc(doc(db, 'users', cred.user.uid), {
-                uid: cred.user.uid,
-                email: cred.user.email,
-                displayName: cred.user.displayName,
-                createdAt: Date.now(),
+                uid: cred.user.uid, email: cred.user.email,
+                displayName: cred.user.displayName, createdAt: Date.now(),
                 preferences: { theme: 'dark', allowSharing: true }
             }, { merge: true });
             window.location.href = '/notas-corner/dashboard';
         } catch (err) {
-            showError(getReadableError(err.code));
+            setErr(errMsg(err.code));
+            document.getElementById('auth-modal').classList.add('active');
         }
     };
 
-    function getReadableError(code) {
-        const map = {
-            'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-            'auth/user-not-found': 'No existe una cuenta con ese correo.',
-            'auth/wrong-password': 'Contraseña incorrecta.',
-            'auth/email-already-in-use': 'Este correo ya está registrado.',
-            'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
-            'auth/popup-closed-by-user': 'Cerraste la ventana de Google. Intenta de nuevo.',
-            'auth/network-request-failed': 'Error de red. Revisa tu conexión.',
-        };
-        return map[code] || 'Ocurrió un error inesperado. Intenta de nuevo.';
-    }
-
-    // Close modal clicking outside
+    // Close modal on backdrop click
     document.getElementById('auth-modal').addEventListener('click', function(e) {
-        if (e.target === this) closeAuthModal();
+        if (e.target === this) window.closeModal();
     });
 </script>
+
 </body>
 </html>
