@@ -27,16 +27,18 @@ function saveData() {
 // ==========================================
 // ROUTER BÁSICO (Detectar página actual)
 // ==========================================
-const path = window.location.pathname;
+document.addEventListener('DOMContentLoaded', () => {
+    const path = window.location.pathname;
 
-if (path.includes('dashboard')) {
-    initDashboard();
-} else if (path.includes('subject')) {
-    initSubject();
-} else {
-    // Default to index if not on dashboard or subject
-    initIndex();
-}
+    if (path.includes('dashboard')) {
+        initDashboard();
+    } else if (path.includes('subject')) {
+        initSubject();
+    } else {
+        // Default to index if not on dashboard or subject
+        initIndex();
+    }
+});
 
 // ==========================================
 // INICIO (index.html)
