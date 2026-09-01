@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notas Corner | Configuración</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/settings.css">
+    <link rel="icon" type="image/png" href="../happyfavicon.png">
+</head>
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <a href="/notas-corner/dashboard" class="logo">
+            <i class="fa-solid fa-graduation-cap" style="color: var(--hp-pink); font-size: 24px;"></i> 
+            <span style="font-weight: 900; font-size: 20px;">Notas Corner</span>
+        </a>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <a href="/notas-corner/dashboard" class="nav-icon" title="Volver al inicio">
+                <i class="fa-solid fa-house"></i>
+            </a>
+            <button class="theme-toggle" id="theme-toggle" title="Night Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+            <div class="menu-btn" id="menuBtn">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- SIDE MENU -->
+    <div class="overlay" id="overlay"></div>
+    <nav class="side-menu" id="sideMenu">
+        <a href="/notas-corner/dashboard"><i class="fa-solid fa-house"></i> Inicio</a>
+        <a href="/notas-corner/settings"><i class="fa-solid fa-gear"></i> Configuración</a>
+        <a href="#" id="menu-logout" style="color: var(--error);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</a>
+    </nav>
+
+    <!-- SETTINGS MAIN -->
+    <main class="settings-container">
+        
+        <h1 class="page-title" style="margin: 0 0 30px; text-align: left;">Configuración</h1>
+        
+        <div class="settings-grid">
+            
+            <!-- Perfil -->
+            <div class="settings-card">
+                <h2 class="settings-title"><i class="fa-solid fa-user"></i> Datos de Cuenta</h2>
+                
+                <label class="input-label">Nombre para mostrar</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <input type="text" id="profile-name" class="input-text" style="margin-bottom: 0;">
+                    <button class="btn-primary" onclick="window.notasAppSettings.updateProfileName()"><i class="fa-solid fa-check"></i></button>
+                </div>
+                
+                <label class="input-label">Correo electrónico (Solo lectura)</label>
+                <input type="email" id="profile-email" class="input-text" readonly disabled>
+                
+                <div class="stats-row">
+                    <span>Miembro desde:</span>
+                    <strong id="profile-date">...</strong>
+                </div>
+                
+                <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <button class="btn-secondary" style="width: 100%; margin-bottom: 10px;" onclick="window.notasAppSettings.resetPassword()">
+                        <i class="fa-solid fa-key"></i> Cambiar contraseña
+                    </button>
+                    <!-- Eliminado para simplificar sprint 1 y evitar problemas de auth-token caducado -->
+                </div>
+            </div>
+            
+            <!-- Preferencias -->
+            <div class="settings-card">
+                <h2 class="settings-title"><i class="fa-solid fa-sliders"></i> Preferencias de Interfaz</h2>
+                
+                <label class="input-label">Tema de la aplicación</label>
+                <select id="theme-selector" class="input-text" onchange="window.notasAppSettings.changeTheme(this.value)">
+                    <option value="light">☀️ Claro</option>
+                    <option value="dark">🌙 Oscuro</option>
+                </select>
+            </div>
+            
+            <!-- Datos y Almacenamiento -->
+            <div class="settings-card">
+                <h2 class="settings-title"><i class="fa-solid fa-database"></i> Datos y Almacenamiento</h2>
+                
+                <div class="stats-row" style="margin-bottom: 20px;">
+                    <span>Notas guardadas:</span>
+                    <strong id="stats-notes-count">0</strong>
+                </div>
+                
+                <button class="btn-primary btn-add" style="width: 100%; margin-bottom: 15px;" onclick="window.notasAppSettings.downloadAllNotes()">
+                    <i class="fa-solid fa-download"></i> Descargar todas mis notas
+                </button>
+                
+                <button class="btn-secondary" style="width: 100%; border-color: var(--error); color: var(--error);" onclick="window.notasAppSettings.clearLocalCache()">
+                    <i class="fa-solid fa-broom"></i> Limpiar caché local
+                </button>
+                <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                    Esto solo borra los datos temporales del navegador, no eliminará tus notas de la nube.
+                </p>
+            </div>
+            
+        </div>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

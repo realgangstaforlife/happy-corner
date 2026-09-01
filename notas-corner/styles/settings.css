@@ -1,0 +1,63 @@
+/* Settings specific styles */
+
+.settings-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 25px;
+}
+
+@media (min-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .settings-card:first-child {
+        grid-column: 1 / -1; /* Make profile span full width */
+    }
+}
+
+.settings-card {
+    background: var(--surface-color);
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.settings-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 25px;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-title i {
+    color: var(--hp-pink);
+}
+
+.stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: var(--input-bg);
+    border-radius: 12px;
+    font-size: 14px;
+    color: var(--text-color);
+}
+
+.stats-row strong {
+    color: var(--hp-pink);
+    font-size: 16px;
+}

@@ -1,353 +1,151 @@
-// ==========================================
-// ESTADO GLOBAL
-// ==========================================
-let appData = {
-    settings: {
-        saber: 50,
-        hacer: 40,
-        ser: 10
-    },
-    subjects: []
-};
+import { initPromise, auth, onAuthStateChanged } from './modules/auth.js';
+import { UIManager } from './modules/ui-manager.js';
+import { NotesService } from './modules/notes-service.js';
 
-// Cargar de LocalStorage (temporal, antes de Firebase)
-const savedData = localStorage.getItem('happyNotasData');
-if (savedData) {
-    try {
-        appData = JSON.parse(savedData);
-    } catch (e) {
-        console.error("Error parsing saved data");
+class App {
+    constructor() {
+        this.init();
     }
-}
-
-function saveData() {
-    localStorage.setItem('happyNotasData', JSON.stringify(appData));
-}
-
-// ==========================================
-// ROUTER BÁSICO (Detectar página actual)
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-
-    if (path.includes('dashboard')) {
-        initDashboard();
-    } else if (path.includes('subject')) {
-        initSubject();
-    } else {
-        // Default to index if not on dashboard or subject
-        initIndex();
-    }
-});
-
-// ==========================================
-// INICIO (index.html)
-// ==========================================
-function initIndex() {
-    const fileInput = document.getElementById('fileInput');
-    if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                try {
-                    // Aquí iría el desencriptado, por ahora parseamos JSON
-                    const data = JSON.parse(event.target.result);
-                    if (data.settings && data.subjects) {
-                        localStorage.setItem('happyNotasData', JSON.stringify(data));
-                        window.location.href = 'dashboard.html';
-                    } else {
-                        alert("Archivo inválido.");
-                    }
-                } catch (e) {
-                    alert("Error leyendo el archivo.");
-                }
-            };
-            reader.readAsText(file);
-        });
-        
-        const btnUpload = document.getElementById('btnUpload');
-        if (btnUpload) {
-            btnUpload.addEventListener('click', () => {
-                fileInput.click();
-            });
+    
+    async init() {
+        try {
+            await initPromise; // Wait for Firebase config to load
+            this.handleRouting();
+            this.setupTheme();
+        } catch (error) {
+            console.error("App initialization failed", error);
+            UIManager.showToast("Error de conexión. Trabajando offline.", "error");
         }
     }
     
-    const btnLogin = document.getElementById('btnLogin');
-    if (btnLogin) {
-        btnLogin.addEventListener('click', () => {
-            window.location.href = 'https://happycorner.top/login.html?returnUrl=https://notas.happycorner.top/dashboard.html';
-        });
-    }
-
-    const btnRegister = document.getElementById('btnRegister');
-    if (btnRegister) {
-        btnRegister.addEventListener('click', () => {
-            window.location.href = 'https://happycorner.top/login.html?mode=register&returnUrl=https://notas.happycorner.top/dashboard.html';
-        });
-    }
-}
-
-// ==========================================
-// DASHBOARD (dashboard.html)
-// ==========================================
-function initDashboard() {
-    renderSubjects();
-    
-    // Configuración
-    const btnSettings = document.getElementById('btnSettings');
-    const settingsModal = document.getElementById('settingsModal');
-    const btnCancelSettings = document.getElementById('btnCancelSettings');
-    const btnSaveSettings = document.getElementById('btnSaveSettings');
-    
-    const inpSaber = document.getElementById('percSaber');
-    const inpHacer = document.getElementById('percHacer');
-    const inpSer = document.getElementById('percSer');
-    const totalPercentageBox = document.getElementById('totalPercentage');
-    const warningMsg = document.getElementById('warningMsg');
-    const timerCount = document.getElementById('timerCount');
-    
-    let timerInterval = null;
-    let canSaveUnbalanced = false;
-
-    btnSettings.addEventListener('click', () => {
-        inpSaber.value = appData.settings.saber;
-        inpHacer.value = appData.settings.hacer;
-        inpSer.value = appData.settings.ser;
-        updateTotal();
-        settingsModal.classList.add('active');
-    });
-    
-    btnCancelSettings.addEventListener('click', () => {
-        settingsModal.classList.remove('active');
-        clearInterval(timerInterval);
-    });
-    
-    function updateTotal() {
-        const s = parseInt(inpSaber.value) || 0;
-        const h = parseInt(inpHacer.value) || 0;
-        const r = parseInt(inpSer.value) || 0;
-        const total = s + h + r;
-        totalPercentageBox.innerText = total;
+    setupTheme() {
+        const toggleBtn = document.getElementById('theme-toggle');
+        if (!toggleBtn) return;
         
-        if (total !== 100) {
-            warningMsg.style.display = 'block';
-            btnSaveSettings.disabled = true;
-            btnSaveSettings.style.opacity = '0.5';
-            canSaveUnbalanced = false;
-            
-            let time = 10;
-            timerCount.innerText = time;
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                time--;
-                timerCount.innerText = time;
-                if (time <= 0) {
-                    clearInterval(timerInterval);
-                    btnSaveSettings.disabled = false;
-                    btnSaveSettings.style.opacity = '1';
-                    canSaveUnbalanced = true;
-                    timerCount.innerText = '0';
-                }
-            }, 1000);
-        } else {
-            warningMsg.style.display = 'none';
-            clearInterval(timerInterval);
-            btnSaveSettings.disabled = false;
-            btnSaveSettings.style.opacity = '1';
-            canSaveUnbalanced = true;
+        // 1. Check local storage
+        let theme = localStorage.getItem('notas_theme');
+        if (!theme) {
+            // 2. Check OS preference
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        
+        document.documentElement.setAttribute('data-theme', theme);
+        this.updateThemeIcon(theme);
+        
+        toggleBtn.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('notas_theme', newTheme);
+            this.updateThemeIcon(newTheme);
+        });
+    }
+    
+    updateThemeIcon(theme) {
+        const icon = document.querySelector('#theme-toggle i') || document.querySelector('#theme-toggle');
+        if (icon && icon.tagName === 'I') {
+            icon.className = theme === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        } else if (icon) {
+            icon.textContent = theme === 'dark' ? '🌙' : '☀️';
         }
     }
     
-    inpSaber.addEventListener('input', updateTotal);
-    inpHacer.addEventListener('input', updateTotal);
-    inpSer.addEventListener('input', updateTotal);
-    
-    btnSaveSettings.addEventListener('click', () => {
-        if (!canSaveUnbalanced && parseInt(totalPercentageBox.innerText) !== 100) return;
-        appData.settings.saber = parseInt(inpSaber.value) || 0;
-        appData.settings.hacer = parseInt(inpHacer.value) || 0;
-        appData.settings.ser = parseInt(inpSer.value) || 0;
-        saveData();
-        settingsModal.classList.remove('active');
-    });
-
-    // Añadir Materia
-    const btnAddSubject = document.getElementById('btnAddSubject');
-    const subjectModal = document.getElementById('subjectModal');
-    const btnCancelSub = document.getElementById('btnCancelSub');
-    const btnSaveSub = document.getElementById('btnSaveSub');
-    const subEmoji = document.getElementById('subEmoji');
-    const subName = document.getElementById('subName');
-    
-    btnAddSubject.addEventListener('click', () => {
-        subEmoji.value = '📚';
-        subName.value = '';
-        subjectModal.classList.add('active');
-    });
-    
-    btnCancelSub.addEventListener('click', () => subjectModal.classList.remove('active'));
-    
-    btnSaveSub.addEventListener('click', () => {
-        if (!subName.value.trim()) return alert("El nombre es requerido");
-        const newSub = {
-            id: Date.now().toString(),
-            name: subName.value.trim(),
-            emoji: subEmoji.value || '📚',
-            grades: { saber: [], hacer: [], ser: [] }
-        };
-        appData.subjects.push(newSub);
-        saveData();
-        renderSubjects();
-        subjectModal.classList.remove('active');
-    });
-    
-    // Exportar
-    const btnExport = document.getElementById('btnExport');
-    btnExport.addEventListener('click', () => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData));
-        const anchor = document.createElement('a');
-        anchor.href = dataStr;
-        anchor.download = "mis_notas.happyc";
-        anchor.click();
-    });
-}
-
-function renderSubjects() {
-    const container = document.getElementById('subjectsContainer');
-    if (!container) return;
-    container.innerHTML = '';
-    
-    appData.subjects.forEach(sub => {
-        const div = document.createElement('div');
-        div.className = 'card subject-card';
-        div.innerHTML = `
-            <div class="emoji">${sub.emoji}</div>
-            <h4 style="font-size: 18px;">${sub.name}</h4>
-            <div class="delete-btn" onclick="deleteSubject(event, '${sub.id}')"><i class="fa-solid fa-trash"></i></div>
-        `;
-        div.onclick = () => {
-            window.location.href = `subject.html?id=${sub.id}`;
-        };
-        container.appendChild(div);
-    });
-}
-
-window.deleteSubject = function(event, id) {
-    event.stopPropagation();
-    if(confirm("¿Seguro que deseas eliminar esta materia?")) {
-        appData.subjects = appData.subjects.filter(s => s.id !== id);
-        saveData();
-        renderSubjects();
-    }
-};
-
-// ==========================================
-// MATERIA (subject.html)
-// ==========================================
-let currentSubId = null;
-let currentSubIndex = -1;
-
-function initSubject() {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentSubId = urlParams.get('id');
-    currentSubIndex = appData.subjects.findIndex(s => s.id === currentSubId);
-    
-    if (currentSubIndex === -1) {
-        window.location.href = 'dashboard.html';
-        return;
-    }
-    
-    const sub = appData.subjects[currentSubIndex];
-    document.getElementById('subjectTitle').innerText = sub.emoji + ' ' + sub.name;
-    
-    document.getElementById('percSaberLabel').innerText = `(${appData.settings.saber}%)`;
-    document.getElementById('percHacerLabel').innerText = `(${appData.settings.hacer}%)`;
-    document.getElementById('percSerLabel').innerText = `(${appData.settings.ser}%)`;
-    
-    renderGrades();
-}
-
-window.addGrade = function(category) {
-    const sub = appData.subjects[currentSubIndex];
-    sub.grades[category].push({
-        id: Date.now().toString(),
-        label: `Nota ${sub.grades[category].length + 1}`,
-        value: 0
-    });
-    saveData();
-    renderGrades();
-};
-
-window.updateGradeLabel = function(category, gradeId, val) {
-    const sub = appData.subjects[currentSubIndex];
-    const grade = sub.grades[category].find(g => g.id === gradeId);
-    if(grade) grade.label = val;
-    saveData();
-};
-
-window.updateGradeValue = function(category, gradeId, val) {
-    const sub = appData.subjects[currentSubIndex];
-    const grade = sub.grades[category].find(g => g.id === gradeId);
-    if(grade) {
-        let num = parseFloat(val);
-        if(isNaN(num)) num = 0;
-        if(num > 5) num = 5; // Asumiendo escala de 1 a 5. Se puede configurar después.
-        grade.value = num;
-    }
-    saveData();
-    renderGrades(true); // true para no perder focus
-};
-
-window.deleteGrade = function(category, gradeId) {
-    const sub = appData.subjects[currentSubIndex];
-    sub.grades[category] = sub.grades[category].filter(g => g.id !== gradeId);
-    saveData();
-    renderGrades();
-};
-
-function renderGrades(skipFocusLoss = false) {
-    const sub = appData.subjects[currentSubIndex];
-    let avgs = { saber: 0, hacer: 0, ser: 0 };
-    
-    ['saber', 'hacer', 'ser'].forEach(cat => {
-        const listDiv = document.getElementById(`list${cat.charAt(0).toUpperCase() + cat.slice(1)}`);
+    handleRouting() {
+        const path = window.location.pathname;
         
-        if (!skipFocusLoss) {
-            listDiv.innerHTML = '';
-            let sum = 0;
+        // Handle Shared links (e.g. /notas-corner/shared/1234-abcd)
+        if (path.includes('/shared/')) {
+            const publicId = path.split('/shared/')[1];
+            if (publicId) {
+                this.renderSharedNote(publicId);
+                return;
+            }
+        }
+        
+        // Normal Auth routing
+        onAuthStateChanged(auth, (user) => {
+            const isDashboard = path.includes('dashboard');
+            const isSettings = path.includes('settings');
+            const isIndex = path.endsWith('notas-corner/') || path.endsWith('index.html');
             
-            sub.grades[cat].forEach(grade => {
-                sum += parseFloat(grade.value) || 0;
-                
-                const item = document.createElement('div');
-                item.className = 'grade-item';
-                item.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 10px; width: 60%;">
-                        <button onclick="deleteGrade('${cat}', '${grade.id}')" style="background: transparent; color: #ff4d4d; border-radius: 5px; padding: 5px;"><i class="fa-solid fa-trash"></i></button>
-                        <input type="text" value="${grade.label}" onchange="updateGradeLabel('${cat}', '${grade.id}', this.value)" style="background: transparent; border: none; font-size: 14px; font-weight: bold; width: 100%; color: var(--text-color);">
+            if (user) {
+                // Logged in
+                if (isIndex) {
+                    window.location.href = '/notas-corner/dashboard';
+                } else if (isDashboard) {
+                    import('./dashboard-controller.js').then(module => module.initDashboard(user));
+                } else if (isSettings) {
+                    import('./settings-controller.js').then(module => module.initSettings(user));
+                }
+            } else {
+                // Not logged in
+                if (isDashboard || isSettings) {
+                    window.location.href = '/notas-corner/';
+                } else if (isIndex) {
+                    import('./auth-controller.js').then(module => module.initAuth());
+                }
+            }
+        });
+    }
+    
+    async renderSharedNote(publicId) {
+        // Change body to simple read-only view
+        document.body.innerHTML = `
+            <div class="shared-container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
+                <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                    <a href="/notas-corner/" style="text-decoration:none; color:var(--hp-pink); font-weight:bold; display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-graduation-cap"></i> Notas Corner
+                    </a>
+                    <span class="trust-badge confiable"><i class="fa-solid fa-link"></i> Nota Compartida Pública</span>
+                </header>
+                <div id="shared-content-area" class="card" style="text-align:left; padding: 30px;">
+                    <div style="text-align:center; padding: 50px;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--hp-pink);"></i>
+                        <p style="margin-top:15px; color: var(--text-muted);">Cargando nota...</p>
                     </div>
-                    <input type="number" class="grade-input" step="0.1" max="5" value="${grade.value}" onchange="updateGradeValue('${cat}', '${grade.id}', this.value)">
-                `;
-                listDiv.appendChild(item);
-            });
+                </div>
+            </div>
+        `;
+        
+        try {
+            const note = await NotesService.getSharedNote(publicId);
+            const container = document.getElementById('shared-content-area');
             
-            avgs[cat] = sub.grades[cat].length ? (sum / sub.grades[cat].length) : 0;
-            document.getElementById(`avg${cat.charAt(0).toUpperCase() + cat.slice(1)}`).innerText = avgs[cat].toFixed(1);
-        } else {
-            // Only update averages if skipping focus loss
-            let sum = 0;
-            sub.grades[cat].forEach(grade => sum += parseFloat(grade.value) || 0);
-            avgs[cat] = sub.grades[cat].length ? (sum / sub.grades[cat].length) : 0;
-            document.getElementById(`avg${cat.charAt(0).toUpperCase() + cat.slice(1)}`).innerText = avgs[cat].toFixed(1);
+            if (note) {
+                const dateStr = new Date(note.updatedAt).toLocaleDateString('es-ES', {
+                    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                
+                container.innerHTML = `
+                    <h1 style="margin-bottom:10px; font-size:28px;">${note.title}</h1>
+                    <div style="font-size:12px; color:var(--text-muted); margin-bottom:25px; border-bottom:1px solid var(--border-color); padding-bottom:15px;">
+                        <i class="fa-regular fa-clock"></i> Última actualización: ${dateStr}
+                    </div>
+                    <div style="line-height:1.6; white-space:pre-wrap; font-size: 16px;">${note.content || '<em>Sin contenido</em>'}</div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 40px 20px;">
+                        <i class="fa-solid fa-file-circle-xmark" style="font-size:40px; color:var(--error); margin-bottom:15px;"></i>
+                        <h2>Nota no encontrada</h2>
+                        <p style="color:var(--text-muted); margin-top:10px;">El enlace puede haber expirado o la nota fue eliminada por su propietario.</p>
+                        <br>
+                        <a href="/notas-corner/" class="btn-primary" style="display:inline-block; text-decoration:none;">Crear mi propia nota</a>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            document.getElementById('shared-content-area').innerHTML = `
+                <div style="text-align:center; padding: 40px 20px;">
+                    <h2>Error de conexión</h2>
+                    <p>No pudimos cargar la nota. Revisa tu conexión a internet.</p>
+                </div>
+            `;
         }
-    });
-    
-    // Calcular nota final
-    const s = appData.settings;
-    const final = (avgs.saber * (s.saber/100)) + (avgs.hacer * (s.hacer/100)) + (avgs.ser * (s.ser/100));
-    document.getElementById('finalGrade').innerText = final.toFixed(1);
+    }
 }
+
+// Initialize App
+document.addEventListener('DOMContentLoaded', () => {
+    window.notasApp = new App();
+});
