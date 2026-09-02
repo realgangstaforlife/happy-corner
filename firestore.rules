@@ -127,5 +127,28 @@ service cloud.firestore {
     match /banned_entities/{entityId} {
       allow read, write: if isAdmin();
     }
+
+    // HappyNotas - notes (calificaciones académicas)
+    match /notes/{noteId} {
+      // Owner puede leer, crear, editar, eliminar sus propias notas
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // sharedLinks - enlaces públicos para compartir notas
+    match /sharedLinks/{linkId} {
+      // Cualquiera puede leer (acceso público via link)
+      allow read: if true;
+      // Solo el propietario puede crear/eliminar links
+      allow create, delete: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+    }
+    
+    // publicNotes - vista pública de notas compartidas
+    match /publicNotes/{noteId} {
+      // Lectura pública para notas compartidas
+      allow read: if true;
+      allow write: if false; // Solo backend puede escribir
+    }
   }
 }
