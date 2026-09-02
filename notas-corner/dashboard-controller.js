@@ -8,14 +8,39 @@ let academicsList = [];
 let filteredAcademics = [];
 let currentAcademicId = null;
 
+// Categorías por defecto con los pesos oficiales (40%, 30%, 20%, 10%)
+export const DEFAULT_PERFORMANCES = {
+    cognitive: { name: "Saber (Cognitivo)", emoji: "📚", weight: 40, categories: [] },
+    procedural: { name: "Hacer (Procedimental)", emoji: "🔧", weight: 30, categories: [] },
+    attitudinal: { name: "Ser (Actitudinal)", emoji: "🎯", weight: 20, categories: [] },
+    evaluation: { name: "Evaluación / Auto", emoji: "📝", weight: 10, categories: [] }
+};
+
 export function initDashboard(user) {
     currentUser = user;
     
+    // 1. Render Greeting
     const title = document.getElementById('welcome-title');
     if (title) {
-        title.innerHTML = `Hola, <span style="color: var(--hp-pink);">${user.displayName || user.email.split('@')[0]}</span> 👋`;
+        const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Estudiante');
+        title.innerHTML = `Hola, <span style="color: var(--hp-pink);">${userName}</span> 👋`;
+    }
+
+    // 2. Render Profile Picture (PFP)
+    const avatarEl = document.getElementById('header-avatar');
+    if (avatarEl) {
+        if (user.photoURL) {
+            avatarEl.innerHTML = `<img src="${user.photoURL}" alt="PFP" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--hp-pink);display:block;">`;
+        } else {
+            const initial = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+            avatarEl.innerHTML = `<div style="width:34px;height:34px;border-radius:50%;background:var(--hp-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(255,82,153,0.3);">${initial}</div>`;
+        }
+        avatarEl.onclick = () => {
+            window.location.href = '/notas-corner/settings';
+        };
     }
     
+    // 3. Logout handler
     document.getElementById('menu-logout')?.addEventListener('click', async (e) => {
         e.preventDefault();
         try {
@@ -27,10 +52,11 @@ export function initDashboard(user) {
         }
     });
 
+    // 4. Mobile side menu
     const menuBtn = document.getElementById('menuBtn');
     const sideMenu = document.getElementById('sideMenu');
     const overlay = document.getElementById('overlay');
-    if (menuBtn) {
+    if (menuBtn && sideMenu && overlay) {
         menuBtn.addEventListener('click', () => {
             sideMenu.classList.add('active');
             overlay.classList.add('active');
@@ -43,7 +69,7 @@ export function initDashboard(user) {
 
     loadAcademics();
     
-    // Exponer funciones globales
+    // Exponer funciones al scope global
     window.notasAppDashboard = {
         openAcademicEditor,
         closeAcademicEditor,
@@ -55,6 +81,7 @@ export function initDashboard(user) {
         openGradeEditor,
         closeGradeEditor,
         saveGrade,
+        deleteGrade,
         openShareModal,
         closeShareModal,
         generateShareLink,
@@ -80,11 +107,15 @@ async function loadAcademics() {
     }
 }
 
+/**
+ * Calcula el promedio ponderado de la asignatura en base a las 4 categorías:
+ * Saber (40%), Hacer (30%), Ser (20%), Evaluación (10%)
+ */
 function calculateSubjectAverage(performances) {
     if (!performances) return 0.00;
     
-    let totalScore = 0;
-    let totalWeight = 0;
+    let totalWeightedScore = 0;
+    let totalWeightCounted = 0;
     
     for (const [key, category] of Object.entries(performances)) {
         if (!category.categories || category.categories.length === 0) continue;
@@ -92,48 +123,69 @@ function calculateSubjectAverage(performances) {
         let catScore = 0;
         let catWeight = 0;
         
-        category.categories.forEach(grade => {
-            catScore += (grade.grade * (grade.weight / 100));
-            catWeight += grade.weight;
+        category.categories.forEach(gradeItem => {
+            const w = Number(gradeItem.weight) || 0;
+            const g = Number(gradeItem.grade) || 0;
+            catScore += (g * (w / 100));
+            catWeight += w;
         });
         
-        // Promedio de esta categoría
         const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
+        const mainWeight = Number(category.weight) || 0;
         
-        // Ponderarlo al peso global de la categoría (ej: 45%)
-        totalScore += (catAvg * (category.weight / 100));
-        totalWeight += category.weight;
+        totalWeightedScore += (catAvg * (mainWeight / 100));
+        totalWeightCounted += mainWeight;
     }
     
-    return totalWeight > 0 ? (totalScore / (totalWeight / 100)) : 0.00;
+    if (totalWeightCounted === 0) return 0.00;
+    return totalWeightedScore / (totalWeightCounted / 100);
 }
 
 function updateSummaryCard() {
-    document.getElementById('total-subjects').textContent = academicsList.length;
+    const totalEl = document.getElementById('total-subjects');
+    const gpaEl = document.getElementById('gpa-score');
+    const bestEl = document.getElementById('best-subject');
+    const worstEl = document.getElementById('worst-subject');
+    const statusPill = document.getElementById('gpa-status-pill');
+    
+    if (totalEl) totalEl.textContent = academicsList.length;
     
     if (academicsList.length === 0) {
-        document.getElementById('gpa-score').textContent = "0.00";
-        document.getElementById('best-subject').textContent = "--";
-        document.getElementById('worst-subject').textContent = "--";
+        if (gpaEl) gpaEl.textContent = "0.00";
+        if (bestEl) bestEl.textContent = "--";
+        if (worstEl) worstEl.textContent = "--";
+        if (statusPill) {
+            statusPill.textContent = "Sin calificaciones";
+            statusPill.style.color = "var(--text-muted)";
+        }
         return;
     }
     
-    let totalGPA = 0;
+    let sumGrades = 0;
     let best = { name: "--", score: -1 };
     let worst = { name: "--", score: 6 };
     
     academicsList.forEach(subject => {
-        const avg = subject.averages?.final || 0;
-        totalGPA += avg;
+        const avg = Number(subject.averages?.final || 0);
+        sumGrades += avg;
         
         if (avg > best.score) best = { name: subject.name, score: avg };
         if (avg < worst.score) worst = { name: subject.name, score: avg };
     });
     
-    const finalGPA = (totalGPA / academicsList.length).toFixed(2);
-    document.getElementById('gpa-score').textContent = finalGPA;
-    document.getElementById('best-subject').textContent = `${best.score.toFixed(1)} (${best.name})`;
-    document.getElementById('worst-subject').textContent = worst.score === 6 ? "--" : `${worst.score.toFixed(1)} (${worst.name})`;
+    const overallAvg = (sumGrades / academicsList.length).toFixed(2);
+    const isOverallPassed = Number(overallAvg) >= 3.4;
+    
+    if (gpaEl) {
+        gpaEl.textContent = overallAvg;
+        gpaEl.style.color = isOverallPassed ? 'var(--hp-pink)' : '#ff5252';
+    }
+    if (bestEl) bestEl.textContent = best.score >= 0 ? `${best.score.toFixed(2)} (${best.name})` : "--";
+    if (worstEl) worstEl.textContent = worst.score <= 5.0 ? `${worst.score.toFixed(2)} (${worst.name})` : "--";
+    if (statusPill) {
+        statusPill.textContent = isOverallPassed ? "✓ Rendimiento Excelente" : "⚠️ Requiere Atención";
+        statusPill.style.color = isOverallPassed ? "#2ecc71" : "#ff5252";
+    }
 }
 
 function renderAcademics(academics) {
@@ -144,31 +196,45 @@ function renderAcademics(academics) {
     
     if (academics.length === 0) {
         grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
-                <i class="fa-solid fa-graduation-cap" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i>
-                <p>No tienes asignaturas registradas. ¡Crea la primera!</p>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 48px 20px; color: var(--text-muted); background: var(--surface-color); border-radius: 20px; border: 1.5px dashed var(--border-color);">
+                <i class="fa-solid fa-graduation-cap" style="font-size: 44px; margin-bottom: 14px; color: var(--hp-pink); opacity: 0.85;"></i>
+                <h3 style="font-size: 18px; font-weight: 800; color: var(--text-color); margin-bottom: 6px;">No tienes asignaturas registradas</h3>
+                <p style="font-size: 14px;">Haz clic en <strong>"+ Nueva Asignatura"</strong> para comenzar a organizar tus notas.</p>
             </div>
         `;
         return;
     }
 
     academics.forEach(item => {
-        const finalScore = (item.averages?.final || 0).toFixed(2);
-        const color = finalScore >= 3.4 ? 'var(--hp-pink)' : 'var(--error)';
+        const finalScore = Number(item.averages?.final || 0).toFixed(2);
+        const isPassed = finalScore >= 3.4;
+        const scoreClass = isPassed ? 'passed' : 'failed';
+        const periodText = item.period ? `Periodo ${item.period}` : 'Periodo 1';
         
         const card = document.createElement('div');
-        card.className = 'note-card';
+        card.className = 'subject-card';
         card.innerHTML = `
-            <div class="note-header" style="justify-content: flex-start; gap: 10px;">
-                <div style="font-size: 24px;">${item.emoji || '📚'}</div>
-                <h3 class="note-title" style="margin-bottom: 0;">${item.name}</h3>
-            </div>
-            <div class="note-content" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-                <div>
-                    <div style="font-size: 12px; color: var(--text-muted);">${item.teacher || 'Sin profesor'}</div>
-                    <div style="font-size: 12px; color: var(--text-muted);">${item.period || '-'}</div>
+            <div class="subject-card-top">
+                <div class="subject-emoji-title">
+                    <div class="subject-emoji">${item.emoji || '📚'}</div>
+                    <div>
+                        <h3 class="subject-name">${item.name}</h3>
+                        <div class="subject-teacher">
+                            <i class="fa-solid fa-user-tie" style="font-size: 11px; opacity: 0.7;"></i>
+                            ${item.teacher || 'Sin profesor'}
+                        </div>
+                    </div>
                 </div>
-                <div style="font-size: 24px; font-weight: 700; color: ${color};">
+                <span class="subject-period-badge">${periodText}</span>
+            </div>
+            
+            <div class="subject-card-divider"></div>
+            
+            <div class="subject-card-bottom">
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
+                    ${isPassed ? '✓ Aprobando' : '⚠️ Por mejorar'}
+                </div>
+                <div class="subject-score-pill ${scoreClass}">
                     ${finalScore}
                 </div>
             </div>
@@ -180,11 +246,12 @@ function renderAcademics(academics) {
 }
 
 function openAcademicEditor() {
+    document.getElementById('academic-modal-title').textContent = 'Nueva Asignatura';
     document.getElementById('academic-id').value = '';
     document.getElementById('academic-emoji').value = '📚';
     document.getElementById('academic-name').value = '';
     document.getElementById('academic-teacher').value = '';
-    document.getElementById('academic-period').value = '2024-2';
+    document.getElementById('academic-period').value = '1';
     
     const modal = document.getElementById('academic-editor-modal');
     modal.style.display = 'flex';
@@ -194,15 +261,15 @@ function openAcademicEditor() {
 function closeAcademicEditor() {
     const modal = document.getElementById('academic-editor-modal');
     modal.classList.remove('active');
-    setTimeout(() => modal.style.display = 'none', 300);
+    setTimeout(() => modal.style.display = 'none', 200);
 }
 
 async function saveAcademic() {
     const id = document.getElementById('academic-id').value;
-    const emoji = document.getElementById('academic-emoji').value;
+    const emoji = document.getElementById('academic-emoji').value || '📚';
     const name = document.getElementById('academic-name').value.trim();
     const teacher = document.getElementById('academic-teacher').value.trim();
-    const period = document.getElementById('academic-period').value.trim();
+    const period = document.getElementById('academic-period').value || '1';
     
     if (!name) {
         UIManager.showToast('El nombre de la asignatura es requerido', 'error');
@@ -211,7 +278,7 @@ async function saveAcademic() {
 
     const btn = document.getElementById('save-academic-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Guardando...';
     btn.disabled = true;
 
     try {
@@ -224,17 +291,13 @@ async function saveAcademic() {
             academicsList = academicsList.map(n => n.id === id ? updated : n);
             UIManager.showToast('Asignatura actualizada', 'success');
         } else {
-            // Create new
-            const defaultPerformances = {
-                cognitive: { name: "Saber (Cognitivo)", weight: 45, categories: [] },
-                procedural: { name: "Hacer (Procedimental)", weight: 35, categories: [] },
-                attitudinal: { name: "Ser (Actitudinal)", weight: 20, categories: [] }
-            };
+            // Create new with default 40/30/20/10 structure
+            const defaultPerformances = JSON.parse(JSON.stringify(DEFAULT_PERFORMANCES));
             
             const newData = {
                 name, emoji, teacher, period,
                 performances: defaultPerformances,
-                averages: { cognitive: 0, procedural: 0, attitudinal: 0, final: 0 }
+                averages: { cognitive: 0, procedural: 0, attitudinal: 0, evaluation: 0, final: 0 }
             };
             
             const created = await NotesService.createAcademic(currentUser.uid, newData);
@@ -243,15 +306,14 @@ async function saveAcademic() {
         }
         
         closeAcademicEditor();
-        filterAcademics(); // Re-render and update summary
+        filterAcademics();
         
-        if (id) {
-            // Si estábamos en detalle, actualizarlo
-            closeAcademicDetail();
-            setTimeout(() => openAcademicDetail(id), 300);
+        if (id && currentAcademicId === id) {
+            renderSubjectDetail(id);
         }
     } catch (error) {
-        UIManager.showToast('Error al guardar', 'error');
+        console.error(error);
+        UIManager.showToast('Error al guardar asignatura', 'error');
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -260,82 +322,145 @@ async function saveAcademic() {
 
 function openAcademicDetail(id) {
     currentAcademicId = id;
-    const academic = academicsList.find(a => a.id === id);
-    if (!academic) return;
     
-    document.getElementById('detail-title').textContent = `${academic.emoji} ${academic.name}`;
-    document.getElementById('detail-subtitle').textContent = `${academic.teacher} | ${academic.period}`;
+    document.getElementById('main-dashboard-view').style.display = 'none';
+    const detailView = document.getElementById('subject-detail-view');
+    detailView.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    const finalScore = (academic.averages?.final || 0).toFixed(2);
-    const scoreEl = document.getElementById('detail-final-score');
-    scoreEl.textContent = finalScore;
-    scoreEl.style.color = finalScore >= 3.4 ? 'var(--hp-pink)' : 'var(--error)';
-    
-    const perfList = document.getElementById('detail-performances-list');
-    perfList.innerHTML = '';
-    
-    // Renderizar cada desempeño
-    if (academic.performances) {
-        for (const [key, category] of Object.entries(academic.performances)) {
-            const catAvg = (academic.averages && academic.averages[key]) ? academic.averages[key].toFixed(2) : "0.00";
-            
-            let html = `
-                <div style="margin-bottom: 15px; background: var(--input-bg); padding: 15px; border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px;">
-                        <span>${category.name} (${category.weight}%)</span>
-                        <span>${catAvg}</span>
-                    </div>
-            `;
-            
-            if (category.categories && category.categories.length > 0) {
-                category.categories.forEach(grade => {
-                    html += `
-                        <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding: 4px 0; border-top: 1px solid var(--border-color);">
-                            <span>${grade.desc || 'Actividad'} (${grade.weight}%)</span>
-                            <span>${grade.grade.toFixed(1)}</span>
-                        </div>
-                    `;
-                });
-            } else {
-                html += `<div style="font-size: 13px; color: var(--text-muted); font-style: italic;">Sin calificaciones</div>`;
-            }
-            
-            html += `</div>`;
-            perfList.innerHTML += html;
-        }
-    }
-    
-    const modal = document.getElementById('academic-detail-modal');
-    modal.style.display = 'flex';
-    setTimeout(() => modal.classList.add('active'), 10);
+    renderSubjectDetail(id);
 }
 
 function closeAcademicDetail() {
     currentAcademicId = null;
-    const modal = document.getElementById('academic-detail-modal');
-    modal.classList.remove('active');
-    setTimeout(() => modal.style.display = 'none', 300);
+    document.getElementById('subject-detail-view').style.display = 'none';
+    document.getElementById('main-dashboard-view').style.display = 'block';
+    filterAcademics();
+}
+
+function renderSubjectDetail(id) {
+    const academic = academicsList.find(a => a.id === id);
+    if (!academic) return;
+    
+    if (!academic.performances) {
+        academic.performances = JSON.parse(JSON.stringify(DEFAULT_PERFORMANCES));
+    } else {
+        if (!academic.performances.cognitive) academic.performances.cognitive = { name: "Saber (Cognitivo)", emoji: "📚", weight: 40, categories: [] };
+        if (!academic.performances.procedural) academic.performances.procedural = { name: "Hacer (Procedimental)", emoji: "🔧", weight: 30, categories: [] };
+        if (!academic.performances.attitudinal) academic.performances.attitudinal = { name: "Ser (Actitudinal)", emoji: "🎯", weight: 20, categories: [] };
+        if (!academic.performances.evaluation) academic.performances.evaluation = { name: "Evaluación / Auto", emoji: "📝", weight: 10, categories: [] };
+    }
+    
+    // Header
+    document.getElementById('detail-emoji').textContent = academic.emoji || '📚';
+    document.getElementById('detail-title').textContent = academic.name;
+    document.getElementById('detail-teacher').innerHTML = `<i class="fa-solid fa-user-tie"></i> ${academic.teacher || 'Sin profesor'}`;
+    document.getElementById('detail-period').textContent = `Periodo ${academic.period || '1'}`;
+    
+    const finalScore = Number(academic.averages?.final || 0).toFixed(2);
+    const isPassed = finalScore >= 3.4;
+    const scoreEl = document.getElementById('detail-final-score');
+    const statusPill = document.getElementById('detail-status-pill');
+    
+    scoreEl.textContent = finalScore;
+    scoreEl.style.color = isPassed ? '#2ecc71' : '#ff5252';
+    statusPill.textContent = isPassed ? '✓ APROBADO' : '⚠️ POR MEJORAR';
+    statusPill.style.color = isPassed ? '#2ecc71' : '#ff5252';
+    
+    // Performances list
+    const perfList = document.getElementById('detail-performances-list');
+    perfList.innerHTML = '';
+    
+    const categoryConfigs = [
+        { key: 'cognitive', defaultName: 'Saber (Cognitivo)', defaultWeight: 40, emoji: '📚' },
+        { key: 'procedural', defaultName: 'Hacer (Procedimental)', defaultWeight: 30, emoji: '🔧' },
+        { key: 'attitudinal', defaultName: 'Ser (Actitudinal)', defaultWeight: 20, emoji: '🎯' },
+        { key: 'evaluation', defaultName: 'Evaluación / Auto', defaultWeight: 10, emoji: '📝' }
+    ];
+    
+    categoryConfigs.forEach(cfg => {
+        const cat = academic.performances[cfg.key] || { name: cfg.defaultName, weight: cfg.defaultWeight, categories: [] };
+        const catAvg = (academic.averages && academic.averages[cfg.key]) ? Number(academic.averages[cfg.key]).toFixed(2) : "0.00";
+        const progressPct = Math.min(100, (Number(catAvg) / 5.0) * 100);
+        
+        let activitiesHtml = '';
+        if (cat.categories && cat.categories.length > 0) {
+            cat.categories.forEach((act, idx) => {
+                const actGrade = Number(act.grade || 0).toFixed(1);
+                const actPassed = actGrade >= 3.4;
+                activitiesHtml += `
+                    <div class="activity-row">
+                        <div class="activity-label-wrap">
+                            <span class="activity-title">${act.desc || 'Actividad #' + (idx + 1)}</span>
+                            <span class="activity-meta">Peso: ${act.weight}% en la categoría</span>
+                        </div>
+                        <div class="activity-score-wrap">
+                            <span class="activity-score-num" style="color: ${actPassed ? 'var(--text-color)' : '#ff5252'};">${actGrade}</span>
+                            <button class="activity-del-btn" onclick="window.notasAppDashboard.deleteGrade('${cfg.key}', ${idx})" title="Eliminar calificación">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            activitiesHtml = `<div style="font-size: 12px; color: var(--text-muted); font-style: italic; text-align: center; padding: 10px 0;">Sin notas registradas en esta categoría</div>`;
+        }
+        
+        const catCard = document.createElement('div');
+        catCard.className = 'category-card';
+        catCard.innerHTML = `
+            <div>
+                <div class="category-card-top">
+                    <div class="category-title-group">
+                        <span style="font-size: 16px;">${cfg.emoji}</span>
+                        <span class="category-card-title">${cat.name || cfg.defaultName}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span class="category-weight-badge">${cat.weight || cfg.defaultWeight}%</span>
+                        <span class="category-score-num">${catAvg}</span>
+                    </div>
+                </div>
+                
+                <div class="progress-track" style="margin: 8px 0 10px;">
+                    <div class="progress-fill" style="width: ${progressPct}%;"></div>
+                </div>
+                
+                <div class="activities-container">
+                    ${activitiesHtml}
+                </div>
+            </div>
+            
+            <button class="btn-add-grade-inline" onclick="window.notasAppDashboard.openGradeEditor('${cfg.key}')">
+                <i class="fa-solid fa-plus"></i> Agregar nota
+            </button>
+        `;
+        
+        perfList.appendChild(catCard);
+    });
 }
 
 function editAcademic() {
     const academic = academicsList.find(a => a.id === currentAcademicId);
     if (!academic) return;
     
+    document.getElementById('academic-modal-title').textContent = 'Editar Asignatura';
     document.getElementById('academic-id').value = academic.id;
     document.getElementById('academic-emoji').value = academic.emoji || '📚';
     document.getElementById('academic-name').value = academic.name;
     document.getElementById('academic-teacher').value = academic.teacher || '';
-    document.getElementById('academic-period').value = academic.period || '';
+    document.getElementById('academic-period').value = academic.period || '1';
     
     const modal = document.getElementById('academic-editor-modal');
     modal.style.display = 'flex';
     setTimeout(() => modal.classList.add('active'), 10);
 }
 
-function openGradeEditor() {
+function openGradeEditor(defaultCategory = 'cognitive') {
+    document.getElementById('grade-category').value = defaultCategory;
     document.getElementById('grade-desc').value = '';
     document.getElementById('grade-value').value = '';
-    document.getElementById('grade-weight').value = '';
+    document.getElementById('grade-weight').value = '50';
     
     const modal = document.getElementById('grade-editor-modal');
     modal.style.display = 'flex';
@@ -345,7 +470,7 @@ function openGradeEditor() {
 function closeGradeEditor() {
     const modal = document.getElementById('grade-editor-modal');
     modal.classList.remove('active');
-    setTimeout(() => modal.style.display = 'none', 300);
+    setTimeout(() => modal.style.display = 'none', 250);
 }
 
 async function saveGrade() {
@@ -357,11 +482,11 @@ async function saveGrade() {
     const weight = parseInt(document.getElementById('grade-weight').value);
     
     if (isNaN(value) || value < 0 || value > 5.0) {
-        UIManager.showToast('La calificación debe estar entre 0 y 5.0', 'error');
+        UIManager.showToast('La calificación debe estar entre 0.0 y 5.0', 'error');
         return;
     }
     if (isNaN(weight) || weight <= 0 || weight > 100) {
-        UIManager.showToast('El peso debe estar entre 1 y 100', 'error');
+        UIManager.showToast('El peso debe estar entre 1% y 100%', 'error');
         return;
     }
 
@@ -370,50 +495,54 @@ async function saveGrade() {
 
     const btn = document.getElementById('save-grade-btn');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Registrando...';
     btn.disabled = true;
 
     try {
-        // Deep copy of performances
-        const perfs = JSON.parse(JSON.stringify(academic.performances));
+        const perfs = JSON.parse(JSON.stringify(academic.performances || DEFAULT_PERFORMANCES));
+        if (!perfs[catId]) {
+            perfs[catId] = { name: catId, weight: 25, categories: [] };
+        }
+        if (!perfs[catId].categories) {
+            perfs[catId].categories = [];
+        }
+        
         perfs[catId].categories.push({
-            desc: desc,
+            desc: desc || `Actividad #${perfs[catId].categories.length + 1}`,
             grade: value,
-            weight: weight
+            weight: weight,
+            date: Date.now()
         });
         
         // Recalcular promedios
         const finalAvg = calculateSubjectAverage(perfs);
         
-        // Calcular promedio de la categoría específica
+        // Calcular promedio de la categoría
         let catScore = 0;
         let catWeight = 0;
         perfs[catId].categories.forEach(g => {
-            catScore += (g.grade * (g.weight / 100));
-            catWeight += g.weight;
+            const w = Number(g.weight) || 0;
+            const gr = Number(g.grade) || 0;
+            catScore += (gr * (w / 100));
+            catWeight += w;
         });
         const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
         
         const newAverages = {
-            ...academic.averages,
+            ...(academic.averages || {}),
             [catId]: catAvg,
             final: finalAvg
         };
         
         const updates = { performances: perfs, averages: newAverages };
-        
         const updated = await NotesService.updateAcademic(currentUser.uid, currentAcademicId, updates, academic);
         
         academicsList = academicsList.map(n => n.id === currentAcademicId ? updated : n);
         
         UIManager.showToast('Calificación registrada', 'success');
         closeGradeEditor();
-        filterAcademics();
-        
-        // Refrescar detalle
-        closeAcademicDetail();
-        setTimeout(() => openAcademicDetail(currentAcademicId), 300);
-        
+        renderSubjectDetail(currentAcademicId);
+        updateSummaryCard();
     } catch (error) {
         console.error(error);
         UIManager.showToast('Error al registrar calificación', 'error');
@@ -423,11 +552,55 @@ async function saveGrade() {
     }
 }
 
-async function deleteAcademic() {
+async function deleteGrade(categoryKey, index) {
     if (!currentAcademicId) return;
-    if (!confirm('¿Estás seguro de que deseas eliminar esta asignatura y todas sus calificaciones?')) return;
+    if (!confirm('¿Deseas eliminar esta calificación?')) return;
     
     const academic = academicsList.find(a => a.id === currentAcademicId);
+    if (!academic || !academic.performances || !academic.performances[categoryKey]) return;
+    
+    try {
+        const perfs = JSON.parse(JSON.stringify(academic.performances));
+        perfs[categoryKey].categories.splice(index, 1);
+        
+        const finalAvg = calculateSubjectAverage(perfs);
+        
+        let catScore = 0;
+        let catWeight = 0;
+        perfs[categoryKey].categories.forEach(g => {
+            const w = Number(g.weight) || 0;
+            const gr = Number(g.grade) || 0;
+            catScore += (gr * (w / 100));
+            catWeight += w;
+        });
+        const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
+        
+        const newAverages = {
+            ...(academic.averages || {}),
+            [categoryKey]: catAvg,
+            final: finalAvg
+        };
+        
+        const updates = { performances: perfs, averages: newAverages };
+        const updated = await NotesService.updateAcademic(currentUser.uid, currentAcademicId, updates, academic);
+        
+        academicsList = academicsList.map(n => n.id === currentAcademicId ? updated : n);
+        
+        UIManager.showToast('Calificación eliminada', 'info');
+        renderSubjectDetail(currentAcademicId);
+        updateSummaryCard();
+    } catch (error) {
+        console.error(error);
+        UIManager.showToast('Error al eliminar calificación', 'error');
+    }
+}
+
+async function deleteAcademic() {
+    if (!currentAcademicId) return;
+    const academic = academicsList.find(a => a.id === currentAcademicId);
+    if (!academic) return;
+    
+    if (!confirm(`¿Estás seguro de eliminar "${academic.name}" y todas sus calificaciones? Esta acción no se puede deshacer.`)) return;
     
     try {
         await NotesService.deleteAcademic(currentAcademicId, academic.publicId);
@@ -435,18 +608,18 @@ async function deleteAcademic() {
         
         UIManager.showToast('Asignatura eliminada', 'success');
         closeAcademicDetail();
-        filterAcademics();
     } catch (error) {
         UIManager.showToast('Error al eliminar', 'error');
     }
 }
 
 function filterAcademics() {
-    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const searchEl = document.getElementById('search-input');
+    const searchTerm = searchEl ? searchEl.value.toLowerCase().trim() : '';
     
     if (searchTerm) {
         filteredAcademics = academicsList.filter(n => 
-            n.name.toLowerCase().includes(searchTerm) || 
+            (n.name && n.name.toLowerCase().includes(searchTerm)) || 
             (n.teacher && n.teacher.toLowerCase().includes(searchTerm))
         );
     } else {
@@ -466,7 +639,7 @@ function openShareModal() {
 function closeShareModal() {
     const modal = document.getElementById('share-modal');
     modal.classList.remove('active');
-    setTimeout(() => modal.style.display = 'none', 300);
+    setTimeout(() => modal.style.display = 'none', 250);
     
     document.getElementById('share-link-container').style.display = 'none';
     document.getElementById('generate-link-btn').style.display = 'block';
@@ -476,27 +649,30 @@ async function generateShareLink() {
     if (!currentAcademicId) return;
     
     const academic = academicsList.find(n => n.id === currentAcademicId);
+    if (!academic) return;
+
     if (academic.shared && academic.publicId) {
         showShareLink(academic.publicId);
         return;
     }
     
     const btn = document.getElementById('generate-link-btn');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generando...';
     btn.disabled = true;
     
     try {
-        // Preparar "Transcript" público (sin datos supersensibles)
+        // Snapshot público del boletín de calificaciones
         const publicData = {
-            studentName: currentUser.displayName || currentUser.email.split('@')[0],
+            studentName: currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Estudiante'),
             subject: academic.name,
-            period: academic.period,
-            gpa: academic.averages?.final || 0,
-            performances: {
-                cognitive: academic.averages?.cognitive || 0,
-                procedural: academic.averages?.procedural || 0,
-                attitudinal: academic.averages?.attitudinal || 0
-            }
+            emoji: academic.emoji || '📚',
+            teacher: academic.teacher || 'Sin profesor asignado',
+            period: academic.period || '1',
+            finalAverage: Number(academic.averages?.final || 0),
+            performances: academic.performances || DEFAULT_PERFORMANCES,
+            averages: academic.averages || {},
+            createdAt: Date.now()
         };
 
         const publicId = await NotesService.generateShareLink(currentAcademicId, currentUser.uid, publicData);
@@ -506,8 +682,9 @@ async function generateShareLink() {
         showShareLink(publicId);
         UIManager.showToast("¡Enlace generado exitosamente!", "success");
     } catch (error) {
+        console.error(error);
         UIManager.showToast("Error al generar enlace", "error");
-        btn.innerHTML = 'Generar enlace público';
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
@@ -517,9 +694,12 @@ function showShareLink(publicId) {
     const linkInput = document.getElementById('share-link-input');
     const generateBtn = document.getElementById('generate-link-btn');
     
-    const shareUrl = `${window.location.origin}/notas-corner/shared/${publicId}`;
+    const isNotasHost = window.location.host.includes('notas.happycorner.top');
+    const shareUrl = isNotasHost
+        ? `https://notas.happycorner.top/shared/${publicId}`
+        : `${window.location.origin}/notas-corner/shared/${publicId}`;
+        
     linkInput.value = shareUrl;
-    
     generateBtn.style.display = 'none';
     linkContainer.style.display = 'block';
 }
@@ -533,10 +713,9 @@ function copyShareLink() {
 }
 
 function importAcademics(event) {
-    // Implementación stubbed para .happyc import
-    UIManager.showToast('Importación .happyc será implementada pronto', 'info');
+    UIManager.showToast('Importación .happyc disponible próximamente', 'info');
 }
 
 function switchTab(tabId) {
-    // Only one tab in MVP
+    // Tab selector
 }

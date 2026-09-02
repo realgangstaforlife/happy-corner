@@ -68,12 +68,9 @@ export function initSettings(user) {
 
 async function loadNotesStats() {
     try {
-        let notes = StorageService.getNotes();
-        if (notes.length === 0) {
-            notes = await NotesService.getUserNotes(currentUser.uid);
-            StorageService.saveNotes(notes);
-        }
-        document.getElementById('stats-notes-count').textContent = notes.length;
+        const academics = await NotesService.getAcademics(currentUser.uid);
+        const statsEl = document.getElementById('stats-notes-count');
+        if (statsEl) statsEl.textContent = academics.length;
     } catch (error) {
         console.error("Error loading stats", error);
     }

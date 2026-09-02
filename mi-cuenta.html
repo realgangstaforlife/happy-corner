@@ -1011,6 +1011,10 @@
                             <span class="profile-field-label">Curso</span>
                             <span class="profile-field-value" id="pf-curso">—</span>
                         </div>
+                        <div class="profile-field">
+                            <span class="profile-field-label">Cuenta creada el</span>
+                            <span class="profile-field-value" id="pf-creada">—</span>
+                        </div>
                         <div class="profile-field" style="align-items:center;">
                             <span class="profile-field-label">HappyCódigo</span>
                             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1020,6 +1024,47 @@
                                     style="font-size:11px;padding:4px 12px;border-radius:20px;border:1px solid var(--hp-pink);background:transparent;color:var(--hp-pink);cursor:pointer;font-weight:700;transition:0.2s;"
                                     onmouseover="this.style.background='var(--hp-pink)';this.style.color='#fff';"
                                     onmouseout="this.style.background='transparent';this.style.color='var(--hp-pink)';">✏️ Cambiar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Servicios Happy Conectados -->
+                    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 12px;">
+                            Has iniciado sesión en los siguientes Happy Servicios
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--input-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🛍️</span>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 800; color: var(--text-color);">Happy Corner</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);">Tienda, pedidos y créditos</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(46, 204, 113, 0.15); color: #2ecc71;">✓ Activo</span>
+                            </div>
+
+                            <a href="https://notas.happycorner.top" target="_blank" rel="noopener" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--input-bg); border-radius: 12px; border: 1px solid var(--border-color); text-decoration: none; transition: border-color 0.2s;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">📚</span>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 800; color: var(--text-color);">HappyNotas</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);">Gestor académico y calificaciones</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(255, 82, 153, 0.15); color: var(--hp-pink);">✓ Conectado ↗</span>
+                            </a>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--input-bg); border-radius: 12px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 20px;">🔐</span>
+                                    <div>
+                                        <div style="font-size: 13px; font-weight: 800; color: var(--text-color);">HappyID / SSO</div>
+                                        <div style="font-size: 11px; color: var(--text-muted);">Autenticación central unificada</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 20px; background: rgba(46, 204, 113, 0.15); color: #2ecc71;">✓ Autenticado</span>
                             </div>
                         </div>
                     </div>
@@ -1430,6 +1475,18 @@
             document.getElementById('pf-telefono').textContent = data.phone || '—';
             document.getElementById('pf-curso').textContent = data.grade || '—';
             document.getElementById('pf-codigo').textContent = data.customerCode || '—';
+
+            // Creation date
+            let createdAtStr = '—';
+            const rawCreated = data.createdAt || (firebaseUser.metadata && firebaseUser.metadata.creationTime);
+            if (rawCreated) {
+                const dateObj = typeof rawCreated === 'object' && rawCreated.seconds ? new Date(rawCreated.seconds * 1000) : new Date(rawCreated);
+                if (!isNaN(dateObj.getTime())) {
+                    createdAtStr = dateObj.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+                }
+            }
+            const pfCreada = document.getElementById('pf-creada');
+            if (pfCreada) pfCreada.textContent = createdAtStr;
 
             // Edit fields pre-fill
             document.getElementById('edit-nombre').value = fullName;

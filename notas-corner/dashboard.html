@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HappyNotas — Dashboard</title>
+    <title>HappyNotas — Calificaciones y Rendimiento Académico</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- CryptoJS para Encriptación AES-256 en cliente -->
@@ -27,12 +29,11 @@
         }
         .nav-icon:hover { color: var(--hp-pink); background: rgba(255,82,153,0.1); }
         .user-avatar {
-            color: var(--text-muted);
-            font-size: 22px;
             cursor: pointer;
-            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .user-avatar:hover { color: var(--hp-pink); }
         body { padding-bottom: 0; }
         main.dashboard-container { padding-bottom: 60px; }
     </style>
@@ -52,8 +53,8 @@
             <a href="/notas-corner/settings" class="nav-icon" title="Configuración">
                 <i class="fa-solid fa-gear"></i>
             </a>
-            <div class="user-avatar" id="header-avatar">
-                <i class="fa-solid fa-circle-user"></i>
+            <div class="user-avatar" id="header-avatar" title="Mi Perfil">
+                <i class="fa-solid fa-circle-user" style="font-size: 24px; color: var(--text-muted);"></i>
             </div>
             <div class="menu-btn" id="menuBtn">
                 <span></span><span></span><span></span>
@@ -66,193 +67,249 @@
     <nav class="side-menu" id="sideMenu">
         <a href="/notas-corner/dashboard"><i class="fa-solid fa-house"></i> Inicio</a>
         <a href="/notas-corner/settings"><i class="fa-solid fa-gear"></i> Configuración</a>
+        <a href="https://happycorner.top/mi-cuenta"><i class="fa-solid fa-user"></i> Mi Cuenta Happy</a>
         <a href="#" id="menu-logout" style="color: var(--error);"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar Sesión</a>
     </nav>
 
-    <!-- MAIN DASHBOARD -->
+    <!-- MAIN DASHBOARD WRAPPER -->
     <main class="dashboard-container">
         
-        <div class="welcome-section">
-            <h1 class="page-title" style="margin: 0; text-align: left; font-size: 32px;" id="welcome-title">Cargando...</h1>
-            <p class="hero-subtitle" style="margin-bottom: 20px; text-align: left;">Mi Resumen Académico</p>
+        <!-- =========================================
+             VISTA 1: LISTADO PRINCIPAL DE ASIGNATURAS
+             ========================================= -->
+        <div id="main-dashboard-view">
             
-            <!-- TARJETA RESUMEN -->
-            <div class="summary-card" style="background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div style="font-size: 14px; color: var(--text-muted); font-weight: 600;">GPA PROMEDIO GENERAL</div>
-                    <div id="gpa-score" style="font-size: 36px; font-weight: 700; color: var(--hp-pink);">0.00</div>
+            <!-- UNIFIED HERO SUMMARY BANNER -->
+            <div class="dashboard-hero-banner">
+                <div class="hero-info-side">
+                    <h1 class="hero-greeting" id="welcome-title">Hola 👋</h1>
+                    <p class="hero-subtitle">Gestor Académico &bull; Mis Calificaciones</p>
+                    
+                    <div class="hero-chips-row">
+                        <div class="hero-chip">
+                            <span class="chip-icon">📚</span>
+                            <span class="chip-text"><strong id="total-subjects">0</strong> Asignaturas</span>
+                        </div>
+                        <div class="hero-chip" id="best-chip-wrap">
+                            <span class="chip-icon">⭐</span>
+                            <span class="chip-text">Mejor: <strong id="best-subject" style="color: #2ecc71;">--</strong></span>
+                        </div>
+                        <div class="hero-chip" id="worst-chip-wrap">
+                            <span class="chip-icon">⚠️</span>
+                            <span class="chip-text">Por Mejorar: <strong id="worst-subject" style="color: #ff5252;">--</strong></span>
+                        </div>
+                    </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
-                    <div>📚 Asignaturas: <strong id="total-subjects">0</strong></div>
-                    <div>⭐ Mejor: <strong id="best-subject">--</strong></div>
-                    <div style="grid-column: 1 / -1;">⚠️ Por mejorar: <strong id="worst-subject" style="color: var(--error);">--</strong></div>
+
+                <div class="hero-score-side">
+                    <div class="score-card-badge">
+                        <div class="score-card-label">PROMEDIO GENERAL</div>
+                        <div class="score-card-val" id="gpa-score">0.00</div>
+                        <div class="score-card-status" id="gpa-status-pill">Sin calificaciones</div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="actions-row">
-                <button class="btn-primary btn-add" style="flex: 1;" onclick="window.notasAppDashboard.openAcademicEditor()">
-                    <i class="fa-solid fa-plus"></i> Nueva Asignatura
-                </button>
-                <button class="btn-secondary" style="flex: 1;" onclick="document.getElementById('import-file').click()">
-                    <i class="fa-solid fa-file-import"></i> Importar .happyc
-                </button>
-                <input type="file" id="import-file" accept=".happyc,.json" style="display: none;" onchange="window.notasAppDashboard.importAcademics(event)">
+
+            <!-- UNIFIED CONTROLS BAR (SEARCH + ACTIONS) -->
+            <div class="dashboard-controls-bar">
+                <div class="search-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="search-input" class="search-field" placeholder="Buscar asignatura o profesor..." oninput="window.notasAppDashboard.filterAcademics()">
+                </div>
+                
+                <div class="controls-actions">
+                    <button class="btn-primary-action" onclick="window.notasAppDashboard.openAcademicEditor()">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Nueva Asignatura</span>
+                    </button>
+                    <button class="btn-icon-action" title="Importar .happyc" onclick="document.getElementById('import-file').click()">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                    </button>
+                    <input type="file" id="import-file" accept=".happyc,.json" style="display: none;" onchange="window.notasAppDashboard.importAcademics(event)">
+                </div>
+            </div>
+
+            <!-- SUBJECTS GRID -->
+            <div class="subjects-grid" id="notes-grid">
+                <!-- Se renderizan las asignaturas -->
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--hp-pink);"></i>
+                </div>
             </div>
         </div>
 
-        <div class="search-bar-container">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="search-input" class="input-text" placeholder="Buscar asignaturas..." style="margin-bottom: 0; padding-left: 40px;" oninput="window.notasAppDashboard.filterAcademics()">
-        </div>
+        <!-- =========================================
+             VISTA 2: PANTALLA COMPLETA DE ASIGNATURA
+             ========================================= -->
+        <div id="subject-detail-view">
+            
+            <!-- DETAIL HEADER BAR -->
+            <div class="detail-header-card">
+                <div class="detail-header-left">
+                    <button class="btn-back-link" onclick="window.notasAppDashboard.closeAcademicDetail()">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Volver a Asignaturas</span>
+                    </button>
+                    
+                    <div class="detail-title-group">
+                        <div class="detail-emoji-box" id="detail-emoji">📐</div>
+                        <div>
+                            <div class="detail-title-row">
+                                <h2 class="detail-main-title" id="detail-title">Matemáticas</h2>
+                                <span class="detail-period-chip" id="detail-period">Periodo 1</span>
+                            </div>
+                            <div class="detail-meta-text">
+                                <span id="detail-teacher"><i class="fa-solid fa-user-tie"></i> Prof. García</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        <!-- TABS -->
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="window.notasAppDashboard.switchTab('mine')">Mis Asignaturas</button>
-        </div>
+                <div class="detail-header-right">
+                    <div class="detail-avg-box">
+                        <div class="detail-avg-label">PROMEDIO FINAL</div>
+                        <div class="detail-avg-val" id="detail-final-score">0.00</div>
+                        <div class="detail-avg-status" id="detail-status-pill">✓ APROBADO</div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- NOTES GRID -->
-        <div class="grid" id="notes-grid" style="padding: 0; margin-top: 20px;">
-            <!-- Notas se renderizan aquí -->
-            <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
-                <i class="fa-solid fa-spinner fa-spin" style="font-size: 30px; color: var(--hp-pink);"></i>
+            <!-- ACTION BUTTONS ROW -->
+            <div class="detail-action-buttons">
+                <button class="btn-primary-action" style="flex: 1.2;" onclick="window.notasAppDashboard.openGradeEditor()">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Registrar Calificación</span>
+                </button>
+                <button class="btn-secondary-action" onclick="window.notasAppDashboard.editAcademic()">
+                    <i class="fa-solid fa-pen"></i>
+                    <span>Editar</span>
+                </button>
+                <button class="btn-secondary-action" onclick="window.notasAppDashboard.openShareModal()">
+                    <i class="fa-solid fa-share-nodes"></i>
+                    <span>Compartir</span>
+                </button>
+                <button class="btn-secondary-action btn-danger-action" onclick="window.notasAppDashboard.deleteAcademic()">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Eliminar</span>
+                </button>
+            </div>
+
+            <!-- DESEMPEÑOS CATEGORIES (SABER 40%, HACER 30%, SER 20%, EVALUACIÓN 10%) -->
+            <div class="performances-grid" id="detail-performances-list">
+                <!-- Se inyectan las 4 tarjetas de categoría -->
             </div>
         </div>
 
     </main>
 
-    <!-- ACADEMIC EDITOR MODAL -->
+    <!-- =========================================
+         MODALS (Z-INDEX 3000)
+         ========================================= -->
+
+    <!-- ACADEMIC EDITOR MODAL (NUEVA / EDITAR ASIGNATURA) -->
     <div class="modal" id="academic-editor-modal">
-        <div class="modal-content" style="max-width: 500px; width: 95%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px;">Nueva Asignatura</h2>
+        <div class="modal-content" style="max-width: 460px; width: 95%;">
+            <div class="modal-header">
+                <h2 class="modal-title" id="academic-modal-title">Nueva Asignatura</h2>
                 <span class="modal-close" onclick="window.notasAppDashboard.closeAcademicEditor()"><i class="fa-solid fa-xmark"></i></span>
             </div>
             
-            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                <div style="flex: 0 0 60px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <div style="flex: 0 0 70px;">
                     <label class="input-label">Emoji</label>
-                    <input type="text" id="academic-emoji" class="input-text" value="📚" style="text-align: center; font-size: 24px; padding: 10px;" maxlength="2">
+                    <input type="text" id="academic-emoji" class="input-text" value="📚" style="text-align: center; font-size: 26px; padding: 8px; margin-bottom: 0;" maxlength="2">
                 </div>
                 <div style="flex: 1;">
                     <label class="input-label">Nombre de Asignatura</label>
-                    <input type="text" id="academic-name" class="input-text" placeholder="Ej: Matemáticas" required>
+                    <input type="text" id="academic-name" class="input-text" placeholder="Ej: Matemáticas" style="margin-bottom: 0;" required>
                 </div>
             </div>
             
-            <div style="margin-bottom: 15px;">
-                <label class="input-label">Profesor</label>
-                <input type="text" id="academic-teacher" class="input-text" placeholder="Ingresa nombre...">
+            <div style="margin-bottom: 16px;">
+                <label class="input-label">Profesor (opcional)</label>
+                <input type="text" id="academic-teacher" class="input-text" placeholder="Ingresa nombre del profesor..." style="margin-bottom: 0;">
             </div>
             
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 24px;">
                 <label class="input-label">Periodo</label>
-                <input type="text" id="academic-period" class="input-text" placeholder="Ej: 2024-2" required>
+                <select id="academic-period" class="input-text" style="margin-bottom: 0; background: var(--input-bg); color: var(--text-color);">
+                    <option value="1">Periodo 1</option>
+                    <option value="2">Periodo 2</option>
+                    <option value="3">Periodo 3</option>
+                    <option value="4">Periodo 4</option>
+                </select>
             </div>
             
             <input type="hidden" id="academic-id">
             
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-secondary" onclick="window.notasAppDashboard.closeAcademicEditor()">Cancelar</button>
-                <button class="btn-primary btn-add" id="save-academic-btn" style="width: auto; padding: 12px 25px;" onclick="window.notasAppDashboard.saveAcademic()">Guardar</button>
+                <button class="btn-primary btn-add" id="save-academic-btn" style="width: auto; padding: 12px 26px;" onclick="window.notasAppDashboard.saveAcademic()">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- GRADE EDITOR MODAL -->
+    <!-- GRADE EDITOR MODAL (REGISTRAR CALIFICACIÓN) -->
     <div class="modal" id="grade-editor-modal">
-        <div class="modal-content" style="max-width: 500px; width: 95%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px;">Registrar Calificación</h2>
+        <div class="modal-content" style="max-width: 460px; width: 95%;">
+            <div class="modal-header">
+                <h2 class="modal-title">Registrar Calificación</h2>
                 <span class="modal-close" onclick="window.notasAppDashboard.closeGradeEditor()"><i class="fa-solid fa-xmark"></i></span>
             </div>
             
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 16px;">
                 <label class="input-label">Categoría de Desempeño</label>
-                <select id="grade-category" class="input-text" style="background: var(--input-bg); color: var(--text-color);">
-                    <option value="cognitive">📚 Saber (Cognitivo) - 45%</option>
-                    <option value="procedural">🔧 Hacer (Procedimental) - 35%</option>
+                <select id="grade-category" class="input-text" style="background: var(--input-bg); color: var(--text-color); margin-bottom: 0;">
+                    <option value="cognitive">📚 Saber (Cognitivo) - 40%</option>
+                    <option value="procedural">🔧 Hacer (Procedimental) - 30%</option>
                     <option value="attitudinal">🎯 Ser (Actitudinal) - 20%</option>
+                    <option value="evaluation">📝 Evaluación / Auto - 10%</option>
                 </select>
             </div>
             
-            <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 16px;">
                 <label class="input-label">Descripción de la actividad (opcional)</label>
-                <input type="text" id="grade-desc" class="input-text" placeholder="Ej: Examen bimestral...">
+                <input type="text" id="grade-desc" class="input-text" placeholder="Ej: Taller práctico, Quiz 1, Examen..." style="margin-bottom: 0;">
             </div>
             
-            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
                 <div style="flex: 1;">
-                    <label class="input-label">Calificación (0.0 - 5.0)</label>
-                    <input type="number" id="grade-value" class="input-text" step="0.1" min="0" max="5.0" placeholder="4.5">
+                    <label class="input-label">Nota (0.0 - 5.0)</label>
+                    <input type="number" id="grade-value" class="input-text" step="0.1" min="0" max="5.0" placeholder="4.5" style="margin-bottom: 0;">
                 </div>
                 <div style="flex: 1;">
-                    <label class="input-label">Peso en categoría (%)</label>
-                    <input type="number" id="grade-weight" class="input-text" step="1" min="1" max="100" placeholder="50">
+                    <label class="input-label">Peso en cat. (%)</label>
+                    <input type="number" id="grade-weight" class="input-text" step="1" min="1" max="100" placeholder="50" style="margin-bottom: 0;">
                 </div>
             </div>
             
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-secondary" onclick="window.notasAppDashboard.closeGradeEditor()">Cancelar</button>
-                <button class="btn-primary btn-add" id="save-grade-btn" style="width: auto; padding: 12px 25px;" onclick="window.notasAppDashboard.saveGrade()">Registrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ACADEMIC DETAIL MODAL (DRAWER) -->
-    <div class="modal" id="academic-detail-modal">
-        <div class="modal-content" style="max-width: 600px; width: 95%;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                <div>
-                    <h2 style="margin: 0; font-size: 24px;" id="detail-title">📐 Matemáticas</h2>
-                    <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;" id="detail-subtitle">Prof. García | 2024-2</p>
-                </div>
-                <span class="modal-close" onclick="window.notasAppDashboard.closeAcademicDetail()"><i class="fa-solid fa-xmark"></i></span>
-            </div>
-            
-            <div style="background: var(--card-bg); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border-color); text-align: center;">
-                <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 5px;">CALIFICACIÓN FINAL</div>
-                <div id="detail-final-score" style="font-size: 32px; font-weight: 700; color: var(--hp-pink);">0.00</div>
-            </div>
-            
-            <div id="detail-performances-list" style="margin-bottom: 20px;">
-                <!-- Desempeños se renderizan aquí -->
-            </div>
-            
-            <div style="display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                <button class="btn-primary btn-add" style="flex: 1; min-width: 150px;" onclick="window.notasAppDashboard.openGradeEditor()">
-                    <i class="fa-solid fa-plus"></i> Calificación
-                </button>
-                <button class="btn-secondary" style="flex: 1; min-width: 120px;" onclick="window.notasAppDashboard.editAcademic()">
-                    <i class="fa-solid fa-pen"></i> Editar
-                </button>
-                <button class="btn-secondary" style="flex: 1; min-width: 120px;" onclick="window.notasAppDashboard.openShareModal()">
-                    <i class="fa-solid fa-link"></i> Compartir
-                </button>
-                <button class="btn-secondary" style="flex: 1; min-width: 120px; color: var(--error); border-color: var(--error);" onclick="window.notasAppDashboard.deleteAcademic()">
-                    <i class="fa-solid fa-trash"></i> Eliminar
-                </button>
+                <button class="btn-primary btn-add" id="save-grade-btn" style="width: auto; padding: 12px 26px;" onclick="window.notasAppDashboard.saveGrade()">Registrar</button>
             </div>
         </div>
     </div>
 
     <!-- SHARE MODAL -->
     <div class="modal" id="share-modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="window.notasAppDashboard.closeShareModal()"><i class="fa-solid fa-xmark"></i></span>
-            <h2 style="margin-bottom: 15px;">Compartir Transcripción</h2>
+        <div class="modal-content" style="max-width: 480px; width: 95%;">
+            <div class="modal-header">
+                <h2 class="modal-title">Compartir Transcripción</h2>
+                <span class="modal-close" onclick="window.notasAppDashboard.closeShareModal()"><i class="fa-solid fa-xmark"></i></span>
+            </div>
             
             <div id="share-content">
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">
-                    Crea un enlace público para mostrar una transcripción de esta asignatura. Los visitantes no podrán modificar las notas.
+                <p style="color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-bottom: 18px;">
+                    Crea un enlace público seguro para compartir tu reporte académico de esta asignatura. Los visitantes podrán ver tus calificaciones en modo lectura sin ver tus datos privados.
                 </p>
                 <button class="btn-primary btn-add" id="generate-link-btn" onclick="window.notasAppDashboard.generateShareLink()">Generar enlace público</button>
             </div>
             
             <div id="share-link-container" style="display: none; margin-top: 15px;">
-                <label class="input-label">Enlace público de lectura:</label>
-                <div style="display: flex; gap: 10px;">
+                <label class="input-label">Enlace público:</label>
+                <div style="display: flex; gap: 8px;">
                     <input type="text" id="share-link-input" class="input-text" style="margin-bottom: 0;" readonly>
-                    <button class="btn-secondary" onclick="window.notasAppDashboard.copyShareLink()"><i class="fa-regular fa-copy"></i> Copiar</button>
+                    <button class="btn-secondary" onclick="window.notasAppDashboard.copyShareLink()" style="flex-shrink: 0;"><i class="fa-regular fa-copy"></i> Copiar</button>
                 </div>
             </div>
         </div>

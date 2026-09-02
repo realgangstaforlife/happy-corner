@@ -151,8 +151,9 @@ service cloud.firestore {
     match /sharedLinks/{linkId} {
       // Cualquiera puede leer (acceso público via link)
       allow read: if true;
-      // Solo el propietario puede crear/eliminar links
-      allow create, delete: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      // Solo el propietario puede crear/actualizar/eliminar links
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
     }
     
     // publicNotes - vista pública de notas compartidas

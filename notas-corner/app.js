@@ -62,13 +62,14 @@ class App {
         
         // Shared note view — no auth
         if (path.includes('/shared/')) {
-            const publicId = path.split('/shared/')[1];
+            const rawId = path.split('/shared/')[1];
+            const publicId = rawId ? rawId.split('?')[0].replace(/\/$/, '') : null;
             if (publicId) { this.renderSharedNote(publicId); return; }
         }
         
-        if (!auth) return; // Firebase not available, landing page handles its own auth UI
+        if (!auth) return;
 
-            onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, (user) => {
             const isDashboard = path.includes('dashboard');
             const isSettings  = path.includes('settings');
             const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
@@ -80,7 +81,6 @@ class App {
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
-                // Not logged in -> ALWAYS redirect to auth unless shared
                 if (!path.includes('/shared/')) {
                     const targetUrl = window.location.href === window.location.origin + '/' 
                         ? window.location.origin + '/notas-corner/dashboard' 
@@ -95,19 +95,20 @@ class App {
     
     async renderSharedNote(publicId) {
         document.body.innerHTML = `
-            <div style="max-width:800px;margin:40px auto;padding:20px;font-family:'Outfit',sans-serif;">
-                <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
-                    <a href="/" style="text-decoration:none;color:var(--hp-pink);font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px;">
-                        <i class="fa-solid fa-graduation-cap"></i> Notas Corner
+            <div style="max-width:850px;margin:30px auto;padding:0 20px;font-family:'Outfit',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-font-smoothing:antialiased;">
+                <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;padding:15px 24px;background:var(--header-bg);border-radius:18px;border:1px solid var(--border-color);">
+                    <a href="https://notas.happycorner.top" style="text-decoration:none;color:var(--text-color);font-weight:900;font-size:18px;display:flex;align-items:center;gap:10px;">
+                        <img src="https://happycorner.top/happylogo.png" alt="HappyNotas" style="height:28px;width:auto;">
+                        <span>Happy<span style="color:var(--hp-pink);">Notas</span></span>
                     </a>
-                    <span style="font-size:12px;padding:5px 12px;background:rgba(46,213,115,0.1);color:#2ed573;border:1px solid rgba(46,213,115,0.3);border-radius:999px;font-weight:700;">
-                        <i class="fa-solid fa-link"></i> Vista pública
+                    <span style="font-size:12px;padding:5px 14px;background:rgba(46,204,113,0.12);color:#2ecc71;border:1px solid rgba(46,204,113,0.3);border-radius:20px;font-weight:800;">
+                        <i class="fa-solid fa-link"></i> Transcripción Oficial
                     </span>
                 </header>
-                <div id="shared-area" class="card" style="padding:36px;text-align:left;">
-                    <div style="text-align:center;padding:40px;">
-                        <i class="fa-solid fa-spinner fa-spin" style="font-size:30px;color:var(--hp-pink);"></i>
-                        <p style="margin-top:15px;color:var(--text-muted);">Cargando nota...</p>
+                <div id="shared-area" style="background:var(--surface-color);border-radius:20px;border:1px solid var(--border-color);padding:30px;box-shadow:var(--shadow-sm);">
+                    <div style="text-align:center;padding:50px 20px;">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:32px;color:var(--hp-pink);"></i>
+                        <p style="margin-top:16px;color:var(--text-muted);font-weight:600;">Cargando transcripción académica...</p>
                     </div>
                 </div>
             </div>
@@ -117,62 +118,118 @@ class App {
             const transcript = await NotesService.getSharedTranscript(publicId);
             const area = document.getElementById('shared-area');
             if (transcript) {
-                const dateStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                const dateStr = transcript.createdAt 
+                    ? new Date(transcript.createdAt).toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' });
                 
-                const finalGpa = transcript.gpa || 0;
-                const statusStr = finalGpa >= 3.4 ? '<span style="color:var(--hp-pink); font-weight:bold;">✓ Aprobado</span>' : '<span style="color:var(--error); font-weight:bold;">⚠️ Reprobado</span>';
+                const finalScore = Number(transcript.finalAverage || transcript.gpa || 0).toFixed(2);
+                const isPassed = Number(finalScore) >= 3.4;
+                const statusBadge = isPassed 
+                    ? '<span style="color:#2ecc71; background:rgba(46,204,113,0.12); padding:4px 12px; border-radius:12px; font-weight:800; font-size:12px;">✓ APROBADO</span>' 
+                    : '<span style="color:#ff5252; background:rgba(255,82,82,0.12); padding:4px 12px; border-radius:12px; font-weight:800; font-size:12px;">⚠️ POR MEJORAR</span>';
+                
+                const cogAvg = Number(transcript.averages?.cognitive || transcript.performances?.cognitive || 0).toFixed(2);
+                const procAvg = Number(transcript.averages?.procedural || transcript.performances?.procedural || 0).toFixed(2);
+                const attAvg = Number(transcript.averages?.attitudinal || transcript.performances?.attitudinal || 0).toFixed(2);
+                const evalAvg = Number(transcript.averages?.evaluation || transcript.performances?.evaluation || 0).toFixed(2);
                 
                 area.innerHTML = `
-                    <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
-                        <h1 style="font-size:24px; font-weight:900; margin-bottom:10px; color:var(--text-color);">📋 TRANSCRIPCIÓN ACADÉMICA</h1>
-                        <div style="font-size:14px; color:var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div><strong>Estudiante:</strong> ${transcript.studentName}</div>
-                            <div><strong>Periodo:</strong> ${transcript.period || '-'}</div>
-                            <div><strong>Asignatura:</strong> ${transcript.subject}</div>
-                            <div><strong>Fecha Emisión:</strong> ${dateStr}</div>
+                    <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
+                        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                            <div style="font-size:32px; width:52px; height:52px; border-radius:14px; background:var(--input-bg); display:flex; align-items:center; justify-content:center; border:1px solid var(--border-color);">
+                                ${transcript.emoji || '📚'}
+                            </div>
+                            <div>
+                                <h1 style="font-size:24px; font-weight:900; color:var(--text-color); margin:0;">${transcript.subject || 'Asignatura'}</h1>
+                                <div style="font-size:13px; color:var(--text-muted); margin-top:2px;">
+                                    <span><i class="fa-solid fa-user-tie"></i> ${transcript.teacher || 'Docente'}</span>
+                                    <span style="margin:0 6px;">•</span>
+                                    <span>Periodo ${transcript.period || '1'}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; background:var(--input-bg); padding:14px 18px; border-radius:14px; border:1px solid var(--border-color); font-size:13px;">
+                            <div><strong style="color:var(--text-muted);">Estudiante:</strong> <span style="font-weight:800;">${transcript.studentName}</span></div>
+                            <div><strong style="color:var(--text-muted);">Fecha de Emisión:</strong> <span>${dateStr}</span></div>
                         </div>
                     </div>
                     
-                    <div style="background: var(--input-bg); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 25px; border: 1px solid var(--border-color);">
-                        <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 10px;">CALIFICACIÓN FINAL</div>
-                        <div style="font-size: 40px; font-weight: 900; color: ${finalGpa >= 3.4 ? 'var(--hp-pink)' : 'var(--error)'};">${finalGpa.toFixed(2)}</div>
-                        <div style="margin-top: 5px;">${statusStr}</div>
+                    <!-- CALIFICACIÓN FINAL -->
+                    <div style="background: var(--input-bg); padding: 22px; border-radius: 16px; text-align: center; margin-bottom: 28px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; color: var(--text-muted); font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 6px;">PROMEDIO FINAL DE LA ASIGNATURA</div>
+                        <div style="font-size: 44px; font-weight: 900; color: ${isPassed ? '#2ecc71' : '#ff5252'}; line-height: 1.1;">${finalScore}</div>
+                        <div style="margin-top: 8px;">${statusBadge}</div>
                     </div>
                     
-                    <h3 style="font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">DESGLOSE POR DESEMPEÑOS</h3>
-                    <div style="display: grid; gap: 15px;">
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
-                            <span>📚 Saber (Cognitivo)</span>
-                            <strong style="color: var(--hp-pink);">${(transcript.performances?.cognitive || 0).toFixed(2)}</strong>
+                    <!-- DESGLOSE POR DESEMPEÑOS (40%, 30%, 20%, 10%) -->
+                    <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 14px;">
+                        Desglose Oficial de Desempeños
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">📚 Saber (Cognitivo)</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 40%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${cogAvg}</strong>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
-                            <span>🔧 Hacer (Procedimental)</span>
-                            <strong style="color: var(--hp-pink);">${(transcript.performances?.procedural || 0).toFixed(2)}</strong>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">🔧 Hacer (Procedimental)</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 30%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${procAvg}</strong>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
-                            <span>🎯 Ser (Actitudinal)</span>
-                            <strong style="color: var(--hp-pink);">${(transcript.performances?.attitudinal || 0).toFixed(2)}</strong>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">🎯 Ser (Actitudinal)</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 20%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${attAvg}</strong>
                         </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">📝 Evaluación / Auto</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 10%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${evalAvg}</strong>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                        <a href="https://notas.happycorner.top" style="display: inline-flex; align-items: center; gap: 8px; color: var(--hp-pink); font-weight: 800; text-decoration: none; font-size: 14px;">
+                            🚀 Organiza tus notas en HappyNotas
+                        </a>
                     </div>
                 `;
             } else {
                 area.innerHTML = `
-                    <div style="text-align:center;padding:40px;">
-                        <i class="fa-solid fa-file-circle-xmark" style="font-size:40px;color:#ef4444;margin-bottom:15px;"></i>
-                        <h2 style="font-weight:900;margin-bottom:10px;">Transcripción no encontrada</h2>
-                        <p style="color:var(--text-muted);">El enlace puede haber expirado o la calificación fue eliminada.</p>
-                        <br><a href="/notas-corner/dashboard" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Inicio</a>
+                    <div style="text-align:center;padding:50px 20px;">
+                        <i class="fa-solid fa-file-circle-xmark" style="font-size:44px;color:#ff5252;margin-bottom:16px;"></i>
+                        <h2 style="font-weight:900;font-size:22px;margin-bottom:8px;">Transcripción no encontrada</h2>
+                        <p style="color:var(--text-muted);font-size:14px;max-width:400px;margin:0 auto 20px;">El enlace puede haber expirado o la calificación fue eliminada por el estudiante.</p>
+                        <a href="https://notas.happycorner.top" style="display:inline-block;padding:10px 24px;background:var(--hp-gradient);color:white;border-radius:14px;font-weight:800;text-decoration:none;font-size:14px;">← Ir a HappyNotas</a>
                     </div>
                 `;
             }
         } catch (err) {
-            document.getElementById('shared-area').innerHTML = `
-                <div style="text-align:center;padding:40px;">
-                    <h2>Error de conexión</h2>
-                    <p style="color:var(--text-muted)">No se pudo cargar la transcripción académica.</p>
-                </div>
-            `;
+            console.error("Error loading shared transcript:", err);
+            const area = document.getElementById('shared-area');
+            if (area) {
+                area.innerHTML = `
+                    <div style="text-align:center;padding:50px 20px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size:44px;color:#ff5252;margin-bottom:16px;"></i>
+                        <h2 style="font-weight:900;margin-bottom:8px;">Error de conexión</h2>
+                        <p style="color:var(--text-muted)">No se pudo cargar la transcripción académica. Por favor recarga la página.</p>
+                    </div>
+                `;
+            }
         }
+    }
     }
 }
 
