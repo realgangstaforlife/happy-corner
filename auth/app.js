@@ -20,7 +20,7 @@ let clientId = '';
 const params = new URLSearchParams(window.location.search);
 redirectUri = params.get('redirect_uri') || 'https://happycorner.top';
 clientId = params.get('client_id') || 'main';
-const isLogout = window.location.pathname.includes('logout');
+const isLogout = window.location.pathname.includes('logout') || params.get('logout') === '1';
 
 initPromise
     .then(() => {
@@ -73,17 +73,17 @@ async function handleSSORedirect(user) {
         
         const data = await res.json();
         
-        if (data.token) {
-            if (redirectUri && redirectUri.startsWith('http')) {
-                const url = new URL(redirectUri);
-                url.searchParams.set('token', data.token);
-                window.location.href = url.toString();
+            if (data.token) {
+                if (redirectUri && redirectUri.startsWith('http')) {
+                    const url = new URL(redirectUri);
+                    url.searchParams.set('token', data.token);
+                    window.location.href = url.toString();
+                } else {
+                    window.location.href = `https://notas.happycorner.top/notas-corner/dashboard.html?token=${data.token}`;
+                }
             } else {
-                window.location.href = `https://notas.happycorner.top/dashboard?token=${data.token}`;
-            }
-        } else {
-            setErr(data.error || 'No se pudo generar el token de acceso.');
-            setLoading(false);
+                setErr(data.error || 'No se pudo generar el token de acceso.');
+                setLoading(false);
         }
     } catch (err) {
         console.error(err);

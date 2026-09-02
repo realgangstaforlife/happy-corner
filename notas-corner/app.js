@@ -68,14 +68,14 @@ class App {
         
         if (!auth) return; // Firebase not available, landing page handles its own auth UI
 
-        onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, (user) => {
             const isDashboard = path.includes('dashboard');
             const isSettings  = path.includes('settings');
             const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
             
             if (user) {
                 if (isIndex) {
-                    window.location.href = '/dashboard';
+                    window.location.href = '/notas-corner/dashboard.html';
                 }
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
@@ -83,7 +83,7 @@ class App {
                 // Not logged in -> ALWAYS redirect to auth unless shared
                 if (!path.includes('/shared/')) {
                     const targetUrl = window.location.href === window.location.origin + '/' 
-                        ? window.location.origin + '/dashboard' 
+                        ? window.location.origin + '/notas-corner/dashboard.html' 
                         : window.location.href;
                         
                     const redirectUrl = `https://auth.happycorner.top?client_id=notas&redirect_uri=${encodeURIComponent(targetUrl)}`;

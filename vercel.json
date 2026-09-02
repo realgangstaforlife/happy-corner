@@ -28,21 +28,6 @@
     }
   ],
   "rewrites": [
-    { "source": "/", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/index.html" },
-    { "source": "/dashboard", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/dashboard.html" },
-    { "source": "/settings", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/settings.html" },
-    { "source": "/shared/:uuid", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/index.html" },
-    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/api/getConfig" },
-    { "source": "/happylogo.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happylogo.png" },
-    { "source": "/happyfavicon.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happyfavicon.png" },
-    { "source": "/:path*", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/:path*" },
-
-    { "source": "/", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
-    { "source": "/logout", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
-    { "source": "/api/account", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/account" },
-    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/getConfig" },
-    { "source": "/:path*", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/:path*" },
-    
     { "source": "/auth", "destination": "/auth/index.html" },
     { "source": "/auth/:path*", "destination": "/auth/:path*" },
 
@@ -138,6 +123,87 @@
     { "source": "/notas-corner/shared/:uuid", "destination": "/notas-corner/index.html" }
   ],
   "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/dashboard.html",
+      "permanent": false
+    },
+    {
+      "source": "/settings",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/settings.html",
+      "permanent": false
+    },
+    {
+      "source": "/shared/:uuid",
+      "has": [
+        {
+          "type": "host",
+          "value": "notas.happycorner.top"
+        }
+      ],
+      "destination": "/notas-corner/shared/:uuid",
+      "permanent": false
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "auth.happycorner.top"
+        }
+      ],
+      "destination": "/auth/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/logout",
+      "has": [
+        {
+          "type": "host",
+          "value": "auth.happycorner.top"
+        }
+      ],
+      "destination": "/auth/index.html?logout=1",
+      "permanent": false
+    },
+    {
+      "source": "/auth",
+      "destination": "/auth/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/notas-corner",
+      "destination": "/notas-corner/index.html",
+      "permanent": false
+    },
+    {
+      "source": "/auth/action",
+      "destination": "/auth-action.html",
+      "permanent": false
+    },
     {
       "source": "/:path*",
       "has": [
