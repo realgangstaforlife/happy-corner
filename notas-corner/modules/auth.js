@@ -64,6 +64,5 @@ export {
     onAuthStateChanged,
     updateProfile,
     sendPasswordResetEmail,
-    signInWithCustomToken,
-    signInWithCustomTokenSSO
+    signInWithCustomToken
 };
