@@ -128,9 +128,20 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // HappyNotas - notes (calificaciones académicas)
+    // HappyNotas - academics (calificaciones académicas encriptadas)
+    match /academics/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // HappyNotas - userDefaults (configuración y pesos de usuario)
+    match /userDefaults/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == docId;
+    }
+
+    // HappyNotas - notes (calificaciones académicas obsoletas)
     match /notes/{noteId} {
-      // Owner puede leer, crear, editar, eliminar sus propias notas
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;

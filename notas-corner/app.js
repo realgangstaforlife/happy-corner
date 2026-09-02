@@ -114,24 +114,54 @@ class App {
         `;
         try {
             await initPromise;
-            const note = await NotesService.getSharedNote(publicId);
+            const transcript = await NotesService.getSharedTranscript(publicId);
             const area = document.getElementById('shared-area');
-            if (note) {
-                const dateStr = new Date(note.updatedAt).toLocaleString('es-ES', { dateStyle: 'long', timeStyle: 'short' });
+            if (transcript) {
+                const dateStr = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                
+                const finalGpa = transcript.gpa || 0;
+                const statusStr = finalGpa >= 3.4 ? '<span style="color:var(--hp-pink); font-weight:bold;">✓ Aprobado</span>' : '<span style="color:var(--error); font-weight:bold;">⚠️ Reprobado</span>';
+                
                 area.innerHTML = `
-                    <h1 style="font-size:28px;font-weight:900;margin-bottom:10px;color:var(--text-color);">${note.title}</h1>
-                    <p style="font-size:12px;color:var(--text-muted);margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--border-color);">
-                        <i class="fa-regular fa-clock"></i> Actualizado: ${dateStr}
-                    </p>
-                    <div style="line-height:1.7;white-space:pre-wrap;font-size:16px;color:var(--text-color);">${note.content || '<em style="color:var(--text-muted)">Sin contenido</em>'}</div>
+                    <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+                        <h1 style="font-size:24px; font-weight:900; margin-bottom:10px; color:var(--text-color);">📋 TRANSCRIPCIÓN ACADÉMICA</h1>
+                        <div style="font-size:14px; color:var(--text-muted); display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div><strong>Estudiante:</strong> ${transcript.studentName}</div>
+                            <div><strong>Periodo:</strong> ${transcript.period || '-'}</div>
+                            <div><strong>Asignatura:</strong> ${transcript.subject}</div>
+                            <div><strong>Fecha Emisión:</strong> ${dateStr}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: var(--input-bg); padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 25px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; margin-bottom: 10px;">CALIFICACIÓN FINAL</div>
+                        <div style="font-size: 40px; font-weight: 900; color: ${finalGpa >= 3.4 ? 'var(--hp-pink)' : 'var(--error)'};">${finalGpa.toFixed(2)}</div>
+                        <div style="margin-top: 5px;">${statusStr}</div>
+                    </div>
+                    
+                    <h3 style="font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">DESGLOSE POR DESEMPEÑOS</h3>
+                    <div style="display: grid; gap: 15px;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                            <span>📚 Saber (Cognitivo)</span>
+                            <strong style="color: var(--hp-pink);">${(transcript.performances?.cognitive || 0).toFixed(2)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                            <span>🔧 Hacer (Procedimental)</span>
+                            <strong style="color: var(--hp-pink);">${(transcript.performances?.procedural || 0).toFixed(2)}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                            <span>🎯 Ser (Actitudinal)</span>
+                            <strong style="color: var(--hp-pink);">${(transcript.performances?.attitudinal || 0).toFixed(2)}</strong>
+                        </div>
+                    </div>
                 `;
             } else {
                 area.innerHTML = `
                     <div style="text-align:center;padding:40px;">
                         <i class="fa-solid fa-file-circle-xmark" style="font-size:40px;color:#ef4444;margin-bottom:15px;"></i>
-                        <h2 style="font-weight:900;margin-bottom:10px;">Nota no encontrada</h2>
-                        <p style="color:var(--text-muted);">El enlace puede haber expirado o la nota fue eliminada.</p>
-                        <br><a href="/" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Notas Corner</a>
+                        <h2 style="font-weight:900;margin-bottom:10px;">Transcripción no encontrada</h2>
+                        <p style="color:var(--text-muted);">El enlace puede haber expirado o la calificación fue eliminada.</p>
+                        <br><a href="/notas-corner/dashboard" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Inicio</a>
                     </div>
                 `;
             }
@@ -139,7 +169,7 @@ class App {
             document.getElementById('shared-area').innerHTML = `
                 <div style="text-align:center;padding:40px;">
                     <h2>Error de conexión</h2>
-                    <p style="color:var(--text-muted)">No se pudo cargar la nota.</p>
+                    <p style="color:var(--text-muted)">No se pudo cargar la transcripción académica.</p>
                 </div>
             `;
         }
