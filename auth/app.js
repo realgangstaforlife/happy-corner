@@ -79,7 +79,7 @@ async function handleSSORedirect(user) {
                     url.searchParams.set('token', data.token);
                     window.location.href = url.toString();
                 } else {
-                    window.location.href = `https://notas.happycorner.top/notas-corner/dashboard.html?token=${data.token}`;
+            window.location.href = `https://notas.happycorner.top/notas-corner/dashboard?token=${data.token}`;
                 }
             } else {
                 setErr(data.error || 'No se pudo generar el token de acceso.');

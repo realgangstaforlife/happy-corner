@@ -28,7 +28,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/auth", "destination": "/auth/index.html" },
+    { "source": "/auth", "destination": "/auth/" },
     { "source": "/auth/:path*", "destination": "/auth/:path*" },
 
     { "source": "/", "destination": "/index.html" },
@@ -99,7 +99,7 @@
     },
     {
       "source": "/auth/action",
-      "destination": "/auth-action.html"
+      "destination": "/auth-action"
     },
     {
       "source": "/admin-v2",
@@ -117,10 +117,10 @@
       "source": "/robots.txt",
       "destination": "/robots.txt"
     },
-    { "source": "/notas-corner", "destination": "/notas-corner/index.html" },
-    { "source": "/notas-corner/dashboard", "destination": "/notas-corner/dashboard.html" },
-    { "source": "/notas-corner/settings", "destination": "/notas-corner/settings.html" },
-    { "source": "/notas-corner/shared/:uuid", "destination": "/notas-corner/index.html" }
+    { "source": "/notas-corner", "destination": "/notas-corner/" },
+    { "source": "/notas-corner/dashboard", "destination": "/notas-corner/dashboard" },
+    { "source": "/notas-corner/settings", "destination": "/notas-corner/settings" },
+    { "source": "/notas-corner/shared/:uuid", "destination": "/notas-corner/" }
   ],
   "redirects": [
     {
@@ -131,7 +131,7 @@
           "value": "notas.happycorner.top"
         }
       ],
-      "destination": "/notas-corner/index.html",
+      "destination": "/notas-corner/",
       "permanent": false
     },
     {
@@ -142,7 +142,7 @@
           "value": "notas.happycorner.top"
         }
       ],
-      "destination": "/notas-corner/dashboard.html",
+      "destination": "/notas-corner/dashboard",
       "permanent": false
     },
     {
@@ -153,7 +153,7 @@
           "value": "notas.happycorner.top"
         }
       ],
-      "destination": "/notas-corner/settings.html",
+      "destination": "/notas-corner/settings",
       "permanent": false
     },
     {
@@ -175,7 +175,7 @@
           "value": "auth.happycorner.top"
         }
       ],
-      "destination": "/auth/index.html",
+      "destination": "/auth/",
       "permanent": false
     },
     {
@@ -186,22 +186,22 @@
           "value": "auth.happycorner.top"
         }
       ],
-      "destination": "/auth/index.html?logout=1",
+      "destination": "/auth/?logout=1",
       "permanent": false
     },
     {
       "source": "/auth",
-      "destination": "/auth/index.html",
+      "destination": "/auth/",
       "permanent": false
     },
     {
       "source": "/notas-corner",
-      "destination": "/notas-corner/index.html",
+      "destination": "/notas-corner/",
       "permanent": false
     },
     {
       "source": "/auth/action",
-      "destination": "/auth-action.html",
+      "destination": "/auth-action",
       "permanent": false
     },
     {

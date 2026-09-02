@@ -394,11 +394,11 @@
     </p>
 
     <div class="cta-group">
-        <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard.html" class="btn-cta-primary" id="btn-login" style="text-decoration: none;">
+        <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard" class="btn-cta-primary" id="btn-login" style="text-decoration: none;">
             <i class="fa-solid fa-right-to-bracket"></i>
             Iniciar Sesión
         </a>
-        <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard.html" class="btn-cta-secondary" id="btn-register" style="text-decoration: none;">
+        <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard" class="btn-cta-secondary" id="btn-register" style="text-decoration: none;">
             <i class="fa-solid fa-user-plus"></i>
             Crear Cuenta
         </a>
@@ -504,7 +504,7 @@
         .then(() => {
             firebaseOk = true;
             onAuthStateChanged(auth, user => {
-                if (user) window.location.href = '/notas-corner/dashboard.html';
+                if (user) window.location.href = '/notas-corner/dashboard';
             });
         })
         .catch(() => {
@@ -577,7 +577,7 @@
                     preferences: { theme: 'dark', allowSharing: true }
                 }, { merge: true });
             }
-            window.location.href = '/notas-corner/dashboard.html';
+            window.location.href = '/notas-corner/dashboard';
         } catch (err) {
             setLoading(false);
             setErr(errMsg(err.code));
@@ -597,7 +597,7 @@
                 displayName: cred.user.displayName, createdAt: Date.now(),
                 preferences: { theme: 'dark', allowSharing: true }
             }, { merge: true });
-            window.location.href = '/notas-corner/dashboard.html';
+            window.location.href = '/notas-corner/dashboard';
         } catch (err) {
             setErr(errMsg(err.code));
             document.getElementById('auth-modal').classList.add('active');
