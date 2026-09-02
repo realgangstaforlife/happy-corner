@@ -32,7 +32,7 @@
     { "source": "/dashboard", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/dashboard.html" },
     { "source": "/settings", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/settings.html" },
     { "source": "/shared/:uuid", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/index.html" },
-    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/api/getConfig.js" },
+    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/api/getConfig.js" },
     { "source": "/happylogo.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happylogo.png" },
     { "source": "/happyfavicon.png", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/happyfavicon.png" },
     { "source": "/(.*\\.(js|css|woff2?|png|svg|jpg|jpeg|gif))", "has": [{ "type": "host", "value": "notas.happycorner.top" }], "destination": "/notas-corner/$1" },
@@ -40,7 +40,7 @@
     { "source": "/", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
     { "source": "/logout", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/index.html" },
     { "source": "/api/account", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/account.js" },
-    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/notas-corner/api/getConfig.js" },
+    { "source": "/api/getConfig", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/api/getConfig.js" },
     { "source": "/(.*\\.(js|css|woff2?|png|svg|jpg|jpeg|gif))", "has": [{ "type": "host", "value": "auth.happycorner.top" }], "destination": "/auth/$1" },
     
     { "source": "/auth", "destination": "/auth/index.html" },

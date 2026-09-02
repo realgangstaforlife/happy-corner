@@ -115,6 +115,21 @@ export default async function handler(req, res) {
                 }
             }
 
+            if (action === 's') {
+                const { code } = req.query;
+                if (!code) return res.status(400).send('Falta el código del link.');
+                try {
+                    const snap = await db.collection('shortlinks').doc(code).get();
+                    if (!snap.exists || !snap.data().target) return res.status(404).send('Este link expiró o no es válido.');
+                    res.writeHead(302, { Location: snap.data().target });
+                    res.end();
+                    return;
+                } catch (e) {
+                    console.error('Error resolviendo shortlink:', e);
+                    return res.status(500).send('Ocurrió un error, intenta de nuevo.');
+                }
+            }
+
             // --- 0. ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
             if (action === 'checkBan') {
                 const forwarded = req.headers['x-forwarded-for'];
