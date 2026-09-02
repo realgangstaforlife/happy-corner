@@ -102,6 +102,19 @@ export default async function handler(req, res) {
                 return json(res, 400, { error: 'Falta el parámetro action' });
             }
 
+            if (action === 'createSSOToken') {
+                const { uid } = req.body || {};
+                if (!uid) return json(res, 400, { error: 'UID required' });
+                
+                try {
+                    const customToken = await auth.createCustomToken(uid);
+                    return res.status(200).json({ token: customToken, expires_in: 3600 });
+                } catch (error) {
+                    console.error('Token creation error:', error);
+                    return json(res, 500, { error: 'No se pudo crear el token de autenticación' });
+                }
+            }
+
             // --- 0. ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
             if (action === 'checkBan') {
                 const forwarded = req.headers['x-forwarded-for'];

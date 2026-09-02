@@ -62,8 +62,8 @@ async function handleLogout() {
 async function handleSSORedirect(user) {
     setLoading(true, "Redirigiendo...");
     try {
-        // Obtenemos el Custom Token desde el backend
-        const res = await fetch('/api/auth/createToken', {
+        // Obtenemos el Custom Token desde el backend consolidado
+        const res = await fetch('/api/account?action=createSSOToken', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
