@@ -75,23 +75,19 @@ class App {
             
             if (user) {
                 if (isIndex) {
-                    // Update: use absolute path based on subdomain or fallback to /notas-corner/
-                    const isSubdomain = window.location.hostname === 'notas.happycorner.top';
-                    window.location.href = isSubdomain ? '/dashboard' : '/notas-corner/dashboard';
+                    window.location.href = '/dashboard';
                 }
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
                 // Not logged in -> ALWAYS redirect to auth unless shared
-                const authUrl = 'https://auth.happycorner.top?client_id=notas&redirect_uri=' + 
-                    encodeURIComponent(window.location.origin + (path === '/' ? '/dashboard' : path));
-                
-                // If local testing without subdomains, we can just redirect to /auth
-                if (window.location.hostname === 'localhost') {
-                    window.location.href = '/auth?client_id=notas&redirect_uri=' + 
-                        encodeURIComponent(window.location.origin + '/notas-corner' + (path === '/' ? '/dashboard' : path));
-                } else {
-                    window.location.href = authUrl;
+                if (!path.includes('/shared/')) {
+                    const targetUrl = window.location.href === window.location.origin + '/' 
+                        ? window.location.origin + '/dashboard' 
+                        : window.location.href;
+                        
+                    const redirectUrl = `https://auth.happycorner.top?client_id=notas&redirect_uri=${encodeURIComponent(targetUrl)}`;
+                    window.location.href = redirectUrl;
                 }
             }
         });
@@ -101,7 +97,7 @@ class App {
         document.body.innerHTML = `
             <div style="max-width:800px;margin:40px auto;padding:20px;font-family:'Outfit',sans-serif;">
                 <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
-                    <a href="/notas-corner/" style="text-decoration:none;color:var(--hp-pink);font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px;">
+                    <a href="/" style="text-decoration:none;color:var(--hp-pink);font-weight:900;font-size:18px;display:flex;align-items:center;gap:8px;">
                         <i class="fa-solid fa-graduation-cap"></i> Notas Corner
                     </a>
                     <span style="font-size:12px;padding:5px 12px;background:rgba(46,213,115,0.1);color:#2ed573;border:1px solid rgba(46,213,115,0.3);border-radius:999px;font-weight:700;">
@@ -135,7 +131,7 @@ class App {
                         <i class="fa-solid fa-file-circle-xmark" style="font-size:40px;color:#ef4444;margin-bottom:15px;"></i>
                         <h2 style="font-weight:900;margin-bottom:10px;">Nota no encontrada</h2>
                         <p style="color:var(--text-muted);">El enlace puede haber expirado o la nota fue eliminada.</p>
-                        <br><a href="/notas-corner/" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Notas Corner</a>
+                        <br><a href="/" style="color:var(--hp-pink);font-weight:700;text-decoration:none;">← Ir a Notas Corner</a>
                     </div>
                 `;
             }

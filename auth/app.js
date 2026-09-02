@@ -74,10 +74,13 @@ async function handleSSORedirect(user) {
         const data = await res.json();
         
         if (data.token) {
-            // Append token to redirectUri
-            const url = new URL(redirectUri);
-            url.searchParams.set('token', data.token);
-            window.location.href = url.toString();
+            if (redirectUri && redirectUri.startsWith('http')) {
+                const url = new URL(redirectUri);
+                url.searchParams.set('token', data.token);
+                window.location.href = url.toString();
+            } else {
+                window.location.href = `https://notas.happycorner.top/dashboard?token=${data.token}`;
+            }
         } else {
             setErr(data.error || 'No se pudo generar el token de acceso.');
             setLoading(false);
