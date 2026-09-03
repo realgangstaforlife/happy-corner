@@ -110,6 +110,7 @@ async function loadAcademics() {
 /**
  * Calcula el promedio ponderado de la asignatura en base a las 4 categorías:
  * Saber (40%), Hacer (30%), Ser (20%), Evaluación (10%)
+ * Dentro de cada categoría, las notas se suman y se dividen entre la cantidad de notas.
  */
 function calculateSubjectAverage(performances) {
     if (!performances) return 0.00;
@@ -120,17 +121,12 @@ function calculateSubjectAverage(performances) {
     for (const [key, category] of Object.entries(performances)) {
         if (!category.categories || category.categories.length === 0) continue;
         
-        let catScore = 0;
-        let catWeight = 0;
-        
+        let sum = 0;
         category.categories.forEach(gradeItem => {
-            const w = Number(gradeItem.weight) || 0;
-            const g = Number(gradeItem.grade) || 0;
-            catScore += (g * (w / 100));
-            catWeight += w;
+            sum += (Number(gradeItem.grade) || 0);
         });
         
-        const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
+        const catAvg = sum / category.categories.length;
         const mainWeight = Number(category.weight) || 0;
         
         totalWeightedScore += (catAvg * (mainWeight / 100));
@@ -391,8 +387,7 @@ function renderSubjectDetail(id) {
                 activitiesHtml += `
                     <div class="activity-row">
                         <div class="activity-label-wrap">
-                            <span class="activity-title">${act.desc || 'Actividad #' + (idx + 1)}</span>
-                            <span class="activity-meta">Peso: ${act.weight}% en la categoría</span>
+                            <span class="activity-title">${act.desc || 'Nota #' + (idx + 1)}</span>
                         </div>
                         <div class="activity-score-wrap">
                             <span class="activity-score-num" style="color: ${actPassed ? 'var(--text-color)' : '#ff5252'};">${actGrade}</span>
@@ -460,7 +455,6 @@ function openGradeEditor(defaultCategory = 'cognitive') {
     document.getElementById('grade-category').value = defaultCategory;
     document.getElementById('grade-desc').value = '';
     document.getElementById('grade-value').value = '';
-    document.getElementById('grade-weight').value = '50';
     
     const modal = document.getElementById('grade-editor-modal');
     modal.style.display = 'flex';
@@ -470,7 +464,7 @@ function openGradeEditor(defaultCategory = 'cognitive') {
 function closeGradeEditor() {
     const modal = document.getElementById('grade-editor-modal');
     modal.classList.remove('active');
-    setTimeout(() => modal.style.display = 'none', 250);
+    setTimeout(() => modal.style.display = 'none', 200);
 }
 
 async function saveGrade() {
@@ -479,14 +473,9 @@ async function saveGrade() {
     const catId = document.getElementById('grade-category').value;
     const desc = document.getElementById('grade-desc').value.trim();
     const value = parseFloat(document.getElementById('grade-value').value);
-    const weight = parseInt(document.getElementById('grade-weight').value);
     
     if (isNaN(value) || value < 0 || value > 5.0) {
         UIManager.showToast('La calificación debe estar entre 0.0 y 5.0', 'error');
-        return;
-    }
-    if (isNaN(weight) || weight <= 0 || weight > 100) {
-        UIManager.showToast('El peso debe estar entre 1% y 100%', 'error');
         return;
     }
 
@@ -508,25 +497,19 @@ async function saveGrade() {
         }
         
         perfs[catId].categories.push({
-            desc: desc || `Actividad #${perfs[catId].categories.length + 1}`,
+            desc: desc || `Nota #${perfs[catId].categories.length + 1}`,
             grade: value,
-            weight: weight,
             date: Date.now()
         });
         
-        // Recalcular promedios
+        // Recalcular promedios (suma de notas dividido cantidad)
         const finalAvg = calculateSubjectAverage(perfs);
         
-        // Calcular promedio de la categoría
-        let catScore = 0;
-        let catWeight = 0;
+        let sum = 0;
         perfs[catId].categories.forEach(g => {
-            const w = Number(g.weight) || 0;
-            const gr = Number(g.grade) || 0;
-            catScore += (gr * (w / 100));
-            catWeight += w;
+            sum += (Number(g.grade) || 0);
         });
-        const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
+        const catAvg = perfs[catId].categories.length > 0 ? (sum / perfs[catId].categories.length) : 0;
         
         const newAverages = {
             ...(academic.averages || {}),
@@ -565,15 +548,11 @@ async function deleteGrade(categoryKey, index) {
         
         const finalAvg = calculateSubjectAverage(perfs);
         
-        let catScore = 0;
-        let catWeight = 0;
+        let sum = 0;
         perfs[categoryKey].categories.forEach(g => {
-            const w = Number(g.weight) || 0;
-            const gr = Number(g.grade) || 0;
-            catScore += (gr * (w / 100));
-            catWeight += w;
+            sum += (Number(g.grade) || 0);
         });
-        const catAvg = catWeight > 0 ? (catScore / (catWeight / 100)) : 0;
+        const catAvg = perfs[categoryKey].categories.length > 0 ? (sum / perfs[categoryKey].categories.length) : 0;
         
         const newAverages = {
             ...(academic.averages || {}),
