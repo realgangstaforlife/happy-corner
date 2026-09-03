@@ -230,7 +230,6 @@ class App {
             }
         }
     }
-    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
