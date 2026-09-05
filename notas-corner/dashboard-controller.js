@@ -8,12 +8,44 @@ let academicsList = [];
 let filteredAcademics = [];
 let currentAcademicId = null;
 
-// Categorías por defecto con los pesos oficiales (40%, 30%, 20%, 10%)
+// Categorías por defecto oficiales en español:
+// 40% Rendimiento Académico, 20% Trabajo en Clase y Participación, 30% Examen Final, 5% Autoevaluación, 5% Coevaluación
 export const DEFAULT_PERFORMANCES = {
-    cognitive: { name: "Saber (Cognitivo)", emoji: "📚", weight: 40, categories: [] },
-    procedural: { name: "Hacer (Procedimental)", emoji: "🔧", weight: 30, categories: [] },
-    attitudinal: { name: "Ser (Actitudinal)", emoji: "🎯", weight: 20, categories: [] },
-    evaluation: { name: "Evaluación / Auto", emoji: "📝", weight: 10, categories: [] }
+    academic: { 
+        name: "Rendimiento Académico", 
+        emoji: "📚", 
+        weight: 40, 
+        desc: "Quices, exámenes, presentaciones, proyectos, plataformas",
+        categories: [] 
+    },
+    classwork: { 
+        name: "Trabajo en Clase y Participación", 
+        emoji: "🔧", 
+        weight: 20, 
+        desc: "Talleres, tareas, post-tests, participación y actividades",
+        categories: [] 
+    },
+    final_exam: { 
+        name: "Examen Final", 
+        emoji: "📝", 
+        weight: 30, 
+        desc: "Evaluación o examen final acumulativo",
+        categories: [] 
+    },
+    self_assessment: { 
+        name: "Autoevaluación", 
+        emoji: "🎯", 
+        weight: 5, 
+        desc: "Autoevaluación del estudiante",
+        categories: [] 
+    },
+    co_assessment: { 
+        name: "Coevaluación", 
+        emoji: "👥", 
+        weight: 5, 
+        desc: "Coevaluación y desempeño formativo",
+        categories: [] 
+    }
 };
 
 export function initDashboard(user) {
@@ -290,13 +322,13 @@ async function saveAcademic() {
             academicsList = academicsList.map(n => n.id === id ? updated : n);
             UIManager.showToast('Asignatura actualizada', 'success');
         } else {
-            // Create new with default 40/30/20/10 structure
+            // Create new with default 40/20/30/5/5 structure
             const defaultPerformances = JSON.parse(JSON.stringify(DEFAULT_PERFORMANCES));
             
             const newData = {
                 name, emoji, teacher, period,
                 performances: defaultPerformances,
-                averages: { cognitive: 0, procedural: 0, attitudinal: 0, evaluation: 0, final: 0 }
+                averages: { academic: 0, classwork: 0, final_exam: 0, self_assessment: 0, co_assessment: 0, final: 0 }
             };
             
             const created = await NotesService.createAcademic(currentUser.uid, newData);
@@ -343,11 +375,6 @@ function renderSubjectDetail(id) {
     
     if (!academic.performances) {
         academic.performances = JSON.parse(JSON.stringify(DEFAULT_PERFORMANCES));
-    } else {
-        if (!academic.performances.cognitive) academic.performances.cognitive = { name: "Saber (Cognitivo)", emoji: "📚", weight: 40, categories: [] };
-        if (!academic.performances.procedural) academic.performances.procedural = { name: "Hacer (Procedimental)", emoji: "🔧", weight: 30, categories: [] };
-        if (!academic.performances.attitudinal) academic.performances.attitudinal = { name: "Ser (Actitudinal)", emoji: "🎯", weight: 20, categories: [] };
-        if (!academic.performances.evaluation) academic.performances.evaluation = { name: "Evaluación / Auto", emoji: "📝", weight: 10, categories: [] };
     }
     
     // Header
@@ -371,15 +398,30 @@ function renderSubjectDetail(id) {
     perfList.innerHTML = '';
     
     const categoryConfigs = [
-        { key: 'cognitive', defaultName: 'Saber (Cognitivo)', defaultWeight: 40, emoji: '📚' },
-        { key: 'procedural', defaultName: 'Hacer (Procedimental)', defaultWeight: 30, emoji: '🔧' },
-        { key: 'attitudinal', defaultName: 'Ser (Actitudinal)', defaultWeight: 20, emoji: '🎯' },
-        { key: 'evaluation', defaultName: 'Evaluación / Auto', defaultWeight: 10, emoji: '📝' }
+        { key: 'academic', legacyKey: 'cognitive', defaultName: 'Rendimiento Académico', defaultWeight: 40, emoji: '📚', desc: 'Quices, exámenes, presentaciones, proyectos' },
+        { key: 'classwork', legacyKey: 'procedural', defaultName: 'Trabajo en Clase y Participación', defaultWeight: 20, emoji: '🔧', desc: 'Talleres, tareas, post-tests, participación' },
+        { key: 'final_exam', legacyKey: 'evaluation', defaultName: 'Examen Final', defaultWeight: 30, emoji: '📝', desc: 'Evaluación o examen final acumulativo' },
+        { key: 'self_assessment', legacyKey: 'attitudinal', defaultName: 'Autoevaluación', defaultWeight: 5, emoji: '🎯', desc: 'Autoevaluación del estudiante' },
+        { key: 'co_assessment', legacyKey: null, defaultName: 'Coevaluación', defaultWeight: 5, emoji: '👥', desc: 'Coevaluación y desempeño formativo' }
     ];
     
     categoryConfigs.forEach(cfg => {
-        const cat = academic.performances[cfg.key] || { name: cfg.defaultName, weight: cfg.defaultWeight, categories: [] };
-        const catAvg = (academic.averages && academic.averages[cfg.key]) ? Number(academic.averages[cfg.key]).toFixed(2) : "0.00";
+        let catKey = cfg.key;
+        let cat = academic.performances[cfg.key];
+        if (!cat && cfg.legacyKey && academic.performances[cfg.legacyKey]) {
+            cat = academic.performances[cfg.legacyKey];
+            catKey = cfg.legacyKey;
+        }
+        if (!cat) {
+            cat = { name: cfg.defaultName, weight: cfg.defaultWeight, desc: cfg.desc, categories: [] };
+            academic.performances[cfg.key] = cat;
+        }
+        
+        let sum = 0;
+        if (cat.categories && cat.categories.length > 0) {
+            cat.categories.forEach(g => sum += (Number(g.grade) || 0));
+        }
+        const catAvg = (cat.categories && cat.categories.length > 0) ? (sum / cat.categories.length).toFixed(2) : "0.00";
         const progressPct = Math.min(100, (Number(catAvg) / 5.0) * 100);
         
         let activitiesHtml = '';
@@ -394,7 +436,7 @@ function renderSubjectDetail(id) {
                         </div>
                         <div class="activity-score-wrap">
                             <span class="activity-score-num" style="color: ${actPassed ? 'var(--text-color)' : '#ff5252'};">${actGrade}</span>
-                            <button class="activity-del-btn" onclick="window.notasAppDashboard.deleteGrade('${cfg.key}', ${idx})" title="Eliminar calificación">
+                            <button class="activity-del-btn" onclick="window.notasAppDashboard.deleteGrade('${catKey}', ${idx})" title="Eliminar calificación">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </div>
@@ -412,7 +454,10 @@ function renderSubjectDetail(id) {
                 <div class="category-card-top">
                     <div class="category-title-group">
                         <span style="font-size: 16px;">${cfg.emoji}</span>
-                        <span class="category-card-title">${cat.name || cfg.defaultName}</span>
+                        <div>
+                            <span class="category-card-title">${cat.name || cfg.defaultName}</span>
+                            <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 1px; font-weight: 500;">${cfg.desc}</span>
+                        </div>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px;">
                         <span class="category-weight-badge">${cat.weight || cfg.defaultWeight}%</span>
@@ -429,7 +474,7 @@ function renderSubjectDetail(id) {
                 </div>
             </div>
             
-            <button class="btn-add-grade-inline" onclick="window.notasAppDashboard.openGradeEditor('${cfg.key}')">
+            <button class="btn-add-grade-inline" onclick="window.notasAppDashboard.openGradeEditor('${catKey}')">
                 <i class="fa-solid fa-plus"></i> Agregar nota
             </button>
         `;
@@ -454,7 +499,7 @@ function editAcademic() {
     setTimeout(() => modal.classList.add('active'), 10);
 }
 
-function openGradeEditor(defaultCategory = 'cognitive') {
+function openGradeEditor(defaultCategory = 'academic') {
     document.getElementById('grade-category').value = defaultCategory;
     document.getElementById('grade-desc').value = '';
     document.getElementById('grade-value').value = '';

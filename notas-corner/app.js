@@ -128,10 +128,11 @@ class App {
                     ? '<span style="color:#2ecc71; background:rgba(46,204,113,0.12); padding:4px 12px; border-radius:12px; font-weight:800; font-size:12px;">✓ APROBADO</span>' 
                     : '<span style="color:#ff5252; background:rgba(255,82,82,0.12); padding:4px 12px; border-radius:12px; font-weight:800; font-size:12px;">⚠️ POR MEJORAR</span>';
                 
-                const cogAvg = Number(transcript.averages?.cognitive || transcript.performances?.cognitive || 0).toFixed(2);
-                const procAvg = Number(transcript.averages?.procedural || transcript.performances?.procedural || 0).toFixed(2);
-                const attAvg = Number(transcript.averages?.attitudinal || transcript.performances?.attitudinal || 0).toFixed(2);
-                const evalAvg = Number(transcript.averages?.evaluation || transcript.performances?.evaluation || 0).toFixed(2);
+                const acadAvg = Number(transcript.averages?.academic || transcript.averages?.cognitive || transcript.performances?.academic || transcript.performances?.cognitive || 0).toFixed(2);
+                const classAvg = Number(transcript.averages?.classwork || transcript.averages?.procedural || transcript.performances?.classwork || transcript.performances?.procedural || 0).toFixed(2);
+                const examAvg = Number(transcript.averages?.final_exam || transcript.averages?.evaluation || transcript.performances?.final_exam || transcript.performances?.evaluation || 0).toFixed(2);
+                const selfAvg = Number(transcript.averages?.self_assessment || transcript.averages?.attitudinal || transcript.performances?.self_assessment || transcript.performances?.attitudinal || 0).toFixed(2);
+                const coAvg = Number(transcript.averages?.co_assessment || transcript.performances?.co_assessment || 0).toFixed(2);
                 
                 area.innerHTML = `
                     <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
@@ -162,41 +163,49 @@ class App {
                         <div style="margin-top: 8px;">${statusBadge}</div>
                     </div>
                     
-                    <!-- DESGLOSE POR DESEMPEÑOS (40%, 30%, 20%, 10%) -->
+                    <!-- DESGLOSE POR DESEMPEÑOS OFICIALES -->
                     <div style="font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); margin-bottom: 14px;">
                         Desglose Oficial de Desempeños
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
                             <div>
-                                <div style="font-weight: 800; font-size: 14px;">📚 Saber (Cognitivo)</div>
+                                <div style="font-weight: 800; font-size: 14px;">📚 Rendimiento Académico</div>
                                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 40%</div>
                             </div>
-                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${cogAvg}</strong>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${acadAvg}</strong>
                         </div>
 
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
                             <div>
-                                <div style="font-weight: 800; font-size: 14px;">🔧 Hacer (Procedimental)</div>
-                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 30%</div>
-                            </div>
-                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${procAvg}</strong>
-                        </div>
-
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
-                            <div>
-                                <div style="font-weight: 800; font-size: 14px;">🎯 Ser (Actitudinal)</div>
+                                <div style="font-weight: 800; font-size: 14px;">🔧 Trabajo en Clase</div>
                                 <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 20%</div>
                             </div>
-                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${attAvg}</strong>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${classAvg}</strong>
                         </div>
 
                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
                             <div>
-                                <div style="font-weight: 800; font-size: 14px;">📝 Evaluación / Auto</div>
-                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 10%</div>
+                                <div style="font-weight: 800; font-size: 14px;">📝 Examen Final</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 30%</div>
                             </div>
-                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${evalAvg}</strong>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${examAvg}</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">🎯 Autoevaluación</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 5%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${selfAvg}</strong>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: var(--input-bg); border-radius: 14px; border: 1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px;">👥 Coevaluación</div>
+                                <div style="font-size: 11px; color: var(--text-muted); font-weight: 700;">Peso: 5%</div>
+                            </div>
+                            <strong style="font-size: 20px; font-weight: 900; color: var(--hp-pink);">${coAvg}</strong>
                         </div>
                     </div>
 
