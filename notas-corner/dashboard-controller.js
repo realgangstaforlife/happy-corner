@@ -41,7 +41,7 @@ export function initDashboard(user) {
     }
     
     // 3. Logout handler
-    document.getElementById('menu-logout')?.addEventListener('click', async (e) => {
+    const handleLogout = async (e) => {
         e.preventDefault();
         try {
             await signOut(auth);
@@ -50,7 +50,10 @@ export function initDashboard(user) {
         } catch (error) {
             console.error("Logout error", error);
         }
-    });
+    };
+    document.getElementById('menu-logout')?.addEventListener('click', handleLogout);
+    document.getElementById('header-logout-btn')?.addEventListener('click', handleLogout);
+    document.querySelectorAll('.logout-trigger-btn').forEach(btn => btn.addEventListener('click', handleLogout));
 
     // 4. Mobile side menu
     const menuBtn = document.getElementById('menuBtn');
