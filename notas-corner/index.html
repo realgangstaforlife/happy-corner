@@ -385,49 +385,76 @@
 <!-- HERO -->
 <section class="hero">
     <div class="hero-eyebrow">
-        <i class="fa-solid fa-star"></i>
-        Parte de Happy Corner
+        <i class="fa-solid fa-graduation-cap"></i>
+        Gestor Académico Happy Corner
     </div>
 
     <h1 class="hero-title">
-        Tus notas,<br>
-        <span class="pink">siempre contigo.</span>
+        Tus calificaciones,<br>
+        <span class="pink">fáciles y organizadas.</span>
     </h1>
 
     <p class="hero-sub">
-        Escribe, guarda y comparte apuntes. Funciona sin conexión y tu información es tuya.
+        Calcula tus promedios, organiza tus notas por asignaturas y desempeños. Funciona con tu cuenta Happy o en modo local con archivos <strong>.happyc</strong>.
     </p>
 
     <div class="cta-group">
         <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard" class="btn-cta-primary" id="btn-login" style="text-decoration: none;">
-            <i class="fa-solid fa-right-to-bracket"></i>
-            Iniciar Sesión
+            <i class="fa-solid fa-cloud"></i>
+            Iniciar con HappyID
         </a>
-        <a href="https://auth.happycorner.top?client_id=notas&redirect_uri=https://notas.happycorner.top/notas-corner/dashboard" class="btn-cta-secondary" id="btn-register" style="text-decoration: none;">
-            <i class="fa-solid fa-user-plus"></i>
-            Crear Cuenta
-        </a>
+        <button class="btn-cta-secondary" id="btn-local-mode" onclick="openLocalModal()">
+            <i class="fa-solid fa-folder-open"></i>
+            Usar sin cuenta (.happyc)
+        </button>
     </div>
 
     <!-- BENEFITS -->
     <div class="benefits">
         <div class="benefit">
-            <div class="benefit-icon"><i class="fa-solid fa-bolt"></i></div>
-            <div class="benefit-title">Acceso rápido</div>
-            <div class="benefit-text">Tus notas cargan al instante en cualquier dispositivo.</div>
+            <div class="benefit-icon"><i class="fa-solid fa-calculator"></i></div>
+            <div class="benefit-title">Promedios Automáticos</div>
+            <div class="benefit-text">Desglose oficial por desempeños (40%, 20%, 30%, 5%, 5%).</div>
         </div>
         <div class="benefit">
-            <div class="benefit-icon"><i class="fa-solid fa-wifi-slash"></i></div>
-            <div class="benefit-title">Sin conexión</div>
-            <div class="benefit-text">Guarda tus notas localmente como archivo .happyc.</div>
+            <div class="benefit-icon"><i class="fa-solid fa-file-shield"></i></div>
+            <div class="benefit-title">Modo Local .happyc</div>
+            <div class="benefit-text">Guarda y carga tus notas directamente desde tu dispositivo.</div>
         </div>
         <div class="benefit">
             <div class="benefit-icon"><i class="fa-solid fa-share-nodes"></i></div>
-            <div class="benefit-title">Comparte fácil</div>
-            <div class="benefit-text">Genera un enlace de solo lectura con un clic.</div>
+            <div class="benefit-title">Transcripciones Públicas</div>
+            <div class="benefit-text">Genera un enlace público para compartir tus calificaciones.</div>
         </div>
     </div>
 </section>
+
+<!-- LOCAL FILE MODAL (MODO LOCAL .HAPPYC) -->
+<div class="modal" id="local-modal">
+    <div class="modal-box" style="max-width: 440px;">
+        <div class="modal-top">
+            <span class="modal-h2">📂 Usar sin cuenta</span>
+            <button class="modal-x" onclick="closeLocalModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin-bottom: 22px;">
+            Puedes usar HappyNotas de forma 100% privada sin iniciar sesión. Tus datos se guardan en tu navegador y en archivos <strong>.happyc</strong> que puedes guardar en tu dispositivo.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+            <button class="btn-cta-primary" style="justify-content: center; width: 100%; border-radius: 12px; font-size: 14px;" onclick="startNewLocalVault()">
+                <i class="fa-solid fa-file-circle-plus"></i> Crear nuevo archivo de notas
+            </button>
+            <button class="btn-cta-secondary" style="justify-content: center; width: 100%; border-radius: 12px; font-size: 14px;" onclick="document.getElementById('file-upload-input').click()">
+                <i class="fa-solid fa-file-import"></i> Cargar archivo .happyc existente
+            </button>
+            <input type="file" id="file-upload-input" accept=".happyc,.json" style="display: none;" onchange="handleFileSelect(event)">
+        </div>
+        
+        <div style="font-size: 12px; color: var(--text-muted); text-align: center;">
+            💡 Podrás sincronizar tus notas con tu cuenta HappyID en cualquier momento.
+        </div>
+    </div>
+</div>
 
 <!-- FOOTER -->
 <footer class="landing-footer">
@@ -610,9 +637,50 @@
     };
 
     // Close modal on backdrop click
-    document.getElementById('auth-modal').addEventListener('click', function(e) {
+    document.getElementById('auth-modal')?.addEventListener('click', function(e) {
         if (e.target === this) window.closeModal();
     });
+
+    // Local .happyc Mode functions
+    window.openLocalModal = function() {
+        document.getElementById('local-modal').classList.add('active');
+    };
+
+    window.closeLocalModal = function() {
+        document.getElementById('local-modal').classList.remove('active');
+    };
+
+    document.getElementById('local-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) window.closeLocalModal();
+    });
+
+    window.startNewLocalVault = function() {
+        localStorage.setItem('happynotas_mode', 'local');
+        window.location.href = '/notas-corner/dashboard?mode=local';
+    };
+
+    window.handleFileSelect = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const parsed = JSON.parse(evt.target.result);
+                let list = [];
+                if (Array.isArray(parsed)) list = parsed;
+                else if (parsed.academics && Array.isArray(parsed.academics)) list = parsed.academics;
+                else throw new Error('Formato inválido');
+                
+                localStorage.setItem('happynotas_local_vault', JSON.stringify(list));
+                localStorage.setItem('happynotas_mode', 'local');
+                window.location.href = '/notas-corner/dashboard?mode=local';
+            } catch (err) {
+                alert('El archivo no es un .happyc o formato JSON de notas válido.');
+            }
+        };
+        reader.readAsText(file);
+    };
 </script>
 
 </body>

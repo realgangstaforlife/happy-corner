@@ -67,26 +67,61 @@ class App {
             if (publicId) { this.renderSharedNote(publicId); return; }
         }
         
-        if (!auth) return;
+        const isDashboard = path.includes('dashboard');
+        const isSettings  = path.includes('settings');
+        const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
+
+        const params = new URLSearchParams(window.location.search);
+        const isExplicitLocal = params.get('mode') === 'local' || localStorage.getItem('happynotas_mode') === 'local';
+
+        // Check if user is in local mode on dashboard
+        if (isDashboard && isExplicitLocal) {
+            const guestUser = { 
+                uid: 'local_guest', 
+                displayName: 'Modo Local', 
+                email: 'local@device', 
+                isLocal: true 
+            };
+            import('./dashboard-controller.js').then(m => m.initDashboard(guestUser));
+            return;
+        }
+
+        if (!auth) {
+            if (isDashboard) {
+                const guestUser = { uid: 'local_guest', displayName: 'Modo Local', isLocal: true };
+                import('./dashboard-controller.js').then(m => m.initDashboard(guestUser));
+            }
+            return;
+        }
 
         onAuthStateChanged(auth, (user) => {
-            const isDashboard = path.includes('dashboard');
-            const isSettings  = path.includes('settings');
-            const isIndex     = !isDashboard && !isSettings && !path.includes('/shared/');
-            
             if (user) {
+                localStorage.removeItem('happynotas_mode'); // Clear local mode override if user has logged in
                 if (isIndex) {
                     window.location.href = '/notas-corner/dashboard';
                 }
                 else if (isDashboard) import('./dashboard-controller.js').then(m => m.initDashboard(user));
                 else if (isSettings)  import('./settings-controller.js').then(m => m.initSettings(user));
             } else {
-                if (!path.includes('/shared/')) {
-                    const targetUrl = window.location.href === window.location.origin + '/' 
-                        ? window.location.origin + '/notas-corner/dashboard' 
-                        : window.location.href;
-                        
-                    const redirectUrl = `https://auth.happycorner.top?client_id=notas&redirect_uri=${encodeURIComponent(targetUrl)}`;
+                if (isIndex) {
+                    // Stay on landing page so visitors can see benefits and choose login or local mode!
+                    return;
+                }
+                
+                if (isDashboard) {
+                    // Default to local mode on dashboard if not logged in
+                    const guestUser = { 
+                        uid: 'local_guest', 
+                        displayName: 'Modo Local', 
+                        email: 'local@device', 
+                        isLocal: true 
+                    };
+                    import('./dashboard-controller.js').then(m => m.initDashboard(guestUser));
+                    return;
+                }
+
+                if (isSettings) {
+                    const redirectUrl = `https://auth.happycorner.top?client_id=notas&redirect_uri=${encodeURIComponent(window.location.href)}`;
                     window.location.href = redirectUrl;
                 }
             }

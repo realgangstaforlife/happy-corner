@@ -83,6 +83,28 @@
              ========================================= -->
         <div id="main-dashboard-view">
             
+            <!-- LOCAL MODE ALERT BANNER -->
+            <div id="local-mode-banner" style="display: none; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; background: rgba(255, 82, 153, 0.08); border: 1px solid rgba(255, 82, 153, 0.25); padding: 12px 18px; border-radius: 14px; margin-bottom: 18px;">
+                <div style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                    <span style="font-size: 18px;">💾</span>
+                    <div>
+                        <strong style="color: var(--text-color);">Modo Local Activo (.happyc)</strong> &mdash; 
+                        <span style="color: var(--text-muted);">Tus notas se guardan en tu navegador y puedes descargarlas.</span>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <button class="btn-secondary" style="padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" onclick="window.notasAppDashboard.downloadLocalFile()">
+                        <i class="fa-solid fa-download"></i> Descargar .happyc
+                    </button>
+                    <button class="btn-secondary" style="padding: 6px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;" onclick="document.getElementById('import-file').click()">
+                        <i class="fa-solid fa-folder-open"></i> Abrir .happyc
+                    </button>
+                    <a href="https://auth.happycorner.top?client_id=notas" class="btn-primary" style="padding: 6px 14px; font-size: 12px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-cloud"></i> Sincronizar en la Nube
+                    </a>
+                </div>
+            </div>
+
             <!-- UNIFIED HERO SUMMARY BANNER -->
             <div class="dashboard-hero-banner">
                 <div class="hero-info-side">
@@ -126,8 +148,11 @@
                         <i class="fa-solid fa-plus"></i>
                         <span>Nueva Asignatura</span>
                     </button>
-                    <button class="btn-icon-action" title="Importar .happyc" onclick="document.getElementById('import-file').click()">
-                        <i class="fa-solid fa-file-arrow-up"></i>
+                    <button class="btn-icon-action" title="Cargar archivo .happyc" onclick="document.getElementById('import-file').click()">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </button>
+                    <button class="btn-icon-action" title="Guardar / Descargar .happyc" onclick="window.notasAppDashboard.downloadLocalFile()">
+                        <i class="fa-solid fa-download"></i>
                     </button>
                     <input type="file" id="import-file" accept=".happyc,.json" style="display: none;" onchange="window.notasAppDashboard.importAcademics(event)">
                 </div>
