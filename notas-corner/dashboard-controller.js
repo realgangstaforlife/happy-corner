@@ -51,36 +51,61 @@ export const DEFAULT_PERFORMANCES = {
 export function initDashboard(user) {
     currentUser = user;
     
-    // 1. Render Greeting
+    // 1. Render Greeting & Local Mode Setup
     const title = document.getElementById('welcome-title');
-    if (title) {
-        const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Estudiante');
-        title.innerHTML = `Hola, <span style="color: var(--hp-pink);">${userName}</span> 👋`;
-    }
-
-    // 2. Render Profile Picture (PFP)
+    const localBanner = document.getElementById('local-mode-banner');
     const avatarEl = document.getElementById('header-avatar');
-    if (avatarEl) {
-        if (user.photoURL) {
-            avatarEl.innerHTML = `<img src="${user.photoURL}" alt="PFP" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--hp-pink);display:block;">`;
-        } else {
-            const initial = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
-            avatarEl.innerHTML = `<div style="width:34px;height:34px;border-radius:50%;background:var(--hp-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(255,82,153,0.3);">${initial}</div>`;
+    
+    if (user.isLocal) {
+        if (localBanner) localBanner.style.display = 'flex';
+        if (title) {
+            title.innerHTML = `Hola, <span style="color: var(--hp-pink);">Estudiante</span> 💾`;
         }
-        avatarEl.onclick = () => {
-            window.location.href = '/notas-corner/settings';
-        };
+        if (avatarEl) {
+            avatarEl.innerHTML = `<div style="width:34px;height:34px;border-radius:50%;background:rgba(255,82,153,0.15);color:var(--hp-pink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;border:1.5px solid var(--hp-pink);" title="Modo Local (.happyc)">💾</div>`;
+            avatarEl.onclick = () => {
+                UIManager.showToast('Inicia sesión con tu HappyCuenta para gestionar tu perfil.', 'info');
+            };
+        }
+        
+        // Bloquear acceso a configuración en modo local
+        const settingsLinks = document.querySelectorAll('a[href*="settings"]');
+        settingsLinks.forEach(link => {
+            link.onclick = (e) => {
+                e.preventDefault();
+                UIManager.showToast('La configuración de cuenta requiere iniciar sesión con tu HappyCuenta.', 'info');
+            };
+        });
+    } else {
+        if (localBanner) localBanner.style.display = 'none';
+        if (title) {
+            const userName = user.displayName || (user.email ? user.email.split('@')[0] : 'Estudiante');
+            title.innerHTML = `Hola, <span style="color: var(--hp-pink);">${userName}</span> 👋`;
+        }
+        if (avatarEl) {
+            if (user.photoURL) {
+                avatarEl.innerHTML = `<img src="${user.photoURL}" alt="PFP" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid var(--hp-pink);display:block;">`;
+            } else {
+                const initial = (user.displayName || user.email || 'U').charAt(0).toUpperCase();
+                avatarEl.innerHTML = `<div style="width:34px;height:34px;border-radius:50%;background:var(--hp-gradient);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;box-shadow:0 2px 8px rgba(255,82,153,0.3);">${initial}</div>`;
+            }
+            avatarEl.onclick = () => {
+                window.location.href = '/notas-corner/settings';
+            };
+        }
     }
     
     // 3. Logout handler
     const handleLogout = async (e) => {
         e.preventDefault();
         try {
-            await signOut(auth);
+            if (auth) await signOut(auth);
             StorageService.clearCache();
+            localStorage.removeItem('happynotas_mode');
             window.location.href = 'https://auth.happycorner.top/logout';
         } catch (error) {
             console.error("Logout error", error);
+            window.location.href = '/notas-corner/';
         }
     };
     document.getElementById('menu-logout')?.addEventListener('click', handleLogout);
@@ -121,6 +146,7 @@ export function initDashboard(user) {
         closeShareModal,
         generateShareLink,
         copyShareLink,
+        downloadLocalFile,
         importAcademics,
         filterAcademics,
         switchTab
@@ -739,8 +765,35 @@ function copyShareLink() {
     UIManager.showToast("Enlace copiado al portapapeles", "success");
 }
 
-function importAcademics(event) {
-    UIManager.showToast('Importación .happyc disponible próximamente', 'info');
+function downloadLocalFile() {
+    try {
+        NotesService.exportLocalFile(academicsList);
+        UIManager.showToast("Archivo .happyc descargado exitosamente", "success");
+    } catch (err) {
+        console.error("Download error:", err);
+        UIManager.showToast("Error al exportar archivo .happyc", "error");
+    }
+}
+
+async function importAcademics(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    
+    try {
+        UIManager.showSpinner();
+        const list = await NotesService.importLocalFile(file);
+        academicsList = list;
+        filteredAcademics = [...academicsList];
+        renderAcademics(filteredAcademics);
+        updateSummaryCard();
+        UIManager.showToast("¡Notas cargadas desde el archivo .happyc!", "success");
+    } catch (err) {
+        console.error("Import error:", err);
+        UIManager.showToast("El archivo no es un .happyc o JSON válido", "error");
+    } finally {
+        UIManager.hideSpinner();
+        event.target.value = '';
+    }
 }
 
 function switchTab(tabId) {

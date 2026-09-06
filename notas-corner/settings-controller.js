@@ -10,13 +10,41 @@ export function initSettings(user) {
     currentUser = user;
     
     // Fill profile data
-    document.getElementById('profile-name').value = user.displayName || user.email.split('@')[0];
-    document.getElementById('profile-email').value = user.email;
+    const nameInput = document.getElementById('profile-name');
+    const emailInput = document.getElementById('profile-email');
+    const dateEl = document.getElementById('profile-date');
     
-    // Auth metadata
-    if (user.metadata && user.metadata.creationTime) {
-        const date = new Date(user.metadata.creationTime);
-        document.getElementById('profile-date').textContent = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    if (user.isLocal) {
+        if (nameInput) {
+            nameInput.value = 'Estudiante (Modo Local)';
+            nameInput.disabled = true;
+        }
+        if (emailInput) {
+            emailInput.value = 'Sin cuenta Happy vinculada';
+        }
+        if (dateEl) {
+            dateEl.textContent = 'Almacenamiento Local (.happyc)';
+        }
+        
+        // Hide password reset button in local mode
+        const resetBtn = document.querySelector('button[onclick*="resetPassword"]');
+        if (resetBtn) {
+            resetBtn.style.display = 'none';
+        }
+        const saveNameBtn = document.querySelector('button[onclick*="updateProfileName"]');
+        if (saveNameBtn) {
+            saveNameBtn.disabled = true;
+            saveNameBtn.style.opacity = '0.5';
+        }
+    } else {
+        if (nameInput) nameInput.value = user.displayName || user.email.split('@')[0];
+        if (emailInput) emailInput.value = user.email;
+        
+        // Auth metadata
+        if (user.metadata && user.metadata.creationTime) {
+            const date = new Date(user.metadata.creationTime);
+            if (dateEl) dateEl.textContent = date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
     }
     
     // Theme setup
