@@ -130,30 +130,118 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 0. ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
+            // --- 0. ACCIÓN: getPaymentLink (PÚBLICA PARA CONSULTAR LINK DE COBRO) ---
+            if (action === 'getPaymentLink') {
+                const id = req.query.id || req.body?.id;
+                if (!id) return json(res, 400, { error: 'Falta el ID del cobro.' });
+
+                try {
+                    let orderSnap = await db.collection('orders').doc(id).get();
+                    if (!orderSnap.exists) {
+                        orderSnap = await db.collection('payment_requests').doc(id).get();
+                    }
+
+                    if (!orderSnap.exists) {
+                        return json(res, 404, { error: 'El link de cobro solicitado no existe o ha expirado.' });
+                    }
+
+                    const data = orderSnap.data();
+                    const now = new Date();
+                    let isExpired = false;
+                    if (data.expiresAt && new Date(data.expiresAt) < now && data.status === 'pending') {
+                        isExpired = true;
+                    }
+
+                    const rawName = data.customerName || data.nombre || 'Cliente';
+                    
+                    return json(res, 200, {
+                        ok: true,
+                        orderId: data.orderId || id,
+                        concept: data.concept || data.resumen || data.itemsSummary || 'Cobro de productos/servicios Happy Corner',
+                        total: data.total || 0,
+                        status: isExpired ? 'expired' : (data.status || 'pending'),
+                        customerName: rawName,
+                        customerPhone: data.customerPhone ? data.customerPhone.substring(0, 4) + '***' : null,
+                        createdAt: data.createdAt || null,
+                        expiresAt: data.expiresAt || null,
+                        paidAt: data.paidAt || null,
+                        paymentMethod: data.paymentMethod || null,
+                        items: data.items || [],
+                        notes: data.notes || '',
+                        paymentDetails: {
+                            revolut: {
+                                name: 'Revolut (Tarjeta)',
+                                url: process.env.REVOLUT_PAY_URL || 'https://revolut.me/evanlensen',
+                                instructions: 'Paga con tarjeta de débito o crédito internacional/nacional al instante sin comisiones adicionales.'
+                            },
+                            transferencia: {
+                                name: 'Transferencia Bancaria',
+                                banks: [
+                                    { bank: 'Nequi', number: '3112871046', type: 'Celular / Ahorros', holder: 'Evan Lensen' },
+                                    { bank: 'Bancolombia', number: '3112871046', type: 'A la mano / Ahorros', holder: 'Evan Lensen' },
+                                    { bank: 'Daviplata', number: '3112871046', type: 'Daviplata', holder: 'Evan Lensen' }
+                                ],
+                                instructions: 'Realiza la transferencia desde la app de tu banco y guarda el comprobante.'
+                            },
+                            breb: {
+                                name: 'Bre-B (Transferencia Inmediata)',
+                                keyType: 'Celular',
+                                key: '3112871046',
+                                alias: 'Happy Corner / Evan Lensen',
+                                instructions: 'Desde cualquier banco de Colombia, entra a la opción de transferencias inmediatas por Bre-B, usa la llave celular 3112871046 y envía el monto exacto sin costo.'
+                            }
+                        }
+                    });
+                } catch (err) {
+                    console.error("Error getting payment link:", err);
+                    return json(res, 500, { error: 'Error al consultar link de cobro.' });
+                }
+            }
+
+            // --- 0.1 ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
             if (action === 'checkBan') {
                 const forwarded = req.headers['x-forwarded-for'];
                 const clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
                 const clientDevice = req.headers['user-agent'] || 'unknown';
                 
-                // Buscar si existe un ban por IP o Dispositivo
                 const bansRef = db.collection('banned_entities');
                 let isBanned = false;
                 let reason = '';
+                let bannedUntil = null;
+                let banGroupId = null;
+                const now = new Date();
                 
                 const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
                 if (!ipQuery.empty) {
-                    isBanned = true;
-                    reason = ipQuery.docs[0].data().reason || 'Violación de términos.';
-                } else if (clientDevice !== 'unknown') {
-                    const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
-                    if (!deviceQuery.empty) {
+                    const data = ipQuery.docs[0].data();
+                    if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
                         isBanned = true;
-                        reason = deviceQuery.docs[0].data().reason || 'Violación de términos.';
+                        reason = data.reason || 'Violación de términos.';
+                        bannedUntil = data.bannedUntil || null;
+                        banGroupId = data.banGroupId || null;
                     }
                 }
                 
-                return json(res, 200, { banned: isBanned, reason });
+                if (!isBanned && clientDevice !== 'unknown') {
+                    const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
+                    if (!deviceQuery.empty) {
+                        const data = deviceQuery.docs[0].data();
+                        if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
+                            isBanned = true;
+                            reason = data.reason || 'Violación de términos.';
+                            bannedUntil = data.bannedUntil || null;
+                            banGroupId = data.banGroupId || null;
+                        }
+                    }
+                }
+                
+                return json(res, 200, { 
+                    banned: isBanned, 
+                    reason, 
+                    bannedUntil,
+                    isTemp: !!bannedUntil,
+                    banGroupId 
+                });
             }
 
             // --- 1. ACCIÓN: logLogin (PÚBLICA PARA USUARIOS AUTENTICADOS) ---
@@ -170,6 +258,113 @@ export default async function handler(req, res) {
 
                 const forwarded = req.headers['x-forwarded-for'];
                 const ip = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
+                const userAgent = req.headers['user-agent'] || 'unknown';
+                const now = new Date();
+
+                // 1. Check if user document is marked as banned
+                const userRef = db.collection('users').doc(decoded.uid);
+                const userSnap = await userRef.get();
+                const userData = userSnap.data() || {};
+
+                let userIsBanned = false;
+                if (userData.banned === true) {
+                    if (userData.bannedUntil && new Date(userData.bannedUntil) <= now) {
+                        // Expired temporary ban - lift automatically
+                        await userRef.update({
+                            banned: false,
+                            bannedUntil: null,
+                            banReason: null,
+                            unbannedAt: now.toISOString()
+                        });
+                        userIsBanned = false;
+                    } else {
+                        userIsBanned = true;
+                    }
+                }
+
+                // CASCADING BAN: If user is banned, also ban this IP & Device automatically!
+                if (userIsBanned) {
+                    const banGroupId = userData.banGroupId || `group_${decoded.uid}`;
+                    const banReason = userData.banReason || 'Cuenta suspendida intentó acceder desde este equipo/red.';
+                    const bannedUntil = userData.bannedUntil || null;
+
+                    // Ensure banGroupId is saved on user
+                    if (!userData.banGroupId) {
+                        await userRef.update({ banGroupId });
+                    }
+
+                    // Cascade to IP
+                    if (ip && ip !== 'unknown') {
+                        const existingIpBan = await db.collection('banned_entities').where('ip', '==', ip).limit(1).get();
+                        if (existingIpBan.empty) {
+                            await db.collection('banned_entities').add({
+                                ip,
+                                device: null,
+                                reason: banReason,
+                                bannedUntil,
+                                banGroupId,
+                                linkedUid: decoded.uid,
+                                bannedAt: now.toISOString()
+                            });
+                        }
+                    }
+
+                    // Cascade to Device
+                    if (userAgent && userAgent !== 'unknown') {
+                        const existingDevBan = await db.collection('banned_entities').where('device', '==', userAgent).limit(1).get();
+                        if (existingDevBan.empty) {
+                            await db.collection('banned_entities').add({
+                                ip: null,
+                                device: userAgent,
+                                reason: banReason,
+                                bannedUntil,
+                                banGroupId,
+                                linkedUid: decoded.uid,
+                                bannedAt: now.toISOString()
+                            });
+                        }
+                    }
+
+                    return json(res, 403, { 
+                        banned: true, 
+                        reason: userData.banReason || 'Tu cuenta se encuentra temporalmente suspendida.',
+                        bannedUntil: userData.bannedUntil || null,
+                        banGroupId
+                    });
+                }
+
+                // 2. Check if the current IP or Device is banned
+                const bansRef = db.collection('banned_entities');
+                let ipBannedSnap = null;
+                if (ip && ip !== 'unknown') {
+                    ipBannedSnap = await bansRef.where('ip', '==', ip).limit(1).get();
+                }
+                let devBannedSnap = null;
+                if ((!ipBannedSnap || ipBannedSnap.empty) && userAgent !== 'unknown') {
+                    devBannedSnap = await bansRef.where('device', '==', userAgent).limit(1).get();
+                }
+
+                const banDoc = (ipBannedSnap && !ipBannedSnap.empty) ? ipBannedSnap.docs[0] : ((devBannedSnap && !devBannedSnap.empty) ? devBannedSnap.docs[0] : null);
+                if (banDoc) {
+                    const banData = banDoc.data();
+                    if (!banData.bannedUntil || new Date(banData.bannedUntil) > now) {
+                        // Cascading ban to this user account as well
+                        const banGroupId = banData.banGroupId || `group_${decoded.uid}`;
+                        await userRef.update({
+                            banned: true,
+                            bannedUntil: banData.bannedUntil || null,
+                            banReason: banData.reason || 'Intento de acceso desde IP/Dispositivo suspendido.',
+                            banGroupId
+                        });
+
+                        return json(res, 403, {
+                            banned: true,
+                            reason: banData.reason || 'Tu IP o dispositivo se encuentra suspendido.',
+                            bannedUntil: banData.bannedUntil || null,
+                            banGroupId
+                        });
+                    }
+                }
 
                 let location = 'Red local / Desconocido';
                 try {
@@ -186,8 +381,8 @@ export default async function handler(req, res) {
                 await db.collection('loginHistory').add({
                     uid: decoded.uid,
                     ip,
-                    userAgent: req.headers['user-agent'] || 'unknown',
-                    timestamp: new Date().toISOString(),
+                    userAgent,
+                    timestamp: now.toISOString(),
                     location
                 });
 
@@ -1128,23 +1323,94 @@ export default async function handler(req, res) {
                 return json(res, 200, { sent, total: recipients.length });
             }
 
-            // --- 4. ACCIÓN: banEntity (SOLO ADMIN) ---
-            if (action === 'banEntity') {
+            // --- 4. ACCIÓN: banEntity / adminBanUser (SOLO ADMIN) ---
+            if (action === 'banEntity' || action === 'adminBanUser') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
 
-                const { ip, device, type, reason } = req.body;
+                const { ip, device, type, reason, targetUid, duration } = req.body;
                 
-                if (!ip && !device) return json(res, 400, { error: 'Faltan datos de IP o Dispositivo.' });
+                if (!ip && !device && !targetUid) return json(res, 400, { error: 'Faltan datos de IP, Dispositivo o Usuario.' });
 
+                const now = new Date();
+                let bannedUntil = null;
+                if (duration && duration !== 'permanent') {
+                    if (duration === '1h') bannedUntil = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
+                    else if (duration === '24h') bannedUntil = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+                    else if (duration === '3d') bannedUntil = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
+                    else if (duration === '7d') bannedUntil = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                    else if (duration === '30d') bannedUntil = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+                    else {
+                        const parsed = new Date(duration);
+                        if (!isNaN(parsed.getTime())) bannedUntil = parsed.toISOString();
+                    }
+                }
+
+                const banGroupId = req.body.banGroupId || `ban_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                const banReason = reason || 'Bloqueo manual por administrador';
                 const bansRef = db.collection('banned_entities');
-                
+
+                // If target user provided:
+                if (targetUid) {
+                    const userRef = db.collection('users').doc(targetUid);
+                    await userRef.update({
+                        banned: true,
+                        bannedUntil,
+                        banReason,
+                        banGroupId,
+                        bannedAt: now.toISOString(),
+                        bannedBy: decoded.uid
+                    });
+
+                    // Pre-ban latest known IP and device from user's login history if available
+                    try {
+                        const recentLogins = await db.collection('loginHistory')
+                            .where('uid', '==', targetUid)
+                            .orderBy('timestamp', 'desc')
+                            .limit(3)
+                            .get();
+                        
+                        for (const d of recentLogins.docs) {
+                            const lData = d.data();
+                            if (lData.ip && lData.ip !== 'unknown') {
+                                await bansRef.add({
+                                    ip: lData.ip,
+                                    device: null,
+                                    reason: banReason,
+                                    bannedUntil,
+                                    banGroupId,
+                                    linkedUid: targetUid,
+                                    createdAt: now.toISOString(),
+                                    adminUid: decoded.uid
+                                });
+                            }
+                            if (lData.userAgent && lData.userAgent !== 'unknown') {
+                                await bansRef.add({
+                                    ip: null,
+                                    device: lData.userAgent,
+                                    reason: banReason,
+                                    bannedUntil,
+                                    banGroupId,
+                                    linkedUid: targetUid,
+                                    createdAt: now.toISOString(),
+                                    adminUid: decoded.uid
+                                });
+                            }
+                        }
+                    } catch (historyErr) {
+                        console.warn("Could not pre-ban recent login sessions:", historyErr.message);
+                    }
+                }
+
                 if (type === 'ip' || type === 'both') {
                     if (ip && ip !== 'unknown') {
                         await bansRef.add({
                             ip,
                             device: null,
-                            reason: reason || 'Bloqueo manual',
-                            createdAt: new Date().toISOString(),
+                            reason: banReason,
+                            bannedUntil,
+                            banGroupId,
+                            linkedUid: targetUid || null,
+                            createdAt: now.toISOString(),
                             adminUid: decoded.uid
                         });
                     }
@@ -1155,14 +1421,170 @@ export default async function handler(req, res) {
                         await bansRef.add({
                             ip: null,
                             device,
-                            reason: reason || 'Bloqueo manual',
-                            createdAt: new Date().toISOString(),
+                            reason: banReason,
+                            bannedUntil,
+                            banGroupId,
+                            linkedUid: targetUid || null,
+                            createdAt: now.toISOString(),
                             adminUid: decoded.uid
                         });
                     }
                 }
 
-                return json(res, 200, { ok: true });
+                return json(res, 200, { ok: true, banGroupId, bannedUntil });
+            }
+
+            // --- 4.1 ACCIÓN: unbanEntity (SOLO ADMIN) ---
+            if (action === 'unbanEntity') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
+
+                const { targetId, ip, device, targetUid, banGroupId, unbanAssociated } = req.body;
+                const bansRef = db.collection('banned_entities');
+                const batch = db.batch();
+                let unbannedCount = 0;
+
+                const groupIdsToUnban = new Set();
+                if (banGroupId) groupIdsToUnban.add(banGroupId);
+
+                if (targetUid) {
+                    const userRef = db.collection('users').doc(targetUid);
+                    const userSnap = await userRef.get();
+                    if (userSnap.exists) {
+                        const uData = userSnap.data();
+                        if (uData.banGroupId) groupIdsToUnban.add(uData.banGroupId);
+                        batch.update(userRef, { 
+                            banned: false, 
+                            bannedUntil: null, 
+                            banReason: null, 
+                            banGroupId: null, 
+                            unbannedAt: new Date().toISOString() 
+                        });
+                        unbannedCount++;
+                    }
+                }
+
+                if (targetId) {
+                    const docRef = bansRef.doc(targetId);
+                    const dSnap = await docRef.get();
+                    if (dSnap.exists) {
+                        const data = dSnap.data();
+                        if (data.banGroupId) groupIdsToUnban.add(data.banGroupId);
+                        batch.delete(docRef);
+                        unbannedCount++;
+                    }
+                }
+
+                if (ip) {
+                    const ipSnap = await bansRef.where('ip', '==', ip).get();
+                    ipSnap.forEach(d => {
+                        if (d.data().banGroupId) groupIdsToUnban.add(d.data().banGroupId);
+                        batch.delete(d.ref);
+                        unbannedCount++;
+                    });
+                }
+                if (device) {
+                    const devSnap = await bansRef.where('device', '==', device).get();
+                    devSnap.forEach(d => {
+                        if (d.data().banGroupId) groupIdsToUnban.add(d.data().banGroupId);
+                        batch.delete(d.ref);
+                        unbannedCount++;
+                    });
+                }
+
+                if (unbanAssociated && groupIdsToUnban.size > 0) {
+                    for (const gId of groupIdsToUnban) {
+                        const groupBans = await bansRef.where('banGroupId', '==', gId).get();
+                        groupBans.forEach(d => {
+                            batch.delete(d.ref);
+                            unbannedCount++;
+                        });
+
+                        const usersInGroup = await db.collection('users').where('banGroupId', '==', gId).get();
+                        usersInGroup.forEach(u => {
+                            batch.update(u.ref, { 
+                                banned: false, 
+                                bannedUntil: null, 
+                                banReason: null, 
+                                banGroupId: null, 
+                                unbannedAt: new Date().toISOString() 
+                            });
+                            unbannedCount++;
+                        });
+                    }
+                }
+
+                await batch.commit();
+                return json(res, 200, { ok: true, unbannedCount });
+            }
+
+            // --- 4.2 ACCIÓN: createPaymentLink (SOLO ADMIN / POS) ---
+            if (action === 'createPaymentLink') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado.' });
+
+                const { concept, total, customerName, customerPhone, customerEmail, customerUID, expiresInDays, notes } = req.body;
+                if (!total || total <= 0) {
+                    return json(res, 400, { error: 'El monto total debe ser mayor a 0.' });
+                }
+
+                const numDays = expiresInDays ? parseInt(expiresInDays) : 3;
+                const now = new Date();
+                const expiresAt = new Date(now.getTime() + numDays * 24 * 60 * 60 * 1000).toISOString();
+                const orderId = `COB-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
+                const paymentDoc = {
+                    orderId,
+                    concept: concept || 'Cobro de productos/servicios Happy Corner',
+                    resumen: concept || 'Cobro Happy Corner',
+                    total: Math.round(Number(total)),
+                    status: 'pending',
+                    isPaymentLink: true,
+                    customerName: customerName || 'Público General',
+                    customerPhone: customerPhone || '',
+                    customerEmail: customerEmail || '',
+                    customerUID: customerUID || null,
+                    notes: notes || '',
+                    createdAt: now.toISOString(),
+                    expiresAt,
+                    paymentMethodsAllowed: ['revolut', 'transferencia', 'breb'],
+                    createdBy: decoded.uid
+                };
+
+                await db.collection('orders').doc(orderId).set(paymentDoc);
+                await db.collection('payment_requests').doc(orderId).set(paymentDoc);
+
+                const linkUrl = `https://happycorner.top/cobro?id=${orderId}`;
+                const formattedTotal = Number(total).toLocaleString('es-CO');
+                const whatsappMessage = `Hola ${customerName || ''}! 🍭 Aquí tienes tu link de cobro de Happy Corner por valor de $${formattedTotal}: ${linkUrl}\nPuedes pagar fácil y rápido con Revolut (Tarjeta), Transferencia Bancaria o Bre-B. ¡Gracias! ✨`;
+
+                return json(res, 200, {
+                    ok: true,
+                    orderId,
+                    paymentLinkId: orderId,
+                    linkUrl,
+                    whatsappMessage
+                });
+            }
+
+            // --- 4.3 ACCIÓN: markPaymentLinkPaid (SOLO ADMIN) ---
+            if (action === 'markPaymentLinkPaid') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado.' });
+
+                const { orderId, paymentMethod, notes } = req.body;
+                if (!orderId) return json(res, 400, { error: 'Falta orderId.' });
+
+                const now = new Date().toISOString();
+                const updateData = {
+                    status: 'paid',
+                    paidAt: now,
+                    paymentMethod: paymentMethod || 'Transferencia',
+                    updatedAt: now
+                };
+                if (notes) updateData.paidNotes = notes;
+
+                await db.collection('orders').doc(orderId).set(updateData, { merge: true });
+                await db.collection('payment_requests').doc(orderId).set(updateData, { merge: true });
+
+                return json(res, 200, { ok: true, orderId });
             }
 
             // --- 5. ACCIÓN: adminCreateClient (SOLO ADMIN) ---

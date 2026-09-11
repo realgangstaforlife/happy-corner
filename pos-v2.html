@@ -639,6 +639,7 @@
                 </div>
 
                 <button class="btn-checkout" onclick="submitCheckout()">Confirmar Venta</button>
+                <button class="btn-checkout" style="background:linear-gradient(135deg, #0075eb, #9b51e0); margin-top:8px;" onclick="generatePosPaymentLink()">🔗 Generar Link de Cobro</button>
             </div>
 
         </div>
@@ -1081,6 +1082,66 @@
             } finally {
                 checkoutBtn.disabled = false;
                 checkoutBtn.textContent = 'Confirmar Venta';
+            }
+        };
+
+        window.generatePosPaymentLink = async function() {
+            if (cart.length === 0) {
+                hcAlert('Añade al menos un producto al carrito para generar un cobro.', 'warning');
+                return;
+            }
+
+            let total = 0;
+            cart.forEach(item => total += item.price * item.qty);
+            const itemsSummary = cart.map(i => `${i.qty}x ${i.name}`).join(', ');
+
+            const clientName = selectedCustomer 
+                ? (selectedCustomer.displayName || selectedCustomer.name || '')
+                : (isManualMode ? (manualCustomerName || prompt("Nombre del cliente para el link de cobro:", "Cliente") || 'Cliente') : (prompt("Nombre del cliente para el link de cobro:", "Cliente") || 'Cliente'));
+
+            const clientPhone = selectedCustomer ? (selectedCustomer.phone || '') : (prompt("Teléfono / WhatsApp (Opcional):", "") || '');
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=createPaymentLink', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        concept: itemsSummary,
+                        total,
+                        customerName: clientName,
+                        customerPhone: clientPhone,
+                        customerUID: selectedCustomer ? selectedCustomer.uid : null,
+                        expiresInDays: 3
+                    })
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    await navigator.clipboard.writeText(data.linkUrl);
+                    
+                    const phoneClean = clientPhone ? clientPhone.replace(/\D/g, '') : '';
+                    const waPhone = phoneClean.length === 10 ? `57${phoneClean}` : phoneClean;
+                    const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(data.whatsappMessage)}` : `https://wa.me/?text=${encodeURIComponent(data.whatsappMessage)}`;
+
+                    const openWa = confirm(`✅ ¡Link de cobro copiado al portapapeles!\n\nID: #${data.orderId}\nTotal: $${total.toLocaleString()}\nURL: ${data.linkUrl}\n\n¿Deseas abrir WhatsApp para enviárselo al cliente ahora?`);
+                    if (openWa) {
+                        window.open(waUrl, '_blank');
+                    }
+
+                    // Reset cart
+                    cart = [];
+                    renderCart();
+                    unassignCustomer();
+                } else {
+                    hcAlert(data.error || "Error creando link de cobro.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error de conexión al generar cobro.", "error");
             }
         };
 

@@ -748,6 +748,7 @@
                     <a href="https://happycorner.top" target="_blank" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);">🏠 happycorner.top</a>
                     <a href="/pos-v2" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px;">🛒 Ir al POS</a>
                     <button class="admin-btn" style="background:var(--accent-green); font-size:13px; padding:10px 18px;" onclick="openCreateClientModal()">➕ Crear Cliente</button>
+                    <button class="admin-btn" style="background:linear-gradient(135deg, #0075eb, #9b51e0); font-size:13px; padding:10px 18px;" onclick="openCreatePaymentLinkModal()">🔗 Link de Cobro</button>
                     <button class="admin-btn" style="background:var(--accent-purple); font-size:13px; padding:10px 18px;" onclick="document.getElementById('ip-search-modal').classList.add('active');">🔍 Consultar IP</button>
                     <button class="admin-btn" style="background:#333; color:var(--text-color); border:1px solid var(--border-color); font-size:13px; padding:10px 18px;" onclick="switchSidebar('contracts')">📄 Ver Contratos</button>
                 </div>
@@ -1423,6 +1424,31 @@
                         <input type="text" id="generated-reset-link" class="admin-input" style="width:100%; font-size:11px; padding:6px; background:rgba(255,255,255,0.05); color:white;" readonly onclick="this.select(); document.execCommand('copy'); hcAlert('¡Copiado!', 'success');">
                     </div>
                     
+                    <!-- Ban / Suspension Control -->
+                    <div style="border-top: 1px solid var(--border-color); margin-top:8px; padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px;">
+                                Suspensión de Acceso
+                                <span id="modal-client-ban-badge" class="badge badge-a">Activo</span>
+                            </div>
+                            <div id="modal-client-ban-info" style="font-size:12px; color:var(--text-muted); margin-top:2px;">El cliente puede iniciar sesión con normalidad.</div>
+                        </div>
+                        <div id="modal-client-ban-actions">
+                            <button class="admin-btn" style="padding: 8px 16px; font-size:12px; background:var(--accent-red);" onclick="openBanClientModal()">⛔ Suspender Cliente</button>
+                        </div>
+                    </div>
+
+                    <!-- Payment Link Quick Action -->
+                    <div style="border-top: 1px solid var(--border-color); margin-top:8px; padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <div style="font-weight:700; font-size:14px;">Link de Cobro / Factura</div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Genera un cobro directo para enviar por WhatsApp a este cliente.</div>
+                        </div>
+                        <div>
+                            <button class="admin-btn" style="padding: 8px 16px; font-size:12px; background:linear-gradient(135deg, #0075eb, #9b51e0);" onclick="openPaymentLinkForSelectedClient()">🔗 Crear Link de Cobro</button>
+                        </div>
+                    </div>
+                    
                     <div style="border-top: 1px solid var(--border-color); margin-top:8px; padding-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <div>
                             <div style="font-weight:700; font-size:14px; color:var(--accent-red);">Eliminar Cuenta Permanentemente</div>
@@ -1680,29 +1706,106 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL: BAN ENTITY -->
+    <!-- MODAL: BAN ENTITY & TEMPORARY SUSPENSION -->
     <!-- ============================================== -->
     <div class="admin-modal-overlay" id="ban-modal">
-        <div class="admin-modal" style="max-width:400px; border: 1px solid var(--accent-red);">
+        <div class="admin-modal" style="max-width:440px; border: 1px solid var(--accent-red);">
             <button class="modal-close" onclick="closeBanModal()">✕</button>
-            <h2 style="font-weight:900; margin-bottom:10px; color:var(--accent-red);">⛔ Suspender</h2>
+            <h2 style="font-weight:900; margin-bottom:10px; color:var(--accent-red);">⛔ Suspender Acceso</h2>
             
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Elige qué datos quieres suspender de manera permanente.</p>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Configura la suspensión temporal o permanente y los elementos vinculados.</p>
             
             <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Tipo de Bloqueo</label>
-            <select id="ban-type" class="admin-input" style="margin-bottom:16px; width:100%;">
-                <option value="both">Ambos (Recomendado)</option>
+            <select id="ban-type" class="admin-input" style="margin-bottom:14px; width:100%;">
+                <option value="both">IP y Dispositivo</option>
+                <option value="user">Usuario y Equipos Vinculados</option>
                 <option value="ip">Solo IP</option>
                 <option value="device">Solo Dispositivo</option>
             </select>
 
+            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Duración de la Suspensión</label>
+            <select id="ban-duration" class="admin-input" style="margin-bottom:14px; width:100%;">
+                <option value="1h">1 hora</option>
+                <option value="24h" selected>24 horas (1 día)</option>
+                <option value="3d">3 días</option>
+                <option value="7d">7 días (1 semana)</option>
+                <option value="30d">30 días (1 mes)</option>
+                <option value="permanent">Permanente (Sin límite)</option>
+            </select>
+
             <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Motivo (Visible para el usuario)</label>
-            <input type="text" id="ban-reason" class="admin-input" placeholder="Spam, broma pesada..." style="margin-bottom:20px; width:100%;">
+            <input type="text" id="ban-reason" class="admin-input" placeholder="Spam, deuda pendiente, broma..." style="margin-bottom:20px; width:100%;">
             
             <input type="hidden" id="ban-ip">
             <input type="hidden" id="ban-device">
+            <input type="hidden" id="ban-target-uid">
             
-            <button class="admin-btn" style="background:var(--accent-red); width:100%;" onclick="submitBan()">CONFIRMAR SUSPENSIÓN</button>
+            <button class="admin-btn" style="background:var(--accent-red); width:100%; font-weight:800;" onclick="submitBan()">CONFIRMAR SUSPENSIÓN</button>
+        </div>
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL: CREATE PAYMENT LINK (LINK DE COBRO) -->
+    <!-- ============================================== -->
+    <div class="admin-modal-overlay" id="payment-link-modal">
+        <div class="admin-modal" style="max-width:480px; padding: 24px;">
+            <button class="modal-close" onclick="closePaymentLinkModal()">✕</button>
+            <h2 style="font-weight:900; margin-bottom:6px; background:linear-gradient(135deg, #0075eb, #9b51e0); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">🔗 Generar Link de Cobro</h2>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">Crea una factura/cobro con opciones de pago en Revolut (tarjeta), Transferencia y Bre-B.</p>
+            
+            <div id="payment-link-form">
+                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Concepto / Descripción del Cobro</label>
+                <input type="text" id="pl-concept" class="admin-input" placeholder="Ej: 2 Pizzas Especiales + 1 Gaseosa o Deuda Saldo" style="margin-bottom:14px; width:100%;">
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Monto Total ($ COP)</label>
+                        <input type="number" id="pl-total" class="admin-input" placeholder="Ej: 15000" style="width:100%;">
+                    </div>
+                    <div>
+                        <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Vigencia</label>
+                        <select id="pl-expires" class="admin-input" style="width:100%;">
+                            <option value="1">1 día</option>
+                            <option value="3" selected>3 días</option>
+                            <option value="7">7 días</option>
+                            <option value="15">15 días</option>
+                            <option value="30">30 días</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Nombre del Cliente</label>
+                <input type="text" id="pl-customer-name" class="admin-input" placeholder="Nombre completo del alumno/cliente" style="margin-bottom:14px; width:100%;">
+
+                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Teléfono / WhatsApp (Opcional)</label>
+                <input type="tel" id="pl-customer-phone" class="admin-input" placeholder="Ej: 3112871046" style="margin-bottom:14px; width:100%;">
+
+                <input type="hidden" id="pl-customer-uid">
+
+                <button class="admin-btn" style="background:linear-gradient(135deg, #0075eb, #9b51e0); width:100%; font-weight:800; padding:14px;" onclick="submitCreatePaymentLink()">
+                    ✨ CREAR Y GENERAR LINK
+                </button>
+            </div>
+
+            <!-- Result Box -->
+            <div id="payment-link-result" style="display:none; margin-top:10px;">
+                <div style="background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); border-radius:14px; padding:16px; margin-bottom:16px; text-align:center;">
+                    <div style="font-size:28px; margin-bottom:6px;">🎉</div>
+                    <div style="font-weight:900; color:var(--accent-green); font-size:15px; margin-bottom:4px;">¡Link de Cobro Generado!</div>
+                    <div style="font-size:12px; color:var(--text-muted);" id="pl-res-id">#COB-XXXXX</div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-bottom:14px;">
+                    <input type="text" id="pl-generated-url" class="admin-input" readonly style="font-size:12px; flex:1; background:rgba(0,0,0,0.3);">
+                    <button class="admin-btn" style="padding:10px 16px; font-size:12px;" onclick="copyGeneratedPaymentLink()">📋 Copiar</button>
+                </div>
+
+                <a id="pl-whatsapp-share-btn" href="#" target="_blank" class="admin-btn" style="background:#25d366; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-bottom:10px;">
+                    <i class="fab fa-whatsapp" style="font-size:18px;"></i> Compartir por WhatsApp
+                </a>
+
+                <button class="admin-btn-secondary" style="width:100%; padding:10px; margin-top:8px;" onclick="resetPaymentLinkForm()">Crear otro link</button>
+            </div>
         </div>
     </div>
 
@@ -2830,14 +2933,25 @@
         };
 
         window.openBanModal = function(ip, device, orderId) {
-            document.getElementById('ban-ip').value = ip;
-            document.getElementById('ban-device').value = device;
+            document.getElementById('ban-ip').value = ip || '';
+            document.getElementById('ban-device').value = device || '';
+            document.getElementById('ban-target-uid').value = '';
+            document.getElementById('ban-modal').classList.add('active');
+        };
+
+        window.openBanClientModal = function(uid, clientName) {
+            document.getElementById('ban-ip').value = '';
+            document.getElementById('ban-device').value = '';
+            document.getElementById('ban-target-uid').value = uid;
+            document.getElementById('ban-type').value = 'user';
+            document.getElementById('ban-reason').value = 'Suspensión administrativa a ' + (clientName || 'cuenta');
             document.getElementById('ban-modal').classList.add('active');
         };
 
         window.closeBanModal = function() {
             document.getElementById('ban-modal').classList.remove('active');
             document.getElementById('ban-reason').value = '';
+            document.getElementById('ban-target-uid').value = '';
         };
 
         window.performIpSearch = async function() {
@@ -2857,19 +2971,20 @@
                 (o.clientDevice && o.clientDevice.toLowerCase().includes(lowerInput))
             );
             
-            // Check loginSessions (We need to fetch this globally as it's not cached like allOrders)
+            // Check loginHistory
             let matchingLogins = [];
             try {
-                const loginsSnap = await getDocs(collection(db, 'loginSessions'));
+                const loginsSnap = await getDocs(collection(db, 'loginHistory'));
                 loginsSnap.forEach(doc => {
                     const data = doc.data();
                     if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
+                        (data.userAgent && data.userAgent.toLowerCase().includes(lowerInput)) ||
                         (data.device && data.device.toLowerCase().includes(lowerInput))) {
                         matchingLogins.push(data);
                     }
                 });
             } catch (err) {
-                console.error("Error fetching loginSessions", err);
+                console.error("Error fetching loginHistory", err);
             }
             
             if (matchingOrders.length > 0 || matchingLogins.length > 0) {
@@ -2880,7 +2995,7 @@
                     html += matchingOrders.map(o => `
                         <tr>
                             <td style="font-family:monospace; font-weight:700;">${o.id}</td>
-                            <td>${o.nombre || o.customerName || 'Cliente'} <br> <span style="font-size:10px; color:var(--text-muted);">${o.clientDevice || o.clientIp}</span></td>
+                            <td>${o.nombre || o.customerName || 'Cliente'} <br> <span style="font-size:10px; color:var(--text-muted);">${o.clientDevice || o.clientIp || '—'}</span></td>
                             <td style="color:var(--primary-color); font-weight:700;">$${(o.total || 0).toLocaleString()}</td>
                             <td style="font-size:12px; color:var(--text-muted);">${new Date(o.createdAt).toLocaleDateString()}</td>
                         </tr>
@@ -2892,7 +3007,7 @@
                     html += matchingLogins.map(l => `
                         <tr>
                             <td style="font-family:monospace; font-weight:700;">UID</td>
-                            <td>${l.email || l.uid} <br> <span style="font-size:10px; color:var(--text-muted);">${l.device || l.ip}</span></td>
+                            <td>${l.email || l.uid || '—'} <br> <span style="font-size:10px; color:var(--text-muted);">${l.userAgent || l.device || l.ip}</span></td>
                             <td style="color:var(--accent-green); font-weight:700;">LOGIN</td>
                             <td style="font-size:12px; color:var(--text-muted);">${new Date(l.timestamp).toLocaleDateString()}</td>
                         </tr>
@@ -2909,13 +3024,20 @@
                 let snap = await getDocs(bansRef);
                 let reason = '';
                 let isBanned = false;
+                let bannedUntilStr = '';
+                const now = new Date();
 
                 snap.forEach(doc => {
                     const data = doc.data();
                     if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
                         (data.device && data.device.toLowerCase().includes(lowerInput))) {
-                        isBanned = true;
-                        reason = data.reason || 'Bloqueo manual';
+                        if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
+                            isBanned = true;
+                            reason = data.reason || 'Bloqueo manual';
+                            if (data.bannedUntil) {
+                                bannedUntilStr = ` (Expira: ${new Date(data.bannedUntil).toLocaleString('es-CO')})`;
+                            }
+                        }
                     }
                 });
 
@@ -2926,7 +3048,7 @@
                 actionsDiv.style.display = 'flex';
 
                 if (isBanned) {
-                    statusDiv.innerHTML = `<div style="background:rgba(235,87,87,0.1); color:var(--accent-red); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">⛔ Esta IP/Dispositivo está BANEADO. Motivo: ${reason}</div>`;
+                    statusDiv.innerHTML = `<div style="background:rgba(235,87,87,0.1); color:var(--accent-red); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">⛔ Esta IP/Dispositivo está BANEADO. Motivo: ${reason}${bannedUntilStr}</div>`;
                     btnBan.style.display = 'none';
                     btnUnban.style.display = 'block';
                 } else {
@@ -2945,19 +3067,33 @@
             const reason = document.getElementById('ip-ban-reason').value.trim() || 'Bloqueo manual por Admin';
             if (!input) return;
 
-            if (!confirm(`¿Estás seguro de banear a: ${input}?`)) return;
+            if (!confirm(`¿Estás seguro de suspender a: ${input}?`)) return;
 
             try {
-                // Generamos un ID seguro para firestore
-                const safeId = input.replace(/\//g, '_').replace(/\./g, '-');
-                await setDoc(doc(db, 'banned_entities', safeId), {
-                    ip: input.includes('.') || input.includes(':') ? input : null,
-                    device: !input.includes('.') && !input.includes(':') ? input : null,
-                    reason: reason,
-                    bannedAt: new Date().toISOString()
+                const isIp = input.includes('.') || input.includes(':');
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=banEntity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ip: isIp ? input : null,
+                        device: !isIp ? input : null,
+                        type: isIp ? 'ip' : 'device',
+                        duration: '24h',
+                        reason
+                    })
                 });
-                hcAlert("Baneado exitosamente.", "success");
-                performIpSearch();
+
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("Baneado exitosamente.", "success");
+                    performIpSearch();
+                } else {
+                    hcAlert(data.error || "Error al banear", "error");
+                }
             } catch (e) {
                 console.error(e);
                 hcAlert("Error al banear", "error");
@@ -2969,33 +3105,69 @@
             if (!input) return;
             const lowerInput = input.toLowerCase();
 
-            if (!confirm(`¿Estás seguro de DESBANEAR a: ${input}?`)) return;
+            const cascade = await hcConfirm(`¿Deseas DESBANEAR a: ${input} y todos los dispositivos/cuentas vinculadas (Linked Bans)?`);
 
             try {
-                const bansRef = collection(db, 'banned_entities');
-                let snap = await getDocs(bansRef);
-                const batch = writeBatch(db);
-                let deletedCount = 0;
-                
-                snap.forEach(d => {
-                    const data = d.data();
-                    if ((data.ip && data.ip.toLowerCase() === lowerInput) || 
-                        (data.device && data.device.toLowerCase() === lowerInput)) {
-                        batch.delete(d.ref);
-                        deletedCount++;
-                    }
+                const isIp = input.includes('.') || input.includes(':');
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=unbanEntity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        ip: isIp ? input : null,
+                        device: !isIp ? input : null,
+                        unbanAssociated: cascade
+                    })
                 });
 
-                if (deletedCount > 0) {
-                    await batch.commit();
+                const data = await res.json();
+                if (data.ok) {
                     hcAlert("Desbaneado exitosamente.", "success");
                     performIpSearch();
                 } else {
-                    hcAlert("No se encontró en la lista de baneados.", "warning");
+                    hcAlert(data.error || "Error al desbanear", "error");
                 }
             } catch (e) {
                 console.error(e);
                 hcAlert("Error al desbanear", "error");
+            }
+        };
+
+        window.unbanClientAccount = async function(uid, banGroupId) {
+            const cascade = await hcConfirm("¿Deseas desbanear también todas las IPs y dispositivos vinculados a este usuario?");
+            
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=unbanEntity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ targetUid: uid, banGroupId, unbanAssociated: cascade })
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("✅ Suspensión levantada con éxito.", "success");
+                    // Update client in list & modal
+                    const client = currentClientsList.find(c => c.uid === uid);
+                    if (client) {
+                        client.banned = false;
+                        client.bannedUntil = null;
+                        client.banReason = null;
+                        client.banGroupId = null;
+                    }
+                    openClientModal(uid);
+                } else {
+                    hcAlert(data.error || "Error al desbanear.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error de conexión.", "error");
             }
         };
 
@@ -3008,10 +3180,7 @@
         window.generateReviewLink = async function() {
             const orderId = document.getElementById('review-options-target-id').value;
             const longUrl = `https://happycorner.top/dejar-resena?orderId=${orderId}`;
-            // Intento crear un link corto usando la API (si existe) o usando el URL completo
             try {
-                // HappyCorner usa s.html para acortar links, normalmente se necesita crearlos en BD
-                // Por rapidez, creamos un documento corto
                 const shortId = Math.random().toString(36).substring(2, 8);
                 await setDoc(doc(db, 'shortlinks', shortId), { target: longUrl, createdAt: new Date().toISOString() });
                 const shortUrl = `https://happycorner.top/s?code=${shortId}`;
@@ -3089,7 +3258,9 @@
         window.submitBan = async function() {
             const ip = document.getElementById('ban-ip').value;
             const device = document.getElementById('ban-device').value;
+            const targetUid = document.getElementById('ban-target-uid').value;
             const type = document.getElementById('ban-type').value;
+            const duration = document.getElementById('ban-duration').value;
             const reason = document.getElementById('ban-reason').value.trim();
 
             if (!reason) {
@@ -3105,19 +3276,161 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ ip, device, type, reason })
+                    body: JSON.stringify({ ip, device, targetUid, type, duration, reason })
                 });
 
                 const data = await res.json();
                 if (data.ok) {
-                    hcAlert("✅ Entidad suspendida exitosamente.", "success");
+                    hcAlert("✅ Suspensión aplicada exitosamente.", "success");
                     closeBanModal();
+                    if (targetUid) {
+                        const client = currentClientsList.find(c => c.uid === targetUid);
+                        if (client) {
+                            client.banned = true;
+                            client.bannedUntil = data.bannedUntil;
+                            client.banReason = reason;
+                            client.banGroupId = data.banGroupId;
+                        }
+                        if (selectedClientUid === targetUid) {
+                            openClientModal(targetUid);
+                        }
+                    }
+                    if (window.performIpSearch) performIpSearch();
                 } else {
                     hcAlert(data.error || "Error suspendiendo.", "error");
                 }
             } catch (err) {
                 console.error(err);
                 hcAlert("Error de conexión al suspender.", "error");
+            }
+        };
+
+        // ==============================================
+        // PAYMENT LINKS (LINKS DE COBRO)
+        // ==============================================
+        window.openCreatePaymentLinkModal = function() {
+            resetPaymentLinkForm();
+            document.getElementById('payment-link-modal').classList.add('active');
+        };
+
+        window.openPaymentLinkForSelectedClient = function() {
+            if (!selectedClientUid) return;
+            const client = currentClientsList.find(c => c.uid === selectedClientUid) || {};
+            resetPaymentLinkForm();
+            document.getElementById('pl-customer-name').value = client.displayName || client.name || '';
+            document.getElementById('pl-customer-phone').value = client.phone || '';
+            document.getElementById('pl-customer-uid').value = selectedClientUid;
+            if (client.activeDebt > 0) {
+                document.getElementById('pl-total').value = client.activeDebt;
+                document.getElementById('pl-concept').value = `Pago de saldo pendiente / Deuda`;
+            }
+            document.getElementById('payment-link-modal').classList.add('active');
+        };
+
+        window.closePaymentLinkModal = function() {
+            document.getElementById('payment-link-modal').classList.remove('active');
+        };
+
+        window.resetPaymentLinkForm = function() {
+            document.getElementById('payment-link-form').style.display = 'block';
+            document.getElementById('payment-link-result').style.display = 'none';
+            document.getElementById('pl-concept').value = '';
+            document.getElementById('pl-total').value = '';
+            document.getElementById('pl-customer-name').value = '';
+            document.getElementById('pl-customer-phone').value = '';
+            document.getElementById('pl-customer-uid').value = '';
+        };
+
+        window.submitCreatePaymentLink = async function() {
+            const concept = document.getElementById('pl-concept').value.trim();
+            const total = parseFloat(document.getElementById('pl-total').value);
+            const customerName = document.getElementById('pl-customer-name').value.trim();
+            const customerPhone = document.getElementById('pl-customer-phone').value.trim();
+            const customerUID = document.getElementById('pl-customer-uid').value.trim() || null;
+            const expiresInDays = document.getElementById('pl-expires').value;
+
+            if (!total || total <= 0) {
+                hcAlert("Por favor ingresa un monto válido mayor a $0.", "warning");
+                return;
+            }
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=createPaymentLink', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        concept: concept || 'Consumo en Happy Corner',
+                        total,
+                        customerName: customerName || 'Público General',
+                        customerPhone,
+                        customerUID,
+                        expiresInDays
+                    })
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    document.getElementById('payment-link-form').style.display = 'none';
+                    document.getElementById('payment-link-result').style.display = 'block';
+                    document.getElementById('pl-res-id').textContent = `#${data.orderId}`;
+                    document.getElementById('pl-generated-url').value = data.linkUrl;
+                    
+                    const phoneClean = customerPhone ? customerPhone.replace(/\D/g, '') : '';
+                    const waPhone = phoneClean.length === 10 ? `57${phoneClean}` : phoneClean;
+                    const waUrl = waPhone ? `https://wa.me/${waPhone}?text=${encodeURIComponent(data.whatsappMessage)}` : `https://wa.me/?text=${encodeURIComponent(data.whatsappMessage)}`;
+                    document.getElementById('pl-whatsapp-share-btn').href = waUrl;
+
+                    hcAlert("✅ Link de cobro generado con éxito.", "success");
+                } else {
+                    hcAlert(data.error || "Error generando link.", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error de conexión al generar cobro.", "error");
+            }
+        };
+
+        window.copyGeneratedPaymentLink = function() {
+            const input = document.getElementById('pl-generated-url');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                hcAlert("📋 ¡Link copiado al portapapeles!", "success");
+            });
+        };
+
+        window.markOrderAsPaid = async function(orderId) {
+            const method = prompt("Selecciona el método con el que se realizó el pago:\n1 = Bre-B (Inmediato)\n2 = Transferencia (Nequi / Bancolombia)\n3 = Revolut (Tarjeta)\n4 = Efectivo", "1");
+            if (!method) return;
+
+            let methodStr = 'Transferencia';
+            if (method === '1' || method.toLowerCase().includes('bre')) methodStr = 'Bre-B';
+            else if (method === '2' || method.toLowerCase().includes('trans')) methodStr = 'Transferencia';
+            else if (method === '3' || method.toLowerCase().includes('revolut') || method.toLowerCase().includes('tarjeta')) methodStr = 'Revolut (Tarjeta)';
+            else if (method === '4' || method.toLowerCase().includes('efectivo')) methodStr = 'Efectivo';
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=markPaymentLinkPaid', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ orderId, paymentMethod: methodStr })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("✅ Pago registrado como Pagado con éxito.", "success");
+                } else {
+                    hcAlert(data.error || "Error al actualizar estado.", "error");
+                }
+            } catch (e) {
+                console.error(e);
+                hcAlert("Error de conexión.", "error");
             }
         };
 
@@ -4565,6 +4878,37 @@
             document.getElementById('manual-score-reason').value = '';
             document.getElementById('password-reset-link-container').style.display = 'none';
             document.getElementById('generated-reset-link').value = '';
+
+            // Ban status in client modal
+            const banBadge = document.getElementById('modal-client-ban-badge');
+            const banInfo = document.getElementById('modal-client-ban-info');
+            const banActions = document.getElementById('modal-client-ban-actions');
+            const now = new Date();
+
+            let isBanned = client.banned === true;
+            if (isBanned && client.bannedUntil && new Date(client.bannedUntil) <= now) {
+                isBanned = false; // Expired
+            }
+
+            if (isBanned) {
+                banBadge.className = 'badge badge-d';
+                banBadge.textContent = client.bannedUntil ? 'Suspendido (Temp)' : 'Suspendido';
+                
+                const expiryStr = client.bannedUntil ? ` Expira el ${new Date(client.bannedUntil).toLocaleString('es-CO')}.` : ' Suspensión permanente.';
+                banInfo.innerHTML = `<span style="color:var(--accent-red); font-weight:700;">⛔ Suspendido:</span> ${client.banReason || 'Sin motivo'}.${expiryStr}`;
+                
+                banActions.innerHTML = `
+                    <button class="admin-btn" style="padding: 8px 16px; font-size:12px; background:var(--accent-green);" onclick="unbanClientAccount('${uid}', '${client.banGroupId || ''}')">🔓 Levantar Suspensión</button>
+                `;
+            } else {
+                banBadge.className = 'badge badge-a';
+                banBadge.textContent = 'Activo';
+                banInfo.textContent = 'El cliente puede iniciar sesión con normalidad.';
+                const safeName = (client.displayName || client.name || 'Cliente').replace(/'/g, "\\'");
+                banActions.innerHTML = `
+                    <button class="admin-btn" style="padding: 8px 16px; font-size:12px; background:var(--accent-red);" onclick="openBanClientModal('${uid}', '${safeName}')">⛔ Suspender Cliente</button>
+                `;
+            }
 
             // Load Modal Subsections
             loadModalContractInfo(uid);

@@ -50,6 +50,14 @@
       "destination": "/factura.html"
     },
     {
+      "source": "/cobro",
+      "destination": "/cobro.html"
+    },
+    {
+      "source": "/pago",
+      "destination": "/cobro.html"
+    },
+    {
       "source": "/puntos",
       "destination": "/puntos.html"
     },

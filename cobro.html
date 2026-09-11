@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Link de Cobro | Happy Corner 🍭</title>
+    <link rel="icon" type="image/png" href="/happyfavicon.png">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --surface-color: #15161e;
+            --surface-card: #1c1d27;
+            --surface-elevated: #232533;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f5f6fa;
+            --text-muted: #8e92a4;
+            --primary-pink: #ff5299;
+            --primary-hover: #ff7bb5;
+            --accent-purple: #9b51e0;
+            --accent-green: #2ecc71;
+            --accent-orange: #f39c12;
+            --accent-red: #e74c3c;
+            --accent-cyan: #00d2d3;
+            --breb-yellow: #f1c40f;
+            --hp-gradient: linear-gradient(135deg, #b01e5a, #ff5299, #ff8c42);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f4f6f9;
+            --surface-color: #ffffff;
+            --surface-card: #f9fafd;
+            --surface-elevated: #edf2f7;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-color: #2d3436;
+            --text-muted: #636e72;
+            --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px 40px;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .brand-header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .brand-logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(255, 82, 153, 0.3);
+        }
+
+        .brand-title {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: var(--hp-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(46, 204, 113, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(46, 204, 113, 0.25);
+        }
+
+        /* Main Bill Card */
+        .bill-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bill-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--hp-gradient);
+        }
+
+        .bill-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .bill-id {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .status-pending {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--accent-orange);
+            border: 1px solid rgba(243, 156, 18, 0.3);
+        }
+
+        .status-paid {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .status-expired {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+        }
+
+        .bill-amount-wrap {
+            text-align: center;
+            padding: 16px 0 20px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .bill-amount-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bill-amount {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            color: var(--primary-pink);
+        }
+
+        .bill-concept-wrap {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bill-row-label {
+            color: var(--text-muted);
+        }
+
+        .bill-row-val {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* Payment Methods Section */
+        .methods-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 6px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tab Navigation for Methods */
+        .method-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .method-tab {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .method-tab:hover {
+            background: var(--surface-elevated);
+            color: var(--text-color);
+            transform: translateY(-2px);
+        }
+
+        .method-tab.active {
+            background: var(--surface-elevated);
+            border-color: var(--primary-pink);
+            color: var(--text-color);
+            box-shadow: 0 4px 16px rgba(255, 82, 153, 0.2);
+        }
+
+        .method-tab.active.tab-breb {
+            border-color: var(--breb-yellow);
+            box-shadow: 0 4px 16px rgba(241, 196, 15, 0.25);
+        }
+
+        .method-tab.active.tab-revolut {
+            border-color: #0075eb;
+            box-shadow: 0 4px 16px rgba(0, 117, 235, 0.25);
+        }
+
+        .method-tab-icon {
+            font-size: 20px;
+        }
+
+        .method-tab-label {
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* Method Content Boxes */
+        .method-content-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .method-content-card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .method-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .method-icon-wrap {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .method-info h3 {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .method-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Copyable Info Box */
+        .copy-box {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .copy-box:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .copy-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .copy-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .copy-value {
+            font-family: 'Courier Prime', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.05em;
+        }
+
+        [data-theme="light"] .copy-value {
+            color: #2d3436;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy:hover {
+            background: var(--primary-pink);
+            color: #fff;
+            border-color: var(--primary-pink);
+        }
+
+        .btn-copy.copied {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: var(--accent-green);
+        }
+
+        /* Step instructions */
+        .step-list {
+            list-style: none;
+            margin: 14px 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        .step-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-color);
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Action Buttons */
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-whatsapp {
+            background: #25d366;
+            color: #fff;
+        }
+
+        .btn-whatsapp:hover {
+            background: #20ba59;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn-revolut-pay {
+            background: linear-gradient(135deg, #0075eb, #0056b3);
+            color: #fff;
+            margin-top: 14px;
+        }
+
+        .btn-revolut-pay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 117, 235, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--surface-card);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-elevated);
+        }
+
+        /* Loading / Error States */
+        #loader-container {
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255, 82, 153, 0.2);
+            border-top: 4px solid var(--primary-pink);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Success Celebration Card */
+        .paid-celebration {
+            display: none;
+            text-align: center;
+            padding: 30px 20px;
+            background: var(--surface-color);
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.4s ease;
+        }
+
+        .paid-icon {
+            font-size: 56px;
+            color: var(--accent-green);
+            margin-bottom: 12px;
+            animation: bounce 1s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-8px); }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <!-- HEADER -->
+        <div class="brand-header">
+            <img src="/happylogo.png" alt="Happy Corner" class="brand-logo" onerror="this.src='/happyfavicon.png'">
+            <div class="brand-title">Happy Corner 🍭</div>
+            <div class="verified-badge">
+                <i class="fas fa-shield-alt"></i> Cobro Verificado y Seguro
+            </div>
+        </div>
+
+        <!-- LOADER -->
+        <div id="loader-container">
+            <div class="spinner"></div>
+            <p style="color:var(--text-muted); font-size:14px;">Cargando factura de cobro...</p>
+        </div>
+
+        <!-- ERROR VIEW -->
+        <div id="error-view" style="display:none; text-align:center; padding:40px 20px; background:var(--surface-color); border-radius:24px; border:1px solid var(--border-color);">
+            <div style="font-size:48px; margin-bottom:12px;">🔍</div>
+            <h2 style="font-size:18px; margin-bottom:8px; font-weight:800;">Cobro no encontrado</h2>
+            <p id="error-message" style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">El enlace es inválido o ha expirado.</p>
+            <a href="/catalogo" class="btn-action btn-secondary" style="display:inline-flex; width:auto; padding:12px 24px;">Ir al Catálogo</a>
+        </div>
+
+        <!-- MAIN VIEW -->
+        <div id="main-content" style="display:none; display:flex; flex-direction:column; gap:20px;">
+
+            <!-- PAID CELEBRATION (Shown when status is paid) -->
+            <div id="paid-view" class="paid-celebration">
+                <div class="paid-icon"><i class="fas fa-check-circle"></i></div>
+                <h2 style="font-size:22px; font-weight:900; color:var(--accent-green); margin-bottom:6px;">¡Pago Confirmado!</h2>
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:20px;">Tu pago ha sido verificado y registrado con éxito en Happy Corner. ¡Muchas gracias por tu compra!</p>
+                
+                <div style="background:var(--surface-card); border-radius:16px; padding:16px; margin-bottom:20px; font-size:13px; text-align:left;">
+                    <div class="bill-row" style="margin-bottom:8px;">
+                        <span class="bill-row-label">Referencia:</span>
+                        <span class="bill-row-val" id="paid-ref">—</span>
+                    </div>
+                    <div class="bill-row" style="margin-bottom:8px;">
+                        <span class="bill-row-label">Monto Pagado:</span>
+                        <span class="bill-row-val" id="paid-amount" style="color:var(--accent-green); font-size:15px;">—</span>
+                    </div>
+                    <div class="bill-row">
+                        <span class="bill-row-label">Método:</span>
+                        <span class="bill-row-val" id="paid-method">—</span>
+                    </div>
+                </div>
+
+                <a id="paid-receipt-link" href="#" class="btn-action btn-secondary" style="margin-bottom:10px;">
+                    <i class="fas fa-receipt"></i> Ver Factura Digital / PDF
+                </a>
+            </div>
+
+            <!-- UNPAID BILL SECTION -->
+            <div id="unpaid-section" style="display:flex; flex-direction:column; gap:20px;">
+                
+                <!-- BILL CARD -->
+                <div class="bill-card">
+                    <div class="bill-header">
+                        <div>
+                            <div class="bill-id" id="bill-id">#COB-XXXXX</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;" id="bill-date">—</div>
+                        </div>
+                        <div id="bill-status-pill" class="status-pill status-pending">
+                            <i class="fas fa-clock"></i> Pendiente
+                        </div>
+                    </div>
+
+                    <div class="bill-amount-wrap">
+                        <div class="bill-amount-label">TOTAL A PAGAR</div>
+                        <div class="bill-amount" id="bill-amount">$0</div>
+                    </div>
+
+                    <div class="bill-concept-wrap">
+                        <div class="bill-row">
+                            <span class="bill-row-label">Concepto:</span>
+                            <span class="bill-row-val" id="bill-concept">—</span>
+                        </div>
+                        <div class="bill-row">
+                            <span class="bill-row-label">Cliente:</span>
+                            <span class="bill-row-val" id="bill-customer">—</span>
+                        </div>
+                        <div class="bill-row" id="bill-expiry-row" style="display:none;">
+                            <span class="bill-row-label">Vence el:</span>
+                            <span class="bill-row-val" id="bill-expiry" style="color:var(--accent-orange);">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYMENT METHODS SECTION -->
+                <div>
+                    <div class="methods-title">
+                        <i class="fas fa-wallet" style="color:var(--primary-pink);"></i> Selecciona cómo deseas pagar:
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="method-tabs">
+                        <div class="method-tab active tab-breb" onclick="switchMethod('breb')">
+                            <div class="method-tab-icon" style="color:var(--breb-yellow);"><i class="fas fa-bolt"></i></div>
+                            <div class="method-tab-label">Bre-B</div>
+                        </div>
+                        <div class="method-tab tab-transfer" onclick="switchMethod('transfer')">
+                            <div class="method-tab-icon" style="color:var(--accent-cyan);"><i class="fas fa-university"></i></div>
+                            <div class="method-tab-label">Transferencia</div>
+                        </div>
+                        <div class="method-tab tab-revolut" onclick="switchMethod('revolut')">
+                            <div class="method-tab-icon" style="color:#0075eb;"><i class="fas fa-credit-card"></i></div>
+                            <div class="method-tab-label">Revolut / Tarjeta</div>
+                        </div>
+                    </div>
+
+                    <!-- CARD: BRE-B -->
+                    <div id="card-breb" class="method-content-card active">
+                        <div class="method-header">
+                            <div class="method-icon-wrap" style="background:rgba(241,196,15,0.15); color:var(--breb-yellow);">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div class="method-info">
+                                <h3>Bre-B (Transferencia Inmediata)</h3>
+                                <p>Transferencias gratis desde cualquier banco en Colombia.</p>
+                            </div>
+                        </div>
+
+                        <div class="copy-box">
+                            <div class="copy-details">
+                                <span class="copy-label">Tipo de Llave</span>
+                                <span class="copy-value" style="font-size:14px;">Celular</span>
+                            </div>
+                            <div class="copy-details" style="text-align:right;">
+                                <span class="copy-label">Llave Bre-B</span>
+                                <span class="copy-value" id="breb-key-display">311 287 1046</span>
+                            </div>
+                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+
+                        <div class="copy-box">
+                            <div class="copy-details">
+                                <span class="copy-label">Titular / Alias</span>
+                                <span class="copy-value" style="font-size:14px; font-family:inherit;">Evan Lensen Mosquera</span>
+                            </div>
+                        </div>
+
+                        <ul class="step-list">
+                            <li class="step-item">
+                                <div class="step-num">1</div>
+                                <div>Abre la app de tu banco (Bancolombia, Davivienda, Nequi, etc.) y busca <strong>Bre-B / Transferencias inmediatas</strong>.</div>
+                            </li>
+                            <li class="step-item">
+                                <div class="step-num">2</div>
+                                <div>Ingresa la llave celular <strong>3112871046</strong> y el monto exacto <strong id="step-amount-breb">$0</strong>.</div>
+                            </li>
+                            <li class="step-item">
+                                <div class="step-num">3</div>
+                                <div>Toma captura y notifica tu pago por WhatsApp abajo.</div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- CARD: TRANSFERENCIA BANCARIA -->
+                    <div id="card-transfer" class="method-content-card">
+                        <div class="method-header">
+                            <div class="method-icon-wrap" style="background:rgba(0,210,211,0.15); color:var(--accent-cyan);">
+                                <i class="fas fa-university"></i>
+                            </div>
+                            <div class="method-info">
+                                <h3>Transferencia Bancaria</h3>
+                                <p>Cuentas directas de Nequi, Bancolombia o Daviplata.</p>
+                            </div>
+                        </div>
+
+                        <!-- Nequi -->
+                        <div class="copy-box">
+                            <div class="copy-details">
+                                <span class="copy-label">Nequi (Ahorros / Celular)</span>
+                                <span class="copy-value">311 287 1046</span>
+                            </div>
+                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+
+                        <!-- Bancolombia -->
+                        <div class="copy-box">
+                            <div class="copy-details">
+                                <span class="copy-label">Bancolombia (A la mano / Ahorros)</span>
+                                <span class="copy-value">311 287 1046</span>
+                            </div>
+                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+
+                        <!-- Daviplata -->
+                        <div class="copy-box">
+                            <div class="copy-details">
+                                <span class="copy-label">Daviplata</span>
+                                <span class="copy-value">311 287 1046</span>
+                            </div>
+                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                                <i class="fas fa-copy"></i> Copiar
+                            </button>
+                        </div>
+
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">
+                            Titular: <strong>Evan Lensen Mosquera</strong>
+                        </div>
+                    </div>
+
+                    <!-- CARD: REVOLUT (TARJETA) -->
+                    <div id="card-revolut" class="method-content-card">
+                        <div class="method-header">
+                            <div class="method-icon-wrap" style="background:rgba(0,117,235,0.15); color:#0075eb;">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <div class="method-info">
+                                <h3>Revolut (Tarjeta Débito / Crédito)</h3>
+                                <p>Pago con tarjeta nacional o internacional sin comisión.</p>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:14px; padding:14px; font-size:13px; line-height:1.5; color:var(--text-muted);">
+                            <div style="font-weight:700; color:var(--text-color); margin-bottom:4px;">✨ Paga al instante con tu tarjeta</div>
+                            Acepta Visa, Mastercard, Apple Pay y Google Pay. Toca el botón de abajo para ingresar a la pasarela segura de Revolut.
+                        </div>
+
+                        <a id="revolut-pay-btn" href="https://revolut.me/evanlensen" target="_blank" class="btn-action btn-revolut-pay">
+                            <i class="fas fa-lock"></i> Pagar con Revolut / Tarjeta
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="display:flex; flex-direction:column; gap:10px; margin-top:8px;">
+                    <a id="whatsapp-notify-btn" href="#" target="_blank" class="btn-action btn-whatsapp">
+                        <i class="fab fa-whatsapp" style="font-size:20px;"></i> Notificar / Enviar Comprobante
+                    </a>
+                    <a id="thermal-receipt-link" href="#" class="btn-action btn-secondary">
+                        <i class="fas fa-receipt"></i> Ver Factura Térmica / PDF
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Firebase Auth & DB -->
+    <script type="module">
+        import { initPromise, db } from './firebase-auth.js';
+        import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        let currentOrderId = '';
+        let currentOrderData = null;
+        let selectedMethod = 'breb';
+
+        async function init() {
+            const params = new URLSearchParams(window.location.search);
+            currentOrderId = params.get('id') || params.get('orderId') || params.get('order') || '';
+
+            if (!currentOrderId) {
+                showError("No se proporcionó ningún ID de cobro en la URL.");
+                return;
+            }
+
+            try {
+                // Fetch public payment data from API
+                const res = await fetch(`/api/account?action=getPaymentLink&id=${encodeURIComponent(currentOrderId)}`);
+                const data = await res.json();
+
+                if (!res.ok || !data.ok) {
+                    showError(data.error || "El cobro solicitado no fue encontrado.");
+                    return;
+                }
+
+                currentOrderData = data;
+                renderPaymentLink(data);
+
+                // Setup real-time Firestore listener
+                await initPromise;
+                listenToOrderStatus(currentOrderId);
+
+            } catch (err) {
+                console.error("Error loading payment link:", err);
+                showError("Ocurrió un error al conectar con el servidor.");
+            }
+        }
+
+        function renderPaymentLink(data) {
+            document.getElementById('loader-container').style.display = 'none';
+            document.getElementById('main-content').style.display = 'flex';
+
+            const formattedTotal = Number(data.total || 0).toLocaleString('es-CO');
+
+            // Header & Details
+            document.getElementById('bill-id').textContent = `#${data.orderId}`;
+            document.getElementById('bill-amount').textContent = `$${formattedTotal}`;
+            document.getElementById('step-amount-breb').textContent = `$${formattedTotal}`;
+            document.getElementById('bill-concept').textContent = data.concept || 'Consumo en Happy Corner';
+            document.getElementById('bill-customer').textContent = data.customerName || 'Cliente';
+            
+            if (data.createdAt) {
+                document.getElementById('bill-date').textContent = new Date(data.createdAt).toLocaleDateString('es-CO', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+            }
+
+            if (data.expiresAt) {
+                const expDate = new Date(data.expiresAt);
+                document.getElementById('bill-expiry').textContent = expDate.toLocaleDateString('es-CO', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+                document.getElementById('bill-expiry-row').style.display = 'flex';
+            }
+
+            // Status Update
+            updateStatusUI(data.status);
+
+            // Configure links
+            const thermalLink = `/factura?orderId=${encodeURIComponent(data.orderId)}`;
+            document.getElementById('thermal-receipt-link').href = thermalLink;
+            document.getElementById('paid-receipt-link').href = thermalLink;
+
+            // Revolut link
+            if (data.paymentDetails?.revolut?.url) {
+                document.getElementById('revolut-pay-btn').href = data.paymentDetails.revolut.url;
+            }
+
+            updateWhatsAppLink();
+        }
+
+        function updateStatusUI(status) {
+            const statusPill = document.getElementById('bill-status-pill');
+            const unpaidSection = document.getElementById('unpaid-section');
+            const paidView = document.getElementById('paid-view');
+
+            if (status === 'paid' || status === 'completed' || status === 'delivered') {
+                unpaidSection.style.display = 'none';
+                paidView.style.display = 'block';
+
+                document.getElementById('paid-ref').textContent = `#${currentOrderData?.orderId || currentOrderId}`;
+                document.getElementById('paid-amount').textContent = `$${(currentOrderData?.total || 0).toLocaleString('es-CO')}`;
+                document.getElementById('paid-method').textContent = currentOrderData?.paymentMethod || 'Transferencia';
+
+                // Fire celebration confetti!
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            } else if (status === 'expired') {
+                statusPill.className = 'status-pill status-expired';
+                statusPill.innerHTML = '<i class="fas fa-times-circle"></i> Vencido';
+            } else {
+                statusPill.className = 'status-pill status-pending';
+                statusPill.innerHTML = '<i class="fas fa-clock"></i> Pendiente';
+                unpaidSection.style.display = 'flex';
+                paidView.style.display = 'none';
+            }
+        }
+
+        function listenToOrderStatus(orderId) {
+            try {
+                const orderRef = doc(db, 'orders', orderId);
+                onSnapshot(orderRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const updated = snapshot.data();
+                        currentOrderData = { ...currentOrderData, ...updated };
+                        if (updated.status) {
+                            updateStatusUI(updated.status);
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn("Firestore snapshot listener unavailable:", err);
+            }
+        }
+
+        window.switchMethod = function(method) {
+            selectedMethod = method;
+            
+            // Toggle tabs
+            document.querySelectorAll('.method-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.method-content-card').forEach(card => card.classList.remove('active'));
+
+            if (method === 'breb') {
+                document.querySelector('.tab-breb').classList.add('active');
+                document.getElementById('card-breb').classList.add('active');
+            } else if (method === 'transfer') {
+                document.querySelector('.tab-transfer').classList.add('active');
+                document.getElementById('card-transfer').classList.add('active');
+            } else if (method === 'revolut') {
+                document.querySelector('.tab-revolut').classList.add('active');
+                document.getElementById('card-revolut').classList.add('active');
+            }
+
+            updateWhatsAppLink();
+        };
+
+        function updateWhatsAppLink() {
+            const btn = document.getElementById('whatsapp-notify-btn');
+            if (!currentOrderData) return;
+
+            const methodName = selectedMethod === 'breb' ? 'Bre-B' : (selectedMethod === 'revolut' ? 'Revolut (Tarjeta)' : 'Transferencia Bancaria');
+            const totalStr = Number(currentOrderData.total || 0).toLocaleString('es-CO');
+            const text = `Hola Happy Corner! 🍭 Acabo de realizar el pago del cobro #${currentOrderData.orderId} por $${totalStr} vía ${methodName}. Adjunto el comprobante.`;
+
+            btn.href = `https://wa.me/573112871046?text=${encodeURIComponent(text)}`;
+        }
+
+        window.copyToClipboard = function(text, btnElement) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHtml = btnElement.innerHTML;
+                btnElement.classList.add('copied');
+                btnElement.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                setTimeout(() => {
+                    btnElement.classList.remove('copied');
+                    btnElement.innerHTML = originalHtml;
+                }, 2000);
+            }).catch(() => {
+                prompt("Copia el número:", text);
+            });
+        };
+
+        function showError(msg) {
+            document.getElementById('loader-container').style.display = 'none';
+            document.getElementById('error-message').textContent = msg;
+            document.getElementById('error-view').style.display = 'block';
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

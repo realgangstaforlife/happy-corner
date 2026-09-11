@@ -2,14 +2,16 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Suspendido - Happy Corner</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Acceso Suspendido | Happy Corner 🍭</title>
+    <link rel="icon" type="image/png" href="/happyfavicon.png">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--bg-color, #0b0c10);
+            color: var(--text-color, #f5f6fa);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -20,94 +22,258 @@
             font-family: 'Outfit', sans-serif;
         }
         .banned-container {
-            background: var(--surface-color);
-            padding: 40px 30px;
-            border-radius: 20px;
+            background: var(--surface-color, #15161e);
+            padding: 40px 28px;
+            border-radius: 24px;
             border: 1px solid rgba(235, 87, 87, 0.3);
-            max-width: 400px;
+            max-width: 420px;
             width: 100%;
-            box-shadow: 0 10px 40px rgba(235, 87, 87, 0.1);
+            box-shadow: 0 16px 50px rgba(235, 87, 87, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .banned-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #eb5757, #ff5299);
         }
         .banned-icon {
-            font-size: 60px;
-            margin-bottom: 20px;
+            font-size: 54px;
+            margin-bottom: 16px;
         }
         .banned-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 900;
-            color: var(--accent-red);
-            margin-bottom: 10px;
+            color: var(--accent-red, #eb5757);
+            margin-bottom: 8px;
         }
         .banned-text {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-muted, #8e92a4);
+            margin-bottom: 18px;
             line-height: 1.5;
         }
         .banned-reason-box {
             background: rgba(235, 87, 87, 0.1);
-            color: var(--accent-red);
-            padding: 15px;
-            border-radius: 12px;
+            color: var(--accent-red, #eb5757);
+            padding: 14px 16px;
+            border-radius: 14px;
             font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 25px;
+            font-size: 13px;
+            margin-bottom: 20px;
             word-break: break-word;
+            border: 1px dashed rgba(235, 87, 87, 0.3);
+            text-align: left;
+        }
+        .timer-box {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 22px;
+            display: none;
+        }
+        .timer-label {
+            font-size: 11px;
+            color: var(--text-muted, #8e92a4);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+        .timer-value {
+            font-size: 20px;
+            font-weight: 900;
+            color: #ff9f43;
+            letter-spacing: 0.02em;
         }
         .banned-btn {
-            display: inline-block;
-            background: #111111;
-            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #25d366;
+            border: none;
             color: white;
             text-decoration: none;
-            padding: 14px 24px;
-            border-radius: 12px;
+            padding: 14px 20px;
+            border-radius: 14px;
             font-weight: 800;
             font-size: 14px;
             transition: transform 0.2s, opacity 0.2s;
             width: 100%;
             box-sizing: border-box;
+            margin-bottom: 10px;
         }
         .banned-btn:hover {
-            opacity: 0.9;
-            transform: scale(0.98);
+            opacity: 0.92;
+            transform: translateY(-2px);
         }
-        .catalog-btn {
-            display: inline-block;
-            background: transparent;
-            color: var(--text-muted);
+        .btn-recheck {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+            color: var(--text-color, #fff);
             text-decoration: none;
-            padding: 14px 24px;
-            border-radius: 12px;
+            padding: 12px 20px;
+            border-radius: 14px;
             font-weight: 700;
-            font-size: 14px;
-            margin-top: 10px;
-            border: 1px solid var(--border-color);
+            font-size: 13px;
             width: 100%;
             box-sizing: border-box;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-recheck:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .catalog-btn {
+            display: block;
+            background: transparent;
+            color: var(--text-muted, #8e92a4);
+            text-decoration: none;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 12px;
+            margin-top: 12px;
+        }
+        .catalog-btn:hover {
+            color: #fff;
         }
     </style>
 </head>
-<body style="background: var(--bg-color);">
+<body>
     <div class="banned-container">
         <div class="banned-icon">⛔</div>
-        <div class="banned-title">Acceso Suspendido</div>
-        <div class="banned-text">Tu equipo o red ha sido suspendido permanentemente de Happy Corner debido a infracciones en nuestras políticas.</div>
+        <div class="banned-title" id="ban-main-title">Acceso Suspendido</div>
+        <div class="banned-text" id="ban-main-text">
+            Tu cuenta, equipo o red ha sido suspendida de Happy Corner debido a infracciones en nuestras políticas de uso.
+        </div>
         
-        <div class="banned-reason-box" id="reason-box">Motivo: Violación de términos</div>
+        <div class="banned-reason-box" id="reason-box">
+            <i class="fas fa-info-circle"></i> <strong>Motivo:</strong> <span id="reason-text">Violación de términos</span>
+        </div>
+
+        <div class="timer-box" id="timer-container">
+            <div class="timer-label"><i class="fas fa-hourglass-half"></i> Tiempo restante de suspensión</div>
+            <div class="timer-value" id="timer-display">Calculando...</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;" id="timer-expiry-date"></div>
+        </div>
         
-        <a href="https://wa.me/573112871046?text=Hola,%20fui%20suspendido%20de%20Happy%20Corner%20y%20quiero%20apelar." class="banned-btn">Apelar Suspensión por WhatsApp</a>
+        <a href="https://wa.me/573112871046?text=Hola,%20fui%20suspendido%20de%20Happy%20Corner%20y%20quiero%20apelar." class="banned-btn">
+            <i class="fab fa-whatsapp"></i> Apelar Suspensión por WhatsApp
+        </a>
+
+        <button class="btn-recheck" onclick="checkBanStatus(true)">
+            <i class="fas fa-sync-alt"></i> Comprobar si mi suspensión terminó
+        </button>
+
         <a href="/catalogo" class="catalog-btn">Ver Catálogo de Precios</a>
     </div>
 
     <script>
-        window.isDark = false;
-        var isDark = false;
-        const urlParams = new URLSearchParams(window.location.search);
-        const reason = urlParams.get('reason');
-        if (reason) {
-            document.getElementById('reason-box').innerText = 'Motivo: ' + reason;
+        let banExpiry = null;
+        let timerInterval = null;
+
+        async function checkBanStatus(manual = false) {
+            try {
+                const res = await fetch('/api/account?action=checkBan');
+                const data = await res.json();
+
+                if (!data.banned) {
+                    // Ban lifted!
+                    localStorage.removeItem('hc_blacklist');
+                    document.cookie = "hc_banned=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                    alert("✅ ¡Tu suspensión ha finalizado o ha sido levantada!");
+                    window.location.href = '/index';
+                    return;
+                }
+
+                if (data.reason) {
+                    document.getElementById('reason-text').textContent = data.reason;
+                }
+
+                if (data.bannedUntil) {
+                    banExpiry = new Date(data.bannedUntil);
+                    startCountdown(banExpiry);
+                }
+
+                if (manual && data.banned) {
+                    alert("Tu suspensión aún se encuentra activa. Consulta el tiempo restante en pantalla.");
+                }
+
+            } catch (err) {
+                console.error("Error checking ban:", err);
+            }
         }
+
+        function startCountdown(expiryDate) {
+            const timerContainer = document.getElementById('timer-container');
+            const timerDisplay = document.getElementById('timer-display');
+            const timerDateLabel = document.getElementById('timer-expiry-date');
+            
+            timerContainer.style.display = 'block';
+            document.getElementById('ban-main-title').textContent = "Suspensión Temporal";
+            document.getElementById('ban-main-text').textContent = "Tu acceso está temporalmente restringido. Una vez finalice el tiempo, tu acceso se restablecerá automáticamente.";
+
+            timerDateLabel.textContent = `Expira: ${expiryDate.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            function updateTimer() {
+                const now = new Date().getTime();
+                const distance = expiryDate.getTime() - now;
+
+                if (distance <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = "¡Tiempo cumplido!";
+                    checkBanStatus();
+                    return;
+                }
+
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                let parts = [];
+                if (days > 0) parts.push(`${days}d`);
+                if (hours > 0 || days > 0) parts.push(`${hours}h`);
+                parts.push(`${minutes}m`);
+                parts.push(`${seconds}s`);
+
+                timerDisplay.textContent = parts.join(' ');
+            }
+
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        // Initial check
+        const urlParams = new URLSearchParams(window.location.search);
+        const reasonParam = urlParams.get('reason');
+        const untilParam = urlParams.get('until');
+
+        if (reasonParam) {
+            document.getElementById('reason-text').textContent = reasonParam;
+        }
+
+        if (untilParam) {
+            const exp = new Date(untilParam);
+            if (!isNaN(exp.getTime())) {
+                banExpiry = exp;
+                startCountdown(exp);
+            }
+        }
+
+        checkBanStatus();
     </script>
 </body>
 </html>

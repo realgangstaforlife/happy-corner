@@ -435,7 +435,14 @@
                 tarjeta: 'Tarjeta',
                 efectivo: 'Efectivo',
                 cash: 'Efectivo',
-                credit: 'Crédito'
+                credit: 'Crédito',
+                revolut: 'Revolut (Tarjeta)',
+                'revolut (tarjeta)': 'Revolut (Tarjeta)',
+                'bre-b': 'Bre-B',
+                breb: 'Bre-B',
+                transferencia: 'Transferencia Bancaria',
+                bancolombia: 'Bancolombia',
+                daviplata: 'Daviplata'
             };
 
             const statusMap = {
@@ -457,10 +464,13 @@
             const dateStr = data.createdAt ? new Date(data.createdAt).toLocaleString('es-CO') : 'N/A';
             const totalStr = (data.total || 0).toLocaleString('es-CO');
 
-            document.getElementById('inv-no').textContent = `#${orderId.substring(0, 8).toUpperCase()}`;
+            const cleanPaymentKey = (data.paymentMethod || '').toLowerCase().trim();
+            const displayPayment = paymentMap[cleanPaymentKey] || data.paymentMethod || 'Efectivo';
+
+            document.getElementById('inv-no').textContent = `#${orderId.startsWith('COB-') || orderId.startsWith('HC-') ? orderId : orderId.substring(0, 10).toUpperCase()}`;
             document.getElementById('inv-date').textContent = dateStr;
             document.getElementById('inv-delivery').textContent = deliveryMap[data.deliveryType] || data.deliveryType || 'Físico';
-            document.getElementById('inv-payment').textContent = paymentMap[data.paymentMethod] || data.paymentMethod || 'Efectivo';
+            document.getElementById('inv-payment').textContent = displayPayment;
             document.getElementById('inv-status').textContent = statusMap[data.status] || data.status || 'Completado';
 
             // Privacy Logic: owner or admin can see full name, phone, email
