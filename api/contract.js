@@ -488,26 +488,28 @@ async function loadContractFromFirestore() {
 // Handler principal
 // ============================================================
 export default async function handler(req, res) {
-    if (applyCors(req, res, { methods: ['POST', 'OPTIONS'] })) return;
+    if (applyCors(req, res, { methods: ['GET', 'POST', 'OPTIONS'] })) return;
 
-    if (req.method !== 'POST') {
+    if (req.method !== 'POST' && req.method !== 'GET') {
         return json(res, 405, { error: 'Method not allowed' });
     }
 
     try {
-        const { action } = req.body;
+        let body = {};
+        if (typeof req.body === 'string') {
+            try { body = JSON.parse(req.body); } catch (e) { body = {}; }
+        } else if (req.body && typeof req.body === 'object') {
+            body = req.body;
+        }
+
+        const action = body.action || req.query?.action || (req.method === 'GET' ? 'getContractText' : null);
 
         // ============================================================
         // ACCION: getContractText — devuelve el texto del contrato actual
-        // Requiere usuario autenticado (cualquier rol)
         // ============================================================
         if (action === 'getContractText') {
-            const token = (req.headers.authorization || '').replace('Bearer ', '');
-            if (!token) return json(res, 401, { error: 'No autenticado.' });
-            try { await auth.verifyIdToken(token); } catch { return json(res, 401, { error: 'Token inválido.' }); }
-
             const { articles, version } = await loadContractFromFirestore();
-            return json(res, 200, { articles, version });
+            return json(res, 200, { ok: true, articles, version });
         }
 
         // ============================================================
@@ -524,7 +526,7 @@ export default async function handler(req, res) {
                 return json(res, 401, { error: 'Token inválido.' });
             }
 
-            const { uid, email } = req.body;
+            const { uid, email } = body;
             if (!uid || !email) return json(res, 400, { error: 'Falta uid o correo electronico.' });
 
             if (sendPinDecoded.uid !== uid) {
@@ -620,7 +622,7 @@ export default async function handler(req, res) {
                 return json(res, 401, { error: 'Token inválido.' });
             }
 
-            const { uid, typedName, signatureImage, pin, userAgent } = req.body;
+            const { uid, typedName, signatureImage, pin, userAgent } = body;
             if (!uid || !typedName || !signatureImage || !pin) {
                 return json(res, 400, { error: 'Faltan campos requeridos para firmar el contrato.' });
             }
@@ -796,7 +798,7 @@ export default async function handler(req, res) {
                 return json(res, 403, { error: 'Acción permitida solo para administradores.' });
             }
 
-            const { uid, typedName, signatureImage, userAgent, screenWidth, screenHeight, language } = req.body;
+            const { uid, typedName, signatureImage, userAgent, screenWidth, screenHeight, language } = body;
             if (!uid || !typedName || !signatureImage) {
                 return json(res, 400, { error: 'Faltan campos requeridos para firmar el contrato.' });
             }

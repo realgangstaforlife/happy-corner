@@ -656,7 +656,7 @@
                                 <i class="fas fa-bolt"></i>
                             </div>
                             <div class="method-info">
-                                <h3>Bre-B (Transferencia Inmediata)</h3>
+                                <h3>Bre-B (Interoperabilidad Inmediata)</h3>
                                 <p>Transferencias gratis desde cualquier banco en Colombia.</p>
                             </div>
                         </div>
@@ -670,7 +670,7 @@
                                 <span class="copy-label">Llave Bre-B</span>
                                 <span class="copy-value" id="breb-key-display">311 287 1046</span>
                             </div>
-                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                            <button class="btn-copy" id="breb-copy-btn" onclick="copyToClipboard('3112871046', this)">
                                 <i class="fas fa-copy"></i> Copiar
                             </button>
                         </div>
@@ -678,7 +678,7 @@
                         <div class="copy-box">
                             <div class="copy-details">
                                 <span class="copy-label">Titular / Alias</span>
-                                <span class="copy-value" style="font-size:14px; font-family:inherit;">Evan Lensen Mosquera</span>
+                                <span class="copy-value" id="breb-holder-display" style="font-size:14px; font-family:inherit;">Evan Lensen Mosquera</span>
                             </div>
                         </div>
 
@@ -689,7 +689,7 @@
                             </li>
                             <li class="step-item">
                                 <div class="step-num">2</div>
-                                <div>Ingresa la llave celular <strong>3112871046</strong> y el monto exacto <strong id="step-amount-breb">$0</strong>.</div>
+                                <div>Ingresa la llave celular <strong id="breb-step-key">3112871046</strong> y el monto exacto <strong id="step-amount-breb">$0</strong>.</div>
                             </li>
                             <li class="step-item">
                                 <div class="step-num">3</div>
@@ -714,9 +714,9 @@
                         <div class="copy-box">
                             <div class="copy-details">
                                 <span class="copy-label">Nequi (Ahorros / Celular)</span>
-                                <span class="copy-value">311 287 1046</span>
+                                <span class="copy-value" id="nequi-num-display">311 287 1046</span>
                             </div>
-                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                            <button class="btn-copy" id="nequi-copy-btn" onclick="copyToClipboard('3112871046', this)">
                                 <i class="fas fa-copy"></i> Copiar
                             </button>
                         </div>
@@ -724,10 +724,10 @@
                         <!-- Bancolombia -->
                         <div class="copy-box">
                             <div class="copy-details">
-                                <span class="copy-label">Bancolombia (A la mano / Ahorros)</span>
-                                <span class="copy-value">311 287 1046</span>
+                                <span class="copy-label" id="bancolombia-label-display">Bancolombia (Ahorros)</span>
+                                <span class="copy-value" id="bancolombia-num-display">031-128710-46</span>
                             </div>
-                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                            <button class="btn-copy" id="bancolombia-copy-btn" onclick="copyToClipboard('03112871046', this)">
                                 <i class="fas fa-copy"></i> Copiar
                             </button>
                         </div>
@@ -736,15 +736,15 @@
                         <div class="copy-box">
                             <div class="copy-details">
                                 <span class="copy-label">Daviplata</span>
-                                <span class="copy-value">311 287 1046</span>
+                                <span class="copy-value" id="daviplata-num-display">311 287 1046</span>
                             </div>
-                            <button class="btn-copy" onclick="copyToClipboard('3112871046', this)">
+                            <button class="btn-copy" id="daviplata-copy-btn" onclick="copyToClipboard('3112871046', this)">
                                 <i class="fas fa-copy"></i> Copiar
                             </button>
                         </div>
 
                         <div style="font-size:12px; color:var(--text-muted); margin-top:10px;">
-                            Titular: <strong>Evan Lensen Mosquera</strong>
+                            Titular: <strong id="transfer-holder-display">Evan Lensen Mosquera</strong>
                         </div>
                     </div>
 
@@ -760,14 +760,22 @@
                             </div>
                         </div>
 
-                        <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:14px; padding:14px; font-size:13px; line-height:1.5; color:var(--text-muted);">
-                            <div style="font-weight:700; color:var(--text-color); margin-bottom:4px;">✨ Paga al instante con tu tarjeta</div>
-                            Acepta Visa, Mastercard, Apple Pay y Google Pay. Toca el botón de abajo para ingresar a la pasarela segura de Revolut.
+                        <!-- EUR Currency Notice Box -->
+                        <div style="background:rgba(241, 196, 15, 0.1); border:1px solid rgba(241, 196, 15, 0.3); border-radius:14px; padding:12px 14px; margin-bottom:12px; font-size:12px; line-height:1.5; color:var(--breb-yellow, #f1c40f);">
+                            <div style="font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                                <span>💶</span> Cobro procesado en EUROS (€ / EUR)
+                            </div>
+                            Debes consultar y acordar previamente la tasa de cambio en Euros con la administración antes de procesar el cobro.
                         </div>
 
-                        <a id="revolut-pay-btn" href="https://revolut.me/evanlensen" target="_blank" class="btn-action btn-revolut-pay">
-                            <i class="fas fa-lock"></i> Pagar con Revolut / Tarjeta
-                        </a>
+                        <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:14px; padding:14px; font-size:13px; line-height:1.5; color:var(--text-muted); margin-bottom:14px;">
+                            <div style="font-weight:700; color:var(--text-color); margin-bottom:4px;">✨ Paga al instante con tu tarjeta</div>
+                            Acepta Visa, Mastercard, Apple Pay y Google Pay. Toca el botón de abajo para revisar las condiciones y continuar a Revolut.
+                        </div>
+
+                        <button id="revolut-pay-btn" type="button" class="btn-action btn-revolut-pay" onclick="openRevolutWarningModal()" style="width:100%; border:none; cursor:pointer;">
+                            <i class="fas fa-lock"></i> Pagar con Revolut / Tarjeta (€)
+                        </button>
                     </div>
                 </div>
 
@@ -785,6 +793,37 @@
 
         </div>
 
+    </div>
+
+    <!-- ============================================== -->
+    <!-- MODAL: REVOLUT EUR TASA DE CAMBIO ADVISORY (10s TIMER) -->
+    <!-- ============================================== -->
+    <div id="revolut-warning-modal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:24px; max-width:440px; width:100%; padding:24px; box-shadow:var(--shadow-lg); text-align:center; position:relative;">
+            
+            <button onclick="closeRevolutWarningModal()" style="position:absolute; top:16px; right:16px; background:rgba(255,255,255,0.08); border:none; color:var(--text-color); width:32px; height:32px; border-radius:50%; font-weight:bold; cursor:pointer;">✕</button>
+
+            <div style="font-size:42px; margin-bottom:8px;">💶</div>
+            <h2 style="font-weight:900; font-size:20px; margin-bottom:8px; color:#fff;">Pago en Euros (€ / EUR)</h2>
+            
+            <div style="background:rgba(243,156,18,0.12); border:1px solid rgba(243,156,18,0.3); border-radius:14px; padding:12px; margin-bottom:16px; font-size:12px; line-height:1.5; color:var(--accent-orange); text-align:left;">
+                <strong>⚠️ AVISO DE CONVERSIÓN DE MONEDA:</strong><br>
+                Los pagos con tarjeta vía Revolut se liquidan en <strong>Euros (€)</strong>.<br>
+                Para el total de <strong id="rev-modal-amount" style="color:#fff;">$0 COP</strong>, la tasa de cambio debe ser consultada y acordada directamente con <strong>Evan / Happy Corner</strong> antes de pagar.
+            </div>
+
+            <p style="font-size:13px; color:var(--text-muted); line-height:1.5; margin-bottom:16px; text-align:left;">
+                Al continuar, confirmas que has acordado la tasa de cambio vigente y aceptas el cobro en Euros.
+            </p>
+
+            <a id="rev-rate-wa-btn" href="#" target="_blank" class="btn-action" style="background:rgba(37,211,102,0.15); color:#25d366; border:1px solid rgba(37,211,102,0.3); text-decoration:none; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px;">
+                <i class="fab fa-whatsapp" style="font-size:18px;"></i> Acordar Tasa por WhatsApp
+            </a>
+
+            <button id="rev-confirm-proceed-btn" disabled class="btn-action" style="width:100%; background:rgba(255,255,255,0.08); color:var(--text-muted); border:1px solid var(--border-color); cursor:not-allowed; font-weight:800; padding:14px; font-size:14px; transition:all 0.3s ease;" onclick="proceedToRevolutPayment()">
+                ⏳ Espera para aceptar (<span id="rev-countdown-timer">10</span>s)
+            </button>
+        </div>
     </div>
 
     <!-- Firebase Auth & DB -->
@@ -855,6 +894,51 @@
                 document.getElementById('bill-expiry-row').style.display = 'flex';
             }
 
+            // Populate dynamic payment data
+            const pSet = data.paymentSettings || {};
+            const holder = pSet.holderName || data.paymentDetails?.transferencia?.holder || 'Evan Lensen Mosquera';
+            const brebKey = pSet.brebKey || data.paymentDetails?.breb?.key || '3112871046';
+            const nequi = pSet.nequiNumber || '3112871046';
+            const bancolombia = pSet.bancolombiaNumber || '031-128710-46';
+            const bancolombiaType = pSet.bancolombiaType || 'Ahorros';
+            const daviplata = pSet.daviplataNumber || '3112871046';
+            const revolutUrl = pSet.revolutUrl || data.paymentDetails?.revolut?.url || 'https://revolut.me/evanlensen';
+
+            // Bre-B
+            const brebDisplay = document.getElementById('breb-key-display');
+            if (brebDisplay) brebDisplay.textContent = formatPhoneDisplay(brebKey);
+            const brebHolder = document.getElementById('breb-holder-display');
+            if (brebHolder) brebHolder.textContent = holder;
+            const brebStepKey = document.getElementById('breb-step-key');
+            if (brebStepKey) brebStepKey.textContent = brebKey;
+            const brebCopyBtn = document.getElementById('breb-copy-btn');
+            if (brebCopyBtn) brebCopyBtn.setAttribute('onclick', `copyToClipboard('${brebKey}', this)`);
+
+            // Transferencia
+            const nequiDisplay = document.getElementById('nequi-num-display');
+            if (nequiDisplay) nequiDisplay.textContent = formatPhoneDisplay(nequi);
+            const nequiCopyBtn = document.getElementById('nequi-copy-btn');
+            if (nequiCopyBtn) nequiCopyBtn.setAttribute('onclick', `copyToClipboard('${nequi.replace(/\\D/g, '')}', this)`);
+
+            const bancoLabel = document.getElementById('bancolombia-label-display');
+            if (bancoLabel) bancoLabel.textContent = `Bancolombia (${bancolombiaType})`;
+            const bancoDisplay = document.getElementById('bancolombia-num-display');
+            if (bancoDisplay) bancoDisplay.textContent = bancolombia;
+            const bancoCopyBtn = document.getElementById('bancolombia-copy-btn');
+            if (bancoCopyBtn) bancoCopyBtn.setAttribute('onclick', `copyToClipboard('${bancolombia.replace(/\\D/g, '')}', this)`);
+
+            const daviDisplay = document.getElementById('daviplata-num-display');
+            if (daviDisplay) daviDisplay.textContent = formatPhoneDisplay(daviplata);
+            const daviCopyBtn = document.getElementById('daviplata-copy-btn');
+            if (daviCopyBtn) daviCopyBtn.setAttribute('onclick', `copyToClipboard('${daviplata.replace(/\\D/g, '')}', this)`);
+
+            const transferHolder = document.getElementById('transfer-holder-display');
+            if (transferHolder) transferHolder.textContent = holder;
+
+            // Revolut link
+            const revolutBtn = document.getElementById('revolut-pay-btn');
+            if (revolutBtn) revolutBtn.href = revolutUrl;
+
             // Status Update
             updateStatusUI(data.status);
 
@@ -863,12 +947,15 @@
             document.getElementById('thermal-receipt-link').href = thermalLink;
             document.getElementById('paid-receipt-link').href = thermalLink;
 
-            // Revolut link
-            if (data.paymentDetails?.revolut?.url) {
-                document.getElementById('revolut-pay-btn').href = data.paymentDetails.revolut.url;
-            }
-
             updateWhatsAppLink();
+        }
+
+        function formatPhoneDisplay(phone) {
+            const clean = String(phone || '').replace(/\D/g, '');
+            if (clean.length === 10) {
+                return `${clean.substring(0, 3)} ${clean.substring(3, 6)} ${clean.substring(6)}`;
+            }
+            return phone;
         }
 
         function updateStatusUI(status) {
@@ -949,8 +1036,76 @@
             const totalStr = Number(currentOrderData.total || 0).toLocaleString('es-CO');
             const text = `Hola Happy Corner! 🍭 Acabo de realizar el pago del cobro #${currentOrderData.orderId} por $${totalStr} vía ${methodName}. Adjunto el comprobante.`;
 
-            btn.href = `https://wa.me/573112871046?text=${encodeURIComponent(text)}`;
+            let waNum = currentOrderData.paymentSettings?.whatsappPhone || '573112871046';
+            waNum = waNum.replace(/\D/g, '');
+            if (waNum.length === 10) waNum = `57${waNum}`;
+
+            btn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(text)}`;
         }
+
+        // ==============================================
+        // REVOLUT EUR ADVISORY & 10s COUNTDOWN
+        // ==============================================
+        let revCountdownInterval = null;
+
+        window.openRevolutWarningModal = function() {
+            const modal = document.getElementById('revolut-warning-modal');
+            const totalStr = Number(currentOrderData?.total || 0).toLocaleString('es-CO');
+            
+            document.getElementById('rev-modal-amount').textContent = `$${totalStr} COP`;
+
+            // Setup WhatsApp rate negotiation link
+            const waBtn = document.getElementById('rev-rate-wa-btn');
+            let waNum = currentOrderData?.paymentSettings?.whatsappPhone || '573112871046';
+            waNum = waNum.replace(/\D/g, '');
+            if (waNum.length === 10) waNum = `57${waNum}`;
+
+            const waMsg = `Hola Evan! 🍭 Deseo pagar el cobro #${currentOrderData?.orderId || currentOrderId} por $${totalStr} COP vía Revolut/Tarjeta. ¿Cuál es la tasa de cambio en Euros (€) para hoy?`;
+            waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`;
+
+            // Reset and start 10s timer
+            const proceedBtn = document.getElementById('rev-confirm-proceed-btn');
+            const timerSpan = document.getElementById('rev-countdown-timer');
+            
+            if (revCountdownInterval) clearInterval(revCountdownInterval);
+            
+            let secondsLeft = 10;
+            proceedBtn.disabled = true;
+            proceedBtn.style.background = 'rgba(255,255,255,0.08)';
+            proceedBtn.style.color = 'var(--text-muted)';
+            proceedBtn.style.cursor = 'not-allowed';
+            proceedBtn.style.boxShadow = 'none';
+            proceedBtn.innerHTML = `⏳ Espera para aceptar (<span id="rev-countdown-timer">${secondsLeft}</span>s)`;
+
+            modal.style.display = 'flex';
+
+            revCountdownInterval = setInterval(() => {
+                secondsLeft--;
+                const currentTimerSpan = document.getElementById('rev-countdown-timer');
+                if (currentTimerSpan) currentTimerSpan.textContent = secondsLeft;
+
+                if (secondsLeft <= 0) {
+                    clearInterval(revCountdownInterval);
+                    proceedBtn.disabled = false;
+                    proceedBtn.style.background = 'linear-gradient(135deg, #0075eb, #00c6ff)';
+                    proceedBtn.style.color = '#ffffff';
+                    proceedBtn.style.cursor = 'pointer';
+                    proceedBtn.style.boxShadow = '0 6px 20px rgba(0,117,235,0.4)';
+                    proceedBtn.innerHTML = `✅ He acordado la tasa y acepto pagar →`;
+                }
+            }, 1000);
+        };
+
+        window.closeRevolutWarningModal = function() {
+            if (revCountdownInterval) clearInterval(revCountdownInterval);
+            document.getElementById('revolut-warning-modal').style.display = 'none';
+        };
+
+        window.proceedToRevolutPayment = function() {
+            closeRevolutWarningModal();
+            const revUrl = currentOrderData?.paymentSettings?.revolutUrl || currentOrderData?.paymentDetails?.revolut?.url || 'https://revolut.me/evanlensen';
+            window.open(revUrl, '_blank');
+        };
 
         window.copyToClipboard = function(text, btnElement) {
             navigator.clipboard.writeText(text).then(() => {

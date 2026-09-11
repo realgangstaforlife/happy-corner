@@ -1216,6 +1216,63 @@
                     </div>
                 </div>
 
+<!-- PAYMENT METHODS & RECEIVING ACCOUNTS SETTINGS -->
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:800px; margin-bottom:28px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <h3 style="font-weight:900; font-size:18px; margin-bottom:4px; color:var(--accent-cyan);">💳 Cuentas de Cobro y Métodos de Pago</h3>
+                            <p style="color:var(--text-muted); font-size:13px; margin:0;">Configura los números de cuenta, titular, llave Bre-B y enlace de Revolut que verán los clientes en sus links de cobro.</p>
+                        </div>
+                        <button class="admin-btn" style="background:var(--accent-green); padding:10px 18px; font-weight:800;" onclick="savePaymentSettings()">💾 Guardar Cuentas</button>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">Nombre del Titular</label>
+                            <input type="text" id="cfg-pay-holder" class="admin-input" placeholder="Ej: Evan Lensen Mosquera" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--breb-yellow, #f1c40f); text-transform:uppercase; margin-bottom:6px;">⚡ Llave Bre-B (Celular)</label>
+                            <input type="text" id="cfg-pay-breb" class="admin-input" placeholder="Ej: 3112871046" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">📱 Número Nequi</label>
+                            <input type="text" id="cfg-pay-nequi" class="admin-input" placeholder="Ej: 3112871046" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">🏦 Cuenta Bancolombia</label>
+                            <input type="text" id="cfg-pay-bancolombia" class="admin-input" placeholder="Ej: 031-128710-46" style="width:100%;">
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">🏦 Tipo Cuenta Bancolombia</label>
+                            <select id="cfg-pay-bancolombia-type" class="admin-input" style="width:100%;">
+                                <option value="Ahorros">Ahorros</option>
+                                <option value="Corriente">Corriente</option>
+                                <option value="A la mano">A la mano</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">📱 Número Daviplata</label>
+                            <input type="text" id="cfg-pay-daviplata" class="admin-input" placeholder="Ej: 3112871046" style="width:100%;">
+                        </div>
+
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display:block; font-size:11px; font-weight:700; color:#0075eb; text-transform:uppercase; margin-bottom:6px;">💳 Enlace / Usuario Revolut</label>
+                            <input type="url" id="cfg-pay-revolut" class="admin-input" placeholder="Ej: https://revolut.me/evanlensen" style="width:100%;">
+                        </div>
+
+                        <div style="grid-column: 1 / -1;">
+                            <label style="display:block; font-size:11px; font-weight:700; color:#25d366; text-transform:uppercase; margin-bottom:6px;"><i class="fab fa-whatsapp"></i> WhatsApp para Recepción de Comprobantes</label>
+                            <input type="text" id="cfg-pay-whatsapp" class="admin-input" placeholder="Ej: 573112871046" style="width:100%;">
+                        </div>
+                    </div>
+                </div>
+
 <!-- GLOBAL ACCESS CONTROLS (DROP / MAINTENANCE) -->
                 <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:16px; padding:24px; max-width:800px;">
                     <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; flex-wrap:wrap; gap:16px;">
@@ -1774,13 +1831,35 @@
                     </div>
                 </div>
 
-                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Nombre del Cliente</label>
-                <input type="text" id="pl-customer-name" class="admin-input" placeholder="Nombre completo del alumno/cliente" style="margin-bottom:14px; width:100%;">
+                <!-- CLIENT SEARCH & ASSIGNMENT -->
+                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Asignar a Cliente (Buscar por Nombre, Teléfono o HappyCode)</label>
+                <div style="position:relative; margin-bottom:12px;">
+                    <input type="text" id="pl-client-search" class="admin-input" placeholder="🔍 Escribe nombre, teléfono o HappyCode..." style="width:100%;" oninput="searchClientsForPaymentLink(this.value)" autocomplete="off">
+                    <div id="pl-client-autocomplete" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--surface-elevated, #232533); border:1px solid var(--border-color); border-radius:12px; max-height:220px; overflow-y:auto; z-index:1100; box-shadow:0 10px 30px rgba(0,0,0,0.6);"></div>
+                </div>
 
-                <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Teléfono / WhatsApp (Opcional)</label>
-                <input type="tel" id="pl-customer-phone" class="admin-input" placeholder="Ej: 3112871046" style="margin-bottom:14px; width:100%;">
+                <!-- SELECTED CLIENT BADGE -->
+                <div id="pl-selected-client-badge" style="display:none; background:rgba(0,117,235,0.12); border:1px solid rgba(0,117,235,0.3); border-radius:12px; padding:10px 14px; margin-bottom:14px; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">👤</span>
+                        <div>
+                            <div id="pl-badge-name" style="font-weight:800; font-size:13px; color:#fff;"></div>
+                            <div id="pl-badge-meta" style="font-size:11px; color:var(--text-muted);"></div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="clearSelectedClientForPaymentLink()" style="background:none; border:none; color:var(--accent-red); font-size:14px; cursor:pointer; font-weight:bold; padding:4px 8px;">✕ Quitar</button>
+                </div>
+
+                <div id="pl-manual-fields">
+                    <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Nombre del Cliente</label>
+                    <input type="text" id="pl-customer-name" class="admin-input" placeholder="Nombre completo del alumno/cliente" style="margin-bottom:14px; width:100%;">
+
+                    <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Teléfono / WhatsApp (Opcional)</label>
+                    <input type="tel" id="pl-customer-phone" class="admin-input" placeholder="Ej: 3112871046" style="margin-bottom:14px; width:100%;">
+                </div>
 
                 <input type="hidden" id="pl-customer-uid">
+                <input type="hidden" id="pl-customer-happycode">
 
                 <button class="admin-btn" style="background:linear-gradient(135deg, #0075eb, #9b51e0); width:100%; font-weight:800; padding:14px;" onclick="submitCreatePaymentLink()">
                     ✨ CREAR Y GENERAR LINK
@@ -2461,6 +2540,7 @@
             setupContractsListener();
             setupLeaderboardListener();
             setupGlobalSettingsListener();
+            setupPaymentSettingsListener();
 
             // Setup search typing helper
             document.getElementById('client-search-input').addEventListener('input', (e) => {
@@ -2492,7 +2572,74 @@
                 }
             });
         }
+
+        // Payment Settings listener
+        function setupPaymentSettingsListener() {
+            onSnapshot(doc(db, 'storeSettings', 'payment'), (docSnap) => {
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    const holder = document.getElementById('cfg-pay-holder');
+                    const breb = document.getElementById('cfg-pay-breb');
+                    const nequi = document.getElementById('cfg-pay-nequi');
+                    const bancolombia = document.getElementById('cfg-pay-bancolombia');
+                    const bancolombiaType = document.getElementById('cfg-pay-bancolombia-type');
+                    const daviplata = document.getElementById('cfg-pay-daviplata');
+                    const revolut = document.getElementById('cfg-pay-revolut');
+                    const whatsapp = document.getElementById('cfg-pay-whatsapp');
+
+                    if (holder) holder.value = d.holderName || '';
+                    if (breb) breb.value = d.brebKey || '';
+                    if (nequi) nequi.value = d.nequiNumber || '';
+                    if (bancolombia) bancolombia.value = d.bancolombiaNumber || '';
+                    if (bancolombiaType) bancolombiaType.value = d.bancolombiaType || 'Ahorros';
+                    if (daviplata) daviplata.value = d.daviplataNumber || '';
+                    if (revolut) revolut.value = d.revolutUrl || '';
+                    if (whatsapp) whatsapp.value = d.whatsappPhone || '';
+                }
+            });
+        }
         
+        window.savePaymentSettings = async function() {
+            const holder = document.getElementById('cfg-pay-holder').value.trim();
+            const breb = document.getElementById('cfg-pay-breb').value.trim();
+            const nequi = document.getElementById('cfg-pay-nequi').value.trim();
+            const bancolombia = document.getElementById('cfg-pay-bancolombia').value.trim();
+            const bancolombiaType = document.getElementById('cfg-pay-bancolombia-type').value;
+            const daviplata = document.getElementById('cfg-pay-daviplata').value.trim();
+            const revolut = document.getElementById('cfg-pay-revolut').value.trim();
+            const whatsapp = document.getElementById('cfg-pay-whatsapp').value.trim();
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=savePaymentSettings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        holderName: holder,
+                        brebKey: breb,
+                        nequiNumber: nequi,
+                        bancolombiaNumber: bancolombia,
+                        bancolombiaType: bancolombiaType,
+                        daviplataNumber: daviplata,
+                        revolutUrl: revolut,
+                        whatsappPhone: whatsapp
+                    })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("✅ Cuentas y medios de pago guardados exitosamente.", "success");
+                } else {
+                    hcAlert(data.error || "Error guardando cuentas.", "error");
+                }
+            } catch (err) {
+                console.error("Error saving payment settings:", err);
+                hcAlert("Error de conexión al guardar medios de pago.", "error");
+            }
+        };
+
         window.saveGlobalAccessSettings = async function() {
             const adminMode = document.getElementById('toggle-admin-mode').checked;
             const dropMode = document.getElementById('toggle-drop-mode').checked;
@@ -3315,12 +3462,10 @@
 
         window.openPaymentLinkForSelectedClient = function() {
             if (!selectedClientUid) return;
-            const client = currentClientsList.find(c => c.uid === selectedClientUid) || {};
             resetPaymentLinkForm();
-            document.getElementById('pl-customer-name').value = client.displayName || client.name || '';
-            document.getElementById('pl-customer-phone').value = client.phone || '';
-            document.getElementById('pl-customer-uid').value = selectedClientUid;
-            if (client.activeDebt > 0) {
+            selectClientForPaymentLink(selectedClientUid);
+            const client = currentClientsList.find(c => c.uid === selectedClientUid);
+            if (client && client.activeDebt > 0) {
                 document.getElementById('pl-total').value = client.activeDebt;
                 document.getElementById('pl-concept').value = `Pago de saldo pendiente / Deuda`;
             }
@@ -3331,14 +3476,92 @@
             document.getElementById('payment-link-modal').classList.remove('active');
         };
 
+        window.searchClientsForPaymentLink = function(val) {
+            const query = (val || '').toLowerCase().trim();
+            const autoBox = document.getElementById('pl-client-autocomplete');
+            if (!query) {
+                autoBox.style.display = 'none';
+                return;
+            }
+
+            const queryClean = query.replace(/\D/g, '');
+            const matches = (currentClientsList || []).filter(c => {
+                const name = (c.displayName || c.name || '').toLowerCase();
+                const code = (c.customerCode || '').toLowerCase();
+                const happyCode = (c.happycode || c.happyCode || '').toLowerCase();
+                const phone = (c.phone || '').replace(/\D/g, '');
+
+                return name.includes(query) ||
+                       code.includes(query) ||
+                       happyCode.includes(query) ||
+                       (queryClean && phone.includes(queryClean));
+            }).slice(0, 6);
+
+            if (matches.length === 0) {
+                autoBox.innerHTML = `
+                    <div style="padding:12px; color:var(--text-muted); font-size:12px; text-align:center;">
+                        No se encontraron clientes coincidentes.
+                    </div>
+                `;
+                autoBox.style.display = 'block';
+                return;
+            }
+
+            autoBox.innerHTML = matches.map(c => {
+                const name = c.displayName || c.name || 'Cliente';
+                const hCode = c.happycode || c.happyCode || c.customerCode || '';
+                const phone = c.phone || '';
+                return `
+                    <div class="autocomplete-item" onclick="selectClientForPaymentLink('${c.uid}')" style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border-color); cursor:pointer; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='transparent'">
+                        <div>
+                            <div style="font-weight:700; font-size:13px; color:#fff;">${name}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">${phone ? '📱 ' + phone : ''} ${hCode ? '· 🏷️ ' + hCode : ''}</div>
+                        </div>
+                        <span style="font-family:monospace; font-size:12px; font-weight:800; color:var(--hp-pink);">${hCode || '—'}</span>
+                    </div>
+                `;
+            }).join('');
+            autoBox.style.display = 'block';
+        };
+
+        window.selectClientForPaymentLink = function(uid) {
+            const client = (currentClientsList || []).find(c => c.uid === uid);
+            if (!client) return;
+
+            const name = client.displayName || client.name || 'Cliente';
+            const phone = client.phone || '';
+            const hCode = client.happycode || client.happyCode || client.customerCode || '';
+
+            document.getElementById('pl-customer-uid').value = uid;
+            document.getElementById('pl-customer-happycode').value = hCode;
+            document.getElementById('pl-customer-name').value = name;
+            document.getElementById('pl-customer-phone').value = phone;
+
+            document.getElementById('pl-badge-name').textContent = name;
+            document.getElementById('pl-badge-meta').textContent = `${phone ? '📱 ' + phone : ''} ${hCode ? '· 🏷️ ' + hCode : ''} · Puntos: ${client.happyPoints || client.happyscore || 0}`;
+            
+            document.getElementById('pl-selected-client-badge').style.display = 'flex';
+            document.getElementById('pl-client-search').value = '';
+            document.getElementById('pl-client-autocomplete').style.display = 'none';
+            document.getElementById('pl-manual-fields').style.display = 'none';
+        };
+
+        window.clearSelectedClientForPaymentLink = function() {
+            document.getElementById('pl-customer-uid').value = '';
+            document.getElementById('pl-customer-happycode').value = '';
+            document.getElementById('pl-customer-name').value = '';
+            document.getElementById('pl-customer-phone').value = '';
+            document.getElementById('pl-selected-client-badge').style.display = 'none';
+            document.getElementById('pl-manual-fields').style.display = 'block';
+            document.getElementById('pl-client-search').value = '';
+        };
+
         window.resetPaymentLinkForm = function() {
             document.getElementById('payment-link-form').style.display = 'block';
             document.getElementById('payment-link-result').style.display = 'none';
             document.getElementById('pl-concept').value = '';
             document.getElementById('pl-total').value = '';
-            document.getElementById('pl-customer-name').value = '';
-            document.getElementById('pl-customer-phone').value = '';
-            document.getElementById('pl-customer-uid').value = '';
+            clearSelectedClientForPaymentLink();
         };
 
         window.submitCreatePaymentLink = async function() {
@@ -3347,6 +3570,7 @@
             const customerName = document.getElementById('pl-customer-name').value.trim();
             const customerPhone = document.getElementById('pl-customer-phone').value.trim();
             const customerUID = document.getElementById('pl-customer-uid').value.trim() || null;
+            const happyCode = document.getElementById('pl-customer-happycode').value.trim() || null;
             const expiresInDays = document.getElementById('pl-expires').value;
 
             if (!total || total <= 0) {
@@ -3368,6 +3592,7 @@
                         customerName: customerName || 'Público General',
                         customerPhone,
                         customerUID,
+                        happyCode,
                         expiresInDays
                     })
                 });

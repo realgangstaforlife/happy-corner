@@ -1,4 +1,4 @@
-const CACHE_NAME = 'happy-corner-v2';
+const CACHE_NAME = 'happy-corner-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   // Only handle GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip API calls and external services (including fonts and avatars)
+  // Skip API calls and external services
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
@@ -64,9 +64,19 @@ self.addEventListener('fetch', (event) => {
 
         return response;
       })
-      .catch(() => {
+      .catch(async () => {
         // If network fails, try to return from cache
-        return caches.match(event.request);
+        try {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+        } catch (e) {}
+
+        // Fallback response so Service Worker doesn't throw TypeError
+        return new Response('Network error and not found in offline cache.', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' }
+        });
       })
   );
 });

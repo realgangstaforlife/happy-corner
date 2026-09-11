@@ -846,21 +846,36 @@
                 }
 
                 const matches = allCustomers.filter(c => {
-                    const matchStr = `${c.displayName || c.name || ''} ${c.customerCode || ''}`.toLowerCase();
-                    return matchStr.includes(val);
-                }).slice(0, 5);
+                    const name = (c.displayName || c.name || '').toLowerCase();
+                    const code = (c.customerCode || '').toLowerCase();
+                    const happyCode = (c.happycode || c.happyCode || '').toLowerCase();
+                    const phone = (c.phone || c.telefono || '').replace(/\D/g, '');
+                    const valClean = val.replace(/\D/g, '');
+
+                    return name.includes(val) || 
+                           code.includes(val) || 
+                           happyCode.includes(val) || 
+                           (valClean && phone.includes(valClean));
+                }).slice(0, 6);
 
                 if (matches.length === 0) {
                     autoBox.style.display = 'none';
                     return;
                 }
 
-                autoBox.innerHTML = matches.map(c => `
-                    <div class="autocomplete-item" onclick="assignCustomer('${c.uid}')">
-                        <span style="font-weight:700;">${c.displayName || c.name}</span>
-                        <span style="font-family:monospace; color:var(--primary-color);">${c.customerCode || '—'}</span>
+                autoBox.innerHTML = matches.map(c => {
+                    const hCode = c.happycode || c.happyCode || c.customerCode || '';
+                    const phoneStr = c.phone || '';
+                    return `
+                    <div class="autocomplete-item" onclick="assignCustomer('${c.uid}')" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px;">
+                        <div>
+                            <div style="font-weight:700; font-size:13px;">${c.displayName || c.name}</div>
+                            <div style="font-size:11px; color:var(--text-muted);">${phoneStr ? '📱 ' + phoneStr : ''} ${hCode ? '· 🏷️ ' + hCode : ''}</div>
+                        </div>
+                        <span style="font-family:monospace; font-weight:bold; font-size:12px; color:var(--primary-color);">${hCode || '—'}</span>
                     </div>
-                `).join('');
+                `;
+                }).join('');
                 autoBox.style.display = 'block';
             });
 
@@ -1115,6 +1130,7 @@
                         customerName: clientName,
                         customerPhone: clientPhone,
                         customerUID: selectedCustomer ? selectedCustomer.uid : null,
+                        happyCode: selectedCustomer ? (selectedCustomer.happycode || selectedCustomer.happyCode || selectedCustomer.customerCode || null) : null,
                         expiresInDays: 3
                     })
                 });

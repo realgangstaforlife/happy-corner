@@ -153,6 +153,26 @@ export default async function handler(req, res) {
                     }
 
                     const rawName = data.customerName || data.nombre || 'Cliente';
+
+                    // Fetch dynamic payment settings
+                    let paymentSettings = {
+                        holderName: 'Evan Lensen Mosquera',
+                        brebKey: '3112871046',
+                        nequiNumber: '3112871046',
+                        bancolombiaNumber: '031-128710-46',
+                        bancolombiaType: 'Ahorros',
+                        daviplataNumber: '3112871046',
+                        revolutUrl: 'https://revolut.me/evanlensen',
+                        whatsappPhone: '573112871046'
+                    };
+                    try {
+                        const pSetSnap = await db.collection('storeSettings').doc('payment').get();
+                        if (pSetSnap.exists) {
+                            paymentSettings = { ...paymentSettings, ...pSetSnap.data() };
+                        }
+                    } catch (e) {
+                        console.warn("Could not read payment settings:", e);
+                    }
                     
                     return json(res, 200, {
                         ok: true,
@@ -162,33 +182,37 @@ export default async function handler(req, res) {
                         status: isExpired ? 'expired' : (data.status || 'pending'),
                         customerName: rawName,
                         customerPhone: data.customerPhone ? data.customerPhone.substring(0, 4) + '***' : null,
+                        happyCode: data.happyCode || data.happycode || null,
+                        customerUID: data.customerUID || null,
                         createdAt: data.createdAt || null,
                         expiresAt: data.expiresAt || null,
                         paidAt: data.paidAt || null,
                         paymentMethod: data.paymentMethod || null,
                         items: data.items || [],
                         notes: data.notes || '',
+                        paymentSettings,
                         paymentDetails: {
                             revolut: {
                                 name: 'Revolut (Tarjeta)',
-                                url: process.env.REVOLUT_PAY_URL || 'https://revolut.me/evanlensen',
+                                url: paymentSettings.revolutUrl || process.env.REVOLUT_PAY_URL || 'https://revolut.me/evanlensen',
                                 instructions: 'Paga con tarjeta de débito o crédito internacional/nacional al instante sin comisiones adicionales.'
                             },
                             transferencia: {
                                 name: 'Transferencia Bancaria',
+                                holder: paymentSettings.holderName || 'Evan Lensen Mosquera',
                                 banks: [
-                                    { bank: 'Nequi', number: '3112871046', type: 'Celular / Ahorros', holder: 'Evan Lensen' },
-                                    { bank: 'Bancolombia', number: '3112871046', type: 'A la mano / Ahorros', holder: 'Evan Lensen' },
-                                    { bank: 'Daviplata', number: '3112871046', type: 'Daviplata', holder: 'Evan Lensen' }
+                                    { bank: 'Nequi', number: paymentSettings.nequiNumber || '3112871046', type: 'Celular / Ahorros', holder: paymentSettings.holderName || 'Evan Lensen Mosquera' },
+                                    { bank: 'Bancolombia', number: paymentSettings.bancolombiaNumber || '031-128710-46', type: paymentSettings.bancolombiaType || 'Ahorros', holder: paymentSettings.holderName || 'Evan Lensen Mosquera' },
+                                    { bank: 'Daviplata', number: paymentSettings.daviplataNumber || '3112871046', type: 'Daviplata', holder: paymentSettings.holderName || 'Evan Lensen Mosquera' }
                                 ],
                                 instructions: 'Realiza la transferencia desde la app de tu banco y guarda el comprobante.'
                             },
                             breb: {
                                 name: 'Bre-B (Transferencia Inmediata)',
                                 keyType: 'Celular',
-                                key: '3112871046',
-                                alias: 'Happy Corner / Evan Lensen',
-                                instructions: 'Desde cualquier banco de Colombia, entra a la opción de transferencias inmediatas por Bre-B, usa la llave celular 3112871046 y envía el monto exacto sin costo.'
+                                key: paymentSettings.brebKey || '3112871046',
+                                alias: paymentSettings.holderName ? `Happy Corner / ${paymentSettings.holderName}` : 'Happy Corner / Evan Lensen',
+                                instructions: `Desde cualquier banco de Colombia, entra a la opción de transferencias inmediatas por Bre-B, usa la llave celular ${paymentSettings.brebKey || '3112871046'} y envía el monto exacto sin costo.`
                             }
                         }
                     });
@@ -1521,9 +1545,30 @@ export default async function handler(req, res) {
             if (action === 'createPaymentLink') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado.' });
 
-                const { concept, total, customerName, customerPhone, customerEmail, customerUID, expiresInDays, notes } = req.body;
+                const { concept, total, customerName, customerPhone, customerEmail, customerUID, happyCode, expiresInDays, notes } = req.body;
                 if (!total || total <= 0) {
                     return json(res, 400, { error: 'El monto total debe ser mayor a 0.' });
+                }
+
+                let finalName = customerName || 'Público General';
+                let finalPhone = customerPhone || '';
+                let finalEmail = customerEmail || '';
+                let finalHappyCode = happyCode || null;
+
+                // Auto-enrich if customerUID provided
+                if (customerUID) {
+                    try {
+                        const userSnap = await db.collection('users').doc(customerUID).get();
+                        if (userSnap.exists) {
+                            const uData = userSnap.data();
+                            if (!customerName) finalName = uData.displayName || uData.name || finalName;
+                            if (!customerPhone) finalPhone = uData.phone || finalPhone;
+                            if (!customerEmail) finalEmail = uData.email || finalEmail;
+                            if (!finalHappyCode) finalHappyCode = uData.happycode || uData.happyCode || uData.customerCode || null;
+                        }
+                    } catch (uErr) {
+                        console.warn("Could not enrich customer info:", uErr);
+                    }
                 }
 
                 const numDays = expiresInDays ? parseInt(expiresInDays) : 3;
@@ -1538,10 +1583,11 @@ export default async function handler(req, res) {
                     total: Math.round(Number(total)),
                     status: 'pending',
                     isPaymentLink: true,
-                    customerName: customerName || 'Público General',
-                    customerPhone: customerPhone || '',
-                    customerEmail: customerEmail || '',
+                    customerName: finalName,
+                    customerPhone: finalPhone,
+                    customerEmail: finalEmail,
                     customerUID: customerUID || null,
+                    happyCode: finalHappyCode,
                     notes: notes || '',
                     createdAt: now.toISOString(),
                     expiresAt,
@@ -1554,7 +1600,7 @@ export default async function handler(req, res) {
 
                 const linkUrl = `https://happycorner.top/cobro?id=${orderId}`;
                 const formattedTotal = Number(total).toLocaleString('es-CO');
-                const whatsappMessage = `Hola ${customerName || ''}! 🍭 Aquí tienes tu link de cobro de Happy Corner por valor de $${formattedTotal}: ${linkUrl}\nPuedes pagar fácil y rápido con Revolut (Tarjeta), Transferencia Bancaria o Bre-B. ¡Gracias! ✨`;
+                const whatsappMessage = `Hola ${finalName !== 'Público General' ? finalName : ''}! 🍭 Aquí tienes tu link de cobro de Happy Corner por valor de $${formattedTotal}: ${linkUrl}\nPuedes pagar fácil y rápido con Bre-B, Transferencia Bancaria o Revolut (Tarjeta). ¡Gracias! ✨`;
 
                 return json(res, 200, {
                     ok: true,
@@ -1585,6 +1631,38 @@ export default async function handler(req, res) {
                 await db.collection('payment_requests').doc(orderId).set(updateData, { merge: true });
 
                 return json(res, 200, { ok: true, orderId });
+            }
+
+            // --- 4.4 ACCIÓN: savePaymentSettings (SOLO ADMIN) ---
+            if (action === 'savePaymentSettings') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado.' });
+
+                const {
+                    holderName,
+                    brebKey,
+                    nequiNumber,
+                    bancolombiaNumber,
+                    bancolombiaType,
+                    daviplataNumber,
+                    revolutUrl,
+                    whatsappPhone
+                } = req.body;
+
+                const paymentConfig = {
+                    holderName: holderName ? holderName.trim() : 'Evan Lensen Mosquera',
+                    brebKey: brebKey ? brebKey.trim() : '3112871046',
+                    nequiNumber: nequiNumber ? nequiNumber.trim() : '3112871046',
+                    bancolombiaNumber: bancolombiaNumber ? bancolombiaNumber.trim() : '031-128710-46',
+                    bancolombiaType: bancolombiaType ? bancolombiaType.trim() : 'Ahorros',
+                    daviplataNumber: daviplataNumber ? daviplataNumber.trim() : '3112871046',
+                    revolutUrl: revolutUrl ? revolutUrl.trim() : 'https://revolut.me/evanlensen',
+                    whatsappPhone: whatsappPhone ? whatsappPhone.trim() : '573112871046',
+                    updatedAt: new Date().toISOString(),
+                    updatedBy: decoded.uid
+                };
+
+                await db.collection('storeSettings').doc('payment').set(paymentConfig, { merge: true });
+                return json(res, 200, { ok: true, paymentConfig });
             }
 
             // --- 5. ACCIÓN: adminCreateClient (SOLO ADMIN) ---
