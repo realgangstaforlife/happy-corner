@@ -337,6 +337,25 @@
                 window.location.href = '/onboarding';
             } else {
                 const userData = userSnap.data();
+                const now = new Date();
+                let isBanned = userData.banned === true;
+                if (isBanned && userData.bannedUntil && new Date(userData.bannedUntil) <= now) {
+                    isBanned = false;
+                }
+                if (isBanned) {
+                    localStorage.setItem('hc_blacklist', 'true');
+                    try {
+                        const token = await user.getIdToken();
+                        await fetch('/api/account?action=logLogin', {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                    } catch (e) {}
+                    await auth.signOut();
+                    window.location.href = '/banned?reason=' + encodeURIComponent(userData.banReason || 'Cuenta suspendida.');
+                    return;
+                }
+
                 // Auto-backfill email / provider for legacy accounts
                 const updates = {};
                 if (!userData.email && email) updates.email = email;

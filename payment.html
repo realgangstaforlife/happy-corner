@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Métodos de Pago Oficiales | Happy Corner 🍭</title>
+    <link rel="icon" type="image/png" href="/happyfavicon.png">
+
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --surface-color: #15161e;
+            --surface-card: #1c1d27;
+            --surface-elevated: #232533;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f5f6fa;
+            --text-muted: #8e92a4;
+            --primary-pink: #ff5299;
+            --primary-hover: #ff7bb5;
+            --accent-purple: #9b51e0;
+            --accent-green: #2ecc71;
+            --accent-orange: #f39c12;
+            --accent-red: #e74c3c;
+            --accent-cyan: #00d2d3;
+            --breb-yellow: #f1c40f;
+            --hp-gradient: linear-gradient(135deg, #b01e5a, #ff5299, #ff8c42);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f4f6f9;
+            --surface-color: #ffffff;
+            --surface-card: #f9fafd;
+            --surface-elevated: #edf2f7;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-color: #2d3436;
+            --text-muted: #636e72;
+            --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 520px;
+            padding: 20px 16px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        /* Brand Hero */
+        .brand-header {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .brand-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(255, 82, 153, 0.35);
+        }
+
+        .brand-title {
+            font-size: 26px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+            background: var(--hp-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 380px;
+            line-height: 1.5;
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            background: rgba(46, 204, 113, 0.12);
+            color: var(--accent-green);
+            border: 1px solid rgba(46, 204, 113, 0.25);
+            margin-top: 4px;
+        }
+
+        /* Payment Card Container */
+        .payment-box {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--hp-gradient);
+        }
+
+        .methods-title {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Tabs Navigation */
+        .method-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .method-tab {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 12px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        .method-tab:hover {
+            background: var(--surface-elevated);
+            color: var(--text-color);
+            transform: translateY(-2px);
+        }
+
+        .method-tab.active {
+            background: var(--surface-elevated);
+            border-color: var(--primary-pink);
+            color: var(--text-color);
+            box-shadow: 0 4px 16px rgba(255, 82, 153, 0.2);
+        }
+
+        .method-tab.active.tab-breb {
+            border-color: var(--breb-yellow);
+            box-shadow: 0 4px 16px rgba(241, 196, 15, 0.25);
+        }
+
+        .method-tab.active.tab-revolut {
+            border-color: #0075eb;
+            box-shadow: 0 4px 16px rgba(0, 117, 235, 0.25);
+        }
+
+        .method-tab-icon {
+            font-size: 20px;
+        }
+
+        .method-tab-label {
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        /* Content Cards */
+        .method-content-card {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .method-content-card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .method-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .method-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .method-info h3 {
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .method-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            line-height: 1.4;
+        }
+
+        /* Copyable Info Box */
+        .copy-box {
+            background: var(--surface-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .copy-box:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .copy-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .copy-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .copy-value {
+            font-family: 'Courier Prime', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.05em;
+        }
+
+        [data-theme="light"] .copy-value {
+            color: #2d3436;
+        }
+
+        .btn-copy {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy:hover {
+            background: var(--primary-pink);
+            color: #fff;
+            border-color: var(--primary-pink);
+        }
+
+        .btn-copy.copied {
+            background: var(--accent-green);
+            color: #fff;
+            border-color: var(--accent-green);
+        }
+
+        /* Step instructions */
+        .step-list {
+            list-style: none;
+            margin: 14px 0 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--text-muted);
+        }
+
+        .step-num {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-color);
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* Action Buttons */
+        .btn-action {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px;
+            border-radius: 16px;
+            font-size: 15px;
+            font-weight: 800;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-sizing: border-box;
+        }
+
+        .btn-whatsapp {
+            background: #25d366;
+            color: white;
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+        }
+
+        .btn-whatsapp:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+        }
+
+        .btn-secondary {
+            background: var(--surface-elevated);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .btn-revolut-pay {
+            background: linear-gradient(135deg, #0075eb, #00c6ff);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(0, 117, 235, 0.35);
+        }
+
+        .btn-revolut-pay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 117, 235, 0.45);
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface-elevated);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Modal Revolut */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            max-width: 440px;
+            width: 100%;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: none;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header / Navbar -->
+    <header>
+        <a href="/index" class="logo">
+            <img src="loguito.png" alt="HappyCorner" class="logo-img">
+        </a>
+        <nav class="nav-desktop">
+            <a href="/index">Inicio</a>
+            <a href="/catalogo">Catálogo</a>
+            <a href="/order">HappyOrder</a>
+            <a href="/reviews">Reseñas</a>
+            <a href="/payment" style="color:var(--primary-pink); font-weight:700;">Métodos de Pago</a>
+        </nav>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button class="theme-toggle" onclick="toggleTheme()" title="Night Mode">
+                <span id="theme-icon">🌙</span>
+            </button>
+            <a href="/mi-cuenta" id="auth-icon-desktop" style="color: var(--text-color); margin-left: 10px; display: flex; align-items: center; text-decoration: none;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </a>
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir Menú">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <div class="overlay" id="overlay"></div>
+    <nav class="side-menu" id="sideMenu">
+        <a href="/index">Inicio</a>
+        <a href="/catalogo">Catálogo</a>
+        <a href="/order">HappyOrder</a>
+        <a href="/reviews">Reseñas</a>
+        <a href="/payment" style="color:var(--primary-pink); font-weight:700;">Métodos de Pago</a>
+        <a href="/terminos">Términos</a>
+        <a href="/wallet">Happy Passes</a>
+        <a href="/login.html" class="login-mobile-link" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">Iniciar Sesión</a>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-wrapper">
+
+        <!-- Brand Header -->
+        <div class="brand-header">
+            <img src="loguito.png" alt="Happy Corner Logo" class="brand-logo">
+            <h1 class="brand-title">Métodos de Pago 🍭</h1>
+            <p class="brand-subtitle">Transfiere de forma rápida, sin comisiones y con acreditación inmediata en Happy Corner.</p>
+            <div class="verified-badge">
+                <i class="fas fa-shield-alt"></i> Cuentas Oficiales Verificadas
+            </div>
+        </div>
+
+        <!-- Payment Box -->
+        <div class="payment-box">
+            <div class="methods-title">
+                <i class="fas fa-wallet" style="color:var(--primary-pink);"></i> Selecciona tu método de pago preferido:
+            </div>
+
+            <!-- Tabs -->
+            <div class="method-tabs">
+                <div class="method-tab active tab-breb" onclick="switchMethod('breb')">
+                    <div class="method-tab-icon" style="color:var(--breb-yellow);"><i class="fas fa-bolt"></i></div>
+                    <div class="method-tab-label">Bre-B</div>
+                </div>
+                <div class="method-tab tab-transfer" onclick="switchMethod('transfer')">
+                    <div class="method-tab-icon" style="color:var(--accent-cyan);"><i class="fas fa-university"></i></div>
+                    <div class="method-tab-label">Transferencia</div>
+                </div>
+                <div class="method-tab tab-revolut" onclick="switchMethod('revolut')">
+                    <div class="method-tab-icon" style="color:#0075eb;"><i class="fas fa-credit-card"></i></div>
+                    <div class="method-tab-label">Revolut / Tarjeta</div>
+                </div>
+            </div>
+
+            <!-- CARD: BRE-B -->
+            <div id="card-breb" class="method-content-card active">
+                <div class="method-header">
+                    <div class="method-icon-wrap" style="background:rgba(241,196,15,0.15); color:var(--breb-yellow);">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="method-info">
+                        <h3>Bre-B (Interoperabilidad Inmediata)</h3>
+                        <p>Transferencias gratuitas al instante desde cualquier entidad bancaria en Colombia.</p>
+                    </div>
+                </div>
+
+                <div class="copy-box">
+                    <div class="copy-details">
+                        <span class="copy-label">Tipo de Llave</span>
+                        <span class="copy-value" style="font-size:14px; font-family:inherit;">Celular</span>
+                    </div>
+                    <div class="copy-details" style="text-align:right;">
+                        <span class="copy-label">Llave Bre-B</span>
+                        <span class="copy-value" id="breb-key-display">311 287 1046</span>
+                    </div>
+                    <button class="btn-copy" id="breb-copy-btn" onclick="copyToClipboard('3112871046', this)">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <div class="copy-box">
+                    <div class="copy-details">
+                        <span class="copy-label">Titular / Nombre Oficial</span>
+                        <span class="copy-value" id="breb-holder-display" style="font-size:14px; font-family:inherit;">Evan Lensen Mosquera</span>
+                    </div>
+                </div>
+
+                <ul class="step-list">
+                    <li class="step-item">
+                        <div class="step-num">1</div>
+                        <div>Abre la app de tu banco (Bancolombia, Nequi, Daviplata, BBVA, etc.) y selecciona la opción <strong>Bre-B / Transferencias inmediatas</strong>.</div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-num">2</div>
+                        <div>Elige llave tipo <strong>Celular</strong>, ingresa <strong id="breb-step-key">3112871046</strong> y digita el monto.</div>
+                    </li>
+                    <li class="step-item">
+                        <div class="step-num">3</div>
+                        <div>Guarda el comprobante y envíalo por WhatsApp tocando el botón de abajo.</div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- CARD: TRANSFERENCIA DIRECTA -->
+            <div id="card-transfer" class="method-content-card">
+                <div class="method-header">
+                    <div class="method-icon-wrap" style="background:rgba(0,210,211,0.15); color:var(--accent-cyan);">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div class="method-info">
+                        <h3>Transferencia Bancaria Directa</h3>
+                        <p>Transferencias entre cuentas de la misma entidad o interbancarias.</p>
+                    </div>
+                </div>
+
+                <!-- Nequi -->
+                <div class="copy-box">
+                    <div class="copy-details">
+                        <span class="copy-label">Nequi (Ahorros / Celular)</span>
+                        <span class="copy-value" id="nequi-num-display">311 287 1046</span>
+                    </div>
+                    <button class="btn-copy" id="nequi-copy-btn" onclick="copyToClipboard('3112871046', this)">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <!-- Bancolombia -->
+                <div class="copy-box">
+                    <div class="copy-details">
+                        <span class="copy-label" id="bancolombia-label-display">Bancolombia (Ahorros)</span>
+                        <span class="copy-value" id="bancolombia-num-display">031-128710-46</span>
+                    </div>
+                    <button class="btn-copy" id="bancolombia-copy-btn" onclick="copyToClipboard('03112871046', this)">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <!-- Daviplata -->
+                <div class="copy-box">
+                    <div class="copy-details">
+                        <span class="copy-label">Daviplata</span>
+                        <span class="copy-value" id="daviplata-num-display">311 287 1046</span>
+                    </div>
+                    <button class="btn-copy" id="daviplata-copy-btn" onclick="copyToClipboard('3112871046', this)">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+
+                <div style="font-size:12px; color:var(--text-muted); margin-top:12px;">
+                    Titular: <strong id="transfer-holder-display" style="color:var(--text-color);">Evan Lensen Mosquera</strong>
+                </div>
+            </div>
+
+            <!-- CARD: REVOLUT (TARJETA) -->
+            <div id="card-revolut" class="method-content-card">
+                <div class="method-header">
+                    <div class="method-icon-wrap" style="background:rgba(0,117,235,0.15); color:#0075eb;">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="method-info">
+                        <h3>Revolut / Tarjetas Internacionales</h3>
+                        <p>Paga con Visa, Mastercard, Apple Pay o Google Pay.</p>
+                    </div>
+                </div>
+
+                <!-- EUR Currency Notice Box -->
+                <div style="background:rgba(241, 196, 15, 0.1); border:1px solid rgba(241, 196, 15, 0.3); border-radius:14px; padding:12px 14px; margin-bottom:12px; font-size:12px; line-height:1.5; color:var(--breb-yellow, #f1c40f);">
+                    <div style="font-weight:800; display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                        <span>💶</span> Cobro procesado en EUROS (€ / EUR)
+                    </div>
+                    Para compras o cobros en pesos (COP), debes consultar la tasa de cambio con la administración antes de pagar.
+                </div>
+
+                <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:14px; padding:14px; font-size:13px; line-height:1.5; color:var(--text-muted); margin-bottom:14px;">
+                    <div style="font-weight:700; color:var(--text-color); margin-bottom:4px;">✨ Pago digital instantáneo</div>
+                    Acepta tarjetas de débito o crédito de cualquier país, además de billeteras digitales como Apple Pay y Google Pay.
+                </div>
+
+                <button id="revolut-pay-btn" type="button" class="btn-action btn-revolut-pay" onclick="openRevolutWarningModal()" style="border:none;">
+                    <i class="fas fa-lock"></i> Pagar con Revolut / Tarjeta (€)
+                </button>
+            </div>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div style="display:flex; flex-direction:column; gap:10px;">
+            <a id="whatsapp-notify-btn" href="https://wa.me/573112871046?text=Hola%20Happy%20Corner!%20%F0%9F%8D%AD%20Adjunto%20mi%20comprobante%20de%20pago." target="_blank" class="btn-action btn-whatsapp">
+                <i class="fab fa-whatsapp" style="font-size:20px;"></i> Enviar Comprobante por WhatsApp
+            </a>
+            <a href="/catalogo" class="btn-action btn-secondary">
+                <i class="fas fa-shopping-bag"></i> Ver Catálogo de Productos
+            </a>
+        </div>
+
+    </div>
+
+    <!-- MODAL: REVOLUT EUR ADVISORY -->
+    <div id="revolut-warning-modal" class="modal-overlay" onclick="if(event.target === this) closeRevolutWarningModal()">
+        <div class="modal-card">
+            <button class="modal-close" onclick="closeRevolutWarningModal()">✕</button>
+            
+            <div style="text-align:center; margin-bottom:16px;">
+                <div style="width:54px; height:54px; border-radius:50%; background:rgba(0,117,235,0.15); color:#0075eb; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 12px;">
+                    💶
+                </div>
+                <h3 style="font-size:18px; font-weight:900; margin-bottom:4px;">Aviso de Conversión de Moneda</h3>
+                <p style="font-size:13px; color:var(--text-muted);">Pago procesado internacionalmente vía Revolut</p>
+            </div>
+
+            <div style="background:var(--surface-card); border:1px solid var(--border-color); border-radius:14px; padding:14px; font-size:13px; line-height:1.5; color:var(--text-color); margin-bottom:16px;">
+                <p style="margin-bottom:8px;">⚠️ <strong>Importante:</strong> El cobro en Revolut se realiza en <strong>EUROS (€)</strong>. Si estás pagando un pedido en pesos colombianos (COP), debes coordinar el equivalente exacto en Euros.</p>
+                <p style="font-size:12px; color:var(--text-muted);">Al continuar, serás redirigido a la pasarela segura de Revolut para ingresar tu tarjeta o usar Apple Pay.</p>
+            </div>
+
+            <a id="rev-rate-wa-btn" href="https://wa.me/573112871046?text=Hola%20Evan!%20%F0%9F%8D%AD%20Deseo%20pagar%20por%20Revolut/Tarjeta.%20%C2%BFCu%C3%A1l%20es%20la%20tasa%20de%20cambio%20en%20Euros%20hoy?" target="_blank" class="btn-action" style="background:#25d366; color:#fff; font-size:13px; padding:12px; margin-bottom:10px;">
+                <i class="fab fa-whatsapp" style="font-size:18px;"></i> Acordar Tasa por WhatsApp
+            </a>
+
+            <button id="rev-confirm-proceed-btn" disabled class="btn-action" style="background:rgba(255,255,255,0.08); color:var(--text-muted); border:1px solid var(--border-color); cursor:not-allowed; font-weight:800; padding:14px; font-size:13px; transition:all 0.3s ease;" onclick="proceedToRevolutPayment()">
+                ⏳ Espera para aceptar (<span id="rev-countdown-timer">10</span>s)
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle" style="color:var(--accent-green);"></i>
+        <span id="toast-text">Copiado al portapapeles</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth-state.js" type="module"></script>
+    <script type="module">
+        import { initPromise, db } from './firebase-auth.js';
+        import { doc, onSnapshot, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+        let selectedMethod = 'breb';
+        let currentRevolutUrl = 'https://revolut.me/evanlensen';
+        let currentPaymentSettings = {
+            holderName: 'Evan Lensen Mosquera',
+            brebKey: '3112871046',
+            nequiNumber: '3112871046',
+            bancolombiaNumber: '031-128710-46',
+            bancolombiaType: 'Ahorros',
+            daviplataNumber: '3112871046',
+            whatsappPhone: '573112871046',
+            revolutUrl: 'https://revolut.me/evanlensen'
+        };
+
+        // Theme management
+        window.toggleTheme = function() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            const icon = document.getElementById('theme-icon');
+            if (icon) icon.textContent = newTheme === 'light' ? '☀️' : '🌙';
+        };
+
+        // Initial theme load
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        const icon = document.getElementById('theme-icon');
+        if (icon) icon.textContent = savedTheme === 'light' ? '☀️' : '🌙';
+
+        // Mobile drawer menu
+        const menuToggle = document.getElementById('menuToggle');
+        const sideMenu = document.getElementById('sideMenu');
+        const overlay = document.getElementById('overlay');
+
+        if (menuToggle && sideMenu && overlay) {
+            menuToggle.addEventListener('click', () => {
+                menuToggle.classList.toggle('active');
+                sideMenu.classList.toggle('active');
+                overlay.classList.toggle('active');
+            });
+
+            overlay.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                sideMenu.classList.remove('active');
+                overlay.classList.remove('active');
+            });
+        }
+
+        // Switch payment tab
+        window.switchMethod = function(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.method-content-card').forEach(c => c.classList.remove('active'));
+
+            if (method === 'breb') {
+                document.querySelector('.tab-breb').classList.add('active');
+                document.getElementById('card-breb').classList.add('active');
+            } else if (method === 'transfer') {
+                document.querySelector('.tab-transfer').classList.add('active');
+                document.getElementById('card-transfer').classList.add('active');
+            } else if (method === 'revolut') {
+                document.querySelector('.tab-revolut').classList.add('active');
+                document.getElementById('card-revolut').classList.add('active');
+            }
+        };
+
+        // Copy to clipboard helper
+        window.copyToClipboard = function(text, btnElement) {
+            const cleanText = String(text).replace(/\s/g, '');
+            navigator.clipboard.writeText(cleanText).then(() => {
+                if (btnElement) {
+                    const originalHtml = btnElement.innerHTML;
+                    btnElement.innerHTML = '<i class="fas fa-check"></i> ¡Copiado!';
+                    btnElement.classList.add('copied');
+                    setTimeout(() => {
+                        btnElement.innerHTML = originalHtml;
+                        btnElement.classList.remove('copied');
+                    }, 2000);
+                }
+                showToast(`Copiado: ${text}`);
+            }).catch(() => {
+                showToast(`Copiado: ${text}`);
+            });
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            if (toast && toastText) {
+                toastText.textContent = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2500);
+            }
+        }
+
+        function formatPhoneDisplay(phone) {
+            const clean = String(phone || '').replace(/\D/g, '');
+            if (clean.length === 10) {
+                return `${clean.substring(0, 3)} ${clean.substring(3, 6)} ${clean.substring(6)}`;
+            }
+            return phone;
+        }
+
+        function updatePaymentUI(settings) {
+            currentPaymentSettings = { ...currentPaymentSettings, ...settings };
+            const s = currentPaymentSettings;
+
+            // Bre-B
+            const brebKey = s.brebKey || '3112871046';
+            const brebHolder = s.holderName || 'Evan Lensen Mosquera';
+            document.getElementById('breb-key-display').textContent = formatPhoneDisplay(brebKey);
+            document.getElementById('breb-holder-display').textContent = brebHolder;
+            document.getElementById('breb-step-key').textContent = brebKey;
+            document.getElementById('breb-copy-btn').setAttribute('onclick', `copyToClipboard('${brebKey}', this)`);
+
+            // Transferencia
+            const nequi = s.nequiNumber || '3112871046';
+            document.getElementById('nequi-num-display').textContent = formatPhoneDisplay(nequi);
+            document.getElementById('nequi-copy-btn').setAttribute('onclick', `copyToClipboard('${nequi.replace(/\\D/g, '')}', this)`);
+
+            const bancolombia = s.bancolombiaNumber || '031-128710-46';
+            const bancolombiaType = s.bancolombiaType || 'Ahorros';
+            document.getElementById('bancolombia-label-display').textContent = `Bancolombia (${bancolombiaType})`;
+            document.getElementById('bancolombia-num-display').textContent = bancolombia;
+            document.getElementById('bancolombia-copy-btn').setAttribute('onclick', `copyToClipboard('${bancolombia.replace(/\\D/g, '')}', this)`);
+
+            const daviplata = s.daviplataNumber || '3112871046';
+            document.getElementById('daviplata-num-display').textContent = formatPhoneDisplay(daviplata);
+            document.getElementById('daviplata-copy-btn').setAttribute('onclick', `copyToClipboard('${daviplata.replace(/\\D/g, '')}', this)`);
+
+            document.getElementById('transfer-holder-display').textContent = brebHolder;
+
+            // Revolut URL
+            currentRevolutUrl = s.revolutUrl || 'https://revolut.me/evanlensen';
+
+            // WhatsApp link
+            let waNum = s.whatsappPhone || '573112871046';
+            waNum = waNum.replace(/\D/g, '');
+            if (waNum.length === 10) waNum = `57${waNum}`;
+            document.getElementById('whatsapp-notify-btn').href = `https://wa.me/${waNum}?text=${encodeURIComponent('Hola Happy Corner! 🍭 Adjunto mi comprobante de pago.')}`;
+        }
+
+        // ==============================================
+        // REVOLUT MODAL & 10s COUNTDOWN
+        // ==============================================
+        let revCountdownInterval = null;
+
+        window.openRevolutWarningModal = function() {
+            const modal = document.getElementById('revolut-warning-modal');
+            const waBtn = document.getElementById('rev-rate-wa-btn');
+            
+            let waNum = currentPaymentSettings.whatsappPhone || '573112871046';
+            waNum = waNum.replace(/\D/g, '');
+            if (waNum.length === 10) waNum = `57${waNum}`;
+            waBtn.href = `https://wa.me/${waNum}?text=${encodeURIComponent('Hola Evan! 🍭 Deseo pagar por Revolut/Tarjeta. ¿Cuál es la tasa de cambio en Euros hoy?')}`;
+
+            const proceedBtn = document.getElementById('rev-confirm-proceed-btn');
+            const timerSpan = document.getElementById('rev-countdown-timer');
+            
+            if (revCountdownInterval) clearInterval(revCountdownInterval);
+            
+            let secondsLeft = 10;
+            proceedBtn.disabled = true;
+            proceedBtn.style.background = 'rgba(255,255,255,0.08)';
+            proceedBtn.style.color = 'var(--text-muted)';
+            proceedBtn.style.cursor = 'not-allowed';
+            proceedBtn.style.boxShadow = 'none';
+            proceedBtn.innerHTML = `⏳ Espera para aceptar (<span id="rev-countdown-timer">${secondsLeft}</span>s)`;
+
+            modal.style.display = 'flex';
+
+            revCountdownInterval = setInterval(() => {
+                secondsLeft--;
+                const currentTimerSpan = document.getElementById('rev-countdown-timer');
+                if (currentTimerSpan) currentTimerSpan.textContent = secondsLeft;
+
+                if (secondsLeft <= 0) {
+                    clearInterval(revCountdownInterval);
+                    proceedBtn.disabled = false;
+                    proceedBtn.style.background = 'linear-gradient(135deg, #0075eb, #00c6ff)';
+                    proceedBtn.style.color = '#ffffff';
+                    proceedBtn.style.cursor = 'pointer';
+                    proceedBtn.style.boxShadow = '0 6px 20px rgba(0,117,235,0.4)';
+                    proceedBtn.innerHTML = `✅ He acordado la tasa y acepto pagar →`;
+                }
+            }, 1000);
+        };
+
+        window.closeRevolutWarningModal = function() {
+            if (revCountdownInterval) clearInterval(revCountdownInterval);
+            document.getElementById('revolut-warning-modal').style.display = 'none';
+        };
+
+        window.proceedToRevolutPayment = function() {
+            closeRevolutWarningModal();
+            window.open(currentRevolutUrl, '_blank');
+        };
+
+        // Firebase Realtime Listener for payment settings
+        initPromise.then(async () => {
+            try {
+                // Listen to storeSettings general / payments
+                onSnapshot(doc(db, 'storeSettings', 'general'), (snap) => {
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        if (data.paymentSettings) updatePaymentUI(data.paymentSettings);
+                    }
+                });
+            } catch (err) {
+                console.warn("Could not attach storeSettings listener:", err);
+            }
+        });
+    </script>
+</body>
+
+</html>

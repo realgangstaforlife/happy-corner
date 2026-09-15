@@ -141,13 +141,16 @@ export default async function handler(req, res) {
             const clientDevice = req.headers['user-agent'] || 'unknown';
 
             // Check if banned
-            const bansRef = db.collection('banned_entities');
-            const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
-            if (!ipQuery.empty) return res.status(403).json({ error: 'Acceso denegado.' });
-            
-            if (clientDevice !== 'unknown') {
-                const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
-                if (!deviceQuery.empty) return res.status(403).json({ error: 'Acceso denegado.' });
+            if (clientIp && clientIp !== 'unknown') {
+                const bansRef = db.collection('banned_entities');
+                const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
+                if (!ipQuery.empty) {
+                    const banDoc = ipQuery.docs[0].data();
+                    const now = new Date();
+                    if (!banDoc.bannedUntil || new Date(banDoc.bannedUntil) > now) {
+                        return res.status(403).json({ error: 'Acceso denegado. Tu dirección IP se encuentra suspendida.' });
+                    }
+                }
             }
 
             // Generate order code h-xxxxx

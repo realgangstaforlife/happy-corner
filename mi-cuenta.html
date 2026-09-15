@@ -1443,9 +1443,29 @@
         // ============================================================
         function setupUserListener(uid) {
             const userRef = doc(db, 'users', uid);
-            const unsub = onSnapshot(userRef, (snap) => {
+            const unsub = onSnapshot(userRef, async (snap) => {
                 if (!snap.exists()) return;
                 const data = snap.data();
+                const now = new Date();
+                let isBanned = data.banned === true;
+                if (isBanned && data.bannedUntil && new Date(data.bannedUntil) <= now) {
+                    isBanned = false;
+                }
+                if (isBanned) {
+                    localStorage.setItem('hc_blacklist', 'true');
+                    try {
+                        const token = await currentUser?.getIdToken();
+                        if (token) {
+                            await fetch('/api/account?action=logLogin', {
+                                method: 'POST',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        }
+                    } catch(e){}
+                    await signOut(auth);
+                    window.location.href = '/banned?reason=' + encodeURIComponent(data.banReason || 'Cuenta suspendida.');
+                    return;
+                }
                 currentUserData = data;
                 renderUserProfile(data, currentUser);
             });

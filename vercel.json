@@ -28,11 +28,22 @@
     }
   ],
   "rewrites": [
-    { "source": "/auth", "destination": "/auth/" },
-    { "source": "/auth/:path*", "destination": "/auth/:path*" },
-
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/index", "destination": "/index.html" },
+    {
+      "source": "/auth",
+      "destination": "/auth/"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/auth/:path*"
+    },
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/index",
+      "destination": "/index.html"
+    },
     {
       "source": "/catalogo",
       "destination": "/catalogo.html"
@@ -56,6 +67,10 @@
     {
       "source": "/pago",
       "destination": "/cobro.html"
+    },
+    {
+      "source": "/payment",
+      "destination": "/payment.html"
     },
     {
       "source": "/puntos",
@@ -125,10 +140,22 @@
       "source": "/robots.txt",
       "destination": "/robots.txt"
     },
-    { "source": "/notas-corner", "destination": "/notas-corner/" },
-    { "source": "/notas-corner/dashboard", "destination": "/notas-corner/dashboard" },
-    { "source": "/notas-corner/settings", "destination": "/notas-corner/settings" },
-    { "source": "/notas-corner/shared/:uuid", "destination": "/notas-corner/" }
+    {
+      "source": "/notas-corner",
+      "destination": "/notas-corner/"
+    },
+    {
+      "source": "/notas-corner/dashboard",
+      "destination": "/notas-corner/dashboard"
+    },
+    {
+      "source": "/notas-corner/settings",
+      "destination": "/notas-corner/settings"
+    },
+    {
+      "source": "/notas-corner/shared/:uuid",
+      "destination": "/notas-corner/"
+    }
   ],
   "redirects": [
     {

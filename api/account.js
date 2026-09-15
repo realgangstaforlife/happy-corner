@@ -222,11 +222,11 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- 0.1 ACCIÓN: checkBan (PÚBLICA PARA BLOQUEO FRONTEND) ---
+            // --- 0.1 ACCIÓN: checkBan (PÚBLICA / AUTENTICADA PARA BLOQUEO FRONTEND) ---
             if (action === 'checkBan') {
                 const forwarded = req.headers['x-forwarded-for'];
                 const clientIp = forwarded ? forwarded.split(',')[0].trim() : req.socket?.remoteAddress || 'unknown';
-                const clientDevice = req.headers['user-agent'] || 'unknown';
+                const idToken = (req.headers.authorization || '').replace('Bearer ', '');
                 
                 const bansRef = db.collection('banned_entities');
                 let isBanned = false;
@@ -235,21 +235,59 @@ export default async function handler(req, res) {
                 let banGroupId = null;
                 const now = new Date();
                 
-                const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
-                if (!ipQuery.empty) {
-                    const data = ipQuery.docs[0].data();
-                    if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
-                        isBanned = true;
-                        reason = data.reason || 'Violación de términos.';
-                        bannedUntil = data.bannedUntil || null;
-                        banGroupId = data.banGroupId || null;
+                // 1. Check if authenticated user token is provided
+                if (idToken) {
+                    try {
+                        const decoded = await auth.verifyIdToken(idToken);
+                        if (decoded && decoded.uid) {
+                            const userRef = db.collection('users').doc(decoded.uid);
+                            const userSnap = await userRef.get();
+                            if (userSnap.exists) {
+                                const uData = userSnap.data();
+                                if (uData.banned === true) {
+                                    if (uData.bannedUntil && new Date(uData.bannedUntil) <= now) {
+                                        // Lift expired ban
+                                        await userRef.update({
+                                            banned: false,
+                                            bannedUntil: null,
+                                            banReason: null,
+                                            unbannedAt: now.toISOString()
+                                        });
+                                    } else {
+                                        isBanned = true;
+                                        reason = uData.banReason || 'Tu cuenta se encuentra suspendida.';
+                                        bannedUntil = uData.bannedUntil || null;
+                                        banGroupId = uData.banGroupId || `group_${decoded.uid}`;
+
+                                        // Auto-cascade ban to current IP
+                                        if (clientIp && clientIp !== 'unknown') {
+                                            const existingIp = await bansRef.where('ip', '==', clientIp).limit(1).get();
+                                            if (existingIp.empty) {
+                                                await bansRef.add({
+                                                    ip: clientIp,
+                                                    device: null,
+                                                    reason: reason,
+                                                    bannedUntil,
+                                                    banGroupId,
+                                                    linkedUid: decoded.uid,
+                                                    bannedAt: now.toISOString()
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        // Token invalid/expired - continue to IP check
                     }
                 }
-                
-                if (!isBanned && clientDevice !== 'unknown') {
-                    const deviceQuery = await bansRef.where('device', '==', clientDevice).limit(1).get();
-                    if (!deviceQuery.empty) {
-                        const data = deviceQuery.docs[0].data();
+
+                // 2. Check if client IP is banned
+                if (!isBanned && clientIp && clientIp !== 'unknown') {
+                    const ipQuery = await bansRef.where('ip', '==', clientIp).limit(1).get();
+                    if (!ipQuery.empty) {
+                        const data = ipQuery.docs[0].data();
                         if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
                             isBanned = true;
                             reason = data.reason || 'Violación de términos.';
@@ -333,22 +371,6 @@ export default async function handler(req, res) {
                         }
                     }
 
-                    // Cascade to Device
-                    if (userAgent && userAgent !== 'unknown') {
-                        const existingDevBan = await db.collection('banned_entities').where('device', '==', userAgent).limit(1).get();
-                        if (existingDevBan.empty) {
-                            await db.collection('banned_entities').add({
-                                ip: null,
-                                device: userAgent,
-                                reason: banReason,
-                                bannedUntil,
-                                banGroupId,
-                                linkedUid: decoded.uid,
-                                bannedAt: now.toISOString()
-                            });
-                        }
-                    }
-
                     return json(res, 403, { 
                         banned: true, 
                         reason: userData.banReason || 'Tu cuenta se encuentra temporalmente suspendida.',
@@ -357,18 +379,14 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // 2. Check if the current IP or Device is banned
+                // 2. Check if the current IP is banned
                 const bansRef = db.collection('banned_entities');
                 let ipBannedSnap = null;
                 if (ip && ip !== 'unknown') {
                     ipBannedSnap = await bansRef.where('ip', '==', ip).limit(1).get();
                 }
-                let devBannedSnap = null;
-                if ((!ipBannedSnap || ipBannedSnap.empty) && userAgent !== 'unknown') {
-                    devBannedSnap = await bansRef.where('device', '==', userAgent).limit(1).get();
-                }
 
-                const banDoc = (ipBannedSnap && !ipBannedSnap.empty) ? ipBannedSnap.docs[0] : ((devBannedSnap && !devBannedSnap.empty) ? devBannedSnap.docs[0] : null);
+                const banDoc = (ipBannedSnap && !ipBannedSnap.empty) ? ipBannedSnap.docs[0] : null;
                 if (banDoc) {
                     const banData = banDoc.data();
                     if (!banData.bannedUntil || new Date(banData.bannedUntil) > now) {
@@ -377,13 +395,13 @@ export default async function handler(req, res) {
                         await userRef.update({
                             banned: true,
                             bannedUntil: banData.bannedUntil || null,
-                            banReason: banData.reason || 'Intento de acceso desde IP/Dispositivo suspendido.',
+                            banReason: banData.reason || 'Intento de acceso desde IP suspendida.',
                             banGroupId
                         });
 
                         return json(res, 403, {
                             banned: true,
-                            reason: banData.reason || 'Tu IP o dispositivo se encuentra suspendido.',
+                            reason: banData.reason || 'Tu dirección IP se encuentra suspendida.',
                             bannedUntil: banData.bannedUntil || null,
                             banGroupId
                         });
@@ -1347,13 +1365,96 @@ export default async function handler(req, res) {
                 return json(res, 200, { sent, total: recipients.length });
             }
 
+            // --- 4.0 ACCIÓN: getBannedList (SOLO ADMIN) ---
+            if (action === 'getBannedList') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
+
+                try {
+                    const bansRef = db.collection('banned_entities');
+                    const bansSnap = await bansRef.get();
+                    const bannedEntities = [];
+                    bansSnap.forEach(d => {
+                        bannedEntities.push({
+                            id: d.id,
+                            ...d.data()
+                        });
+                    });
+
+                    const bannedUsersSnap = await db.collection('users').where('banned', '==', true).get();
+                    const bannedUsers = [];
+                    bannedUsersSnap.forEach(u => {
+                        const uData = u.data();
+                        bannedUsers.push({
+                            uid: u.id,
+                            email: uData.email || '',
+                            displayName: uData.displayName || uData.name || '',
+                            phone: uData.phone || '',
+                            happycode: uData.happycode || uData.happyCode || '',
+                            banned: uData.banned,
+                            bannedUntil: uData.bannedUntil || null,
+                            banReason: uData.banReason || '',
+                            banGroupId: uData.banGroupId || '',
+                            bannedAt: uData.bannedAt || ''
+                        });
+                    });
+
+                    return json(res, 200, { ok: true, bannedEntities, bannedUsers });
+                } catch (err) {
+                    console.error("Error fetching banned list:", err);
+                    return json(res, 500, { error: 'Error al consultar lista de baneados.' });
+                }
+            }
+
+            // --- 4.01 ACCIÓN: purgeDeviceBans (SOLO ADMIN - LIMPIEZA DE USER-AGENTS / IPHONES) ---
+            if (action === 'purgeDeviceBans') {
+                if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
+
+                try {
+                    const bansRef = db.collection('banned_entities');
+                    const bansSnap = await bansRef.get();
+                    const batch = db.batch();
+                    let deletedCount = 0;
+
+                    bansSnap.forEach(d => {
+                        const data = d.data();
+                        if (data.device) {
+                            batch.delete(d.ref);
+                            deletedCount++;
+                        }
+                    });
+
+                    // Also unban any users that were accidentally cascaded by device ban (e.g. admin accounts)
+                    const usersSnap = await db.collection('users').where('banned', '==', true).get();
+                    let unbannedUsersCount = 0;
+                    usersSnap.forEach(u => {
+                        const uData = u.data();
+                        if (uData.role === 'admin' || (uData.banReason && (uData.banReason.includes('IP/Dispositivo suspendido') || uData.banReason.includes('este equipo/red')))) {
+                            batch.update(u.ref, {
+                                banned: false,
+                                bannedUntil: null,
+                                banReason: null,
+                                banGroupId: null,
+                                unbannedAt: new Date().toISOString()
+                            });
+                            unbannedUsersCount++;
+                        }
+                    });
+
+                    await batch.commit();
+                    return json(res, 200, { ok: true, deletedDeviceBans: deletedCount, unbannedUsersCount });
+                } catch (err) {
+                    console.error("Error purging device bans:", err);
+                    return json(res, 500, { error: 'Error al purgar baneos de dispositivos.' });
+                }
+            }
+
             // --- 4. ACCIÓN: banEntity / adminBanUser (SOLO ADMIN) ---
             if (action === 'banEntity' || action === 'adminBanUser') {
                 if (!isCallerAdmin) return json(res, 403, { error: 'No autorizado. Se requiere rol de admin.' });
 
                 const { ip, device, type, reason, targetUid, duration } = req.body;
                 
-                if (!ip && !device && !targetUid) return json(res, 400, { error: 'Faltan datos de IP, Dispositivo o Usuario.' });
+                if (!ip && !targetUid) return json(res, 400, { error: 'Faltan datos de IP o Usuario.' });
 
                 const now = new Date();
                 let bannedUntil = null;
@@ -1385,7 +1486,7 @@ export default async function handler(req, res) {
                         bannedBy: decoded.uid
                     });
 
-                    // Pre-ban latest known IP and device from user's login history if available
+                    // Pre-ban latest known IP from user's login history if available (never pre-ban raw User-Agent!)
                     try {
                         const recentLogins = await db.collection('loginHistory')
                             .where('uid', '==', targetUid)
@@ -1396,28 +1497,19 @@ export default async function handler(req, res) {
                         for (const d of recentLogins.docs) {
                             const lData = d.data();
                             if (lData.ip && lData.ip !== 'unknown') {
-                                await bansRef.add({
-                                    ip: lData.ip,
-                                    device: null,
-                                    reason: banReason,
-                                    bannedUntil,
-                                    banGroupId,
-                                    linkedUid: targetUid,
-                                    createdAt: now.toISOString(),
-                                    adminUid: decoded.uid
-                                });
-                            }
-                            if (lData.userAgent && lData.userAgent !== 'unknown') {
-                                await bansRef.add({
-                                    ip: null,
-                                    device: lData.userAgent,
-                                    reason: banReason,
-                                    bannedUntil,
-                                    banGroupId,
-                                    linkedUid: targetUid,
-                                    createdAt: now.toISOString(),
-                                    adminUid: decoded.uid
-                                });
+                                const existing = await bansRef.where('ip', '==', lData.ip).limit(1).get();
+                                if (existing.empty) {
+                                    await bansRef.add({
+                                        ip: lData.ip,
+                                        device: null,
+                                        reason: banReason,
+                                        bannedUntil,
+                                        banGroupId,
+                                        linkedUid: targetUid,
+                                        createdAt: now.toISOString(),
+                                        adminUid: decoded.uid
+                                    });
+                                }
                             }
                         }
                     } catch (historyErr) {
@@ -1425,26 +1517,12 @@ export default async function handler(req, res) {
                     }
                 }
 
-                if (type === 'ip' || type === 'both') {
-                    if (ip && ip !== 'unknown') {
+                if (ip && ip !== 'unknown') {
+                    const existingIp = await bansRef.where('ip', '==', ip).limit(1).get();
+                    if (existingIp.empty) {
                         await bansRef.add({
                             ip,
                             device: null,
-                            reason: banReason,
-                            bannedUntil,
-                            banGroupId,
-                            linkedUid: targetUid || null,
-                            createdAt: now.toISOString(),
-                            adminUid: decoded.uid
-                        });
-                    }
-                }
-                
-                if (type === 'device' || type === 'both') {
-                    if (device && device !== 'unknown') {
-                        await bansRef.add({
-                            ip: null,
-                            device,
                             reason: banReason,
                             bannedUntil,
                             banGroupId,

@@ -749,7 +749,7 @@
                     <a href="/pos-v2" class="admin-btn" style="text-decoration:none; font-size:13px; padding:10px 18px;">🛒 Ir al POS</a>
                     <button class="admin-btn" style="background:var(--accent-green); font-size:13px; padding:10px 18px;" onclick="openCreateClientModal()">➕ Crear Cliente</button>
                     <button class="admin-btn" style="background:linear-gradient(135deg, #0075eb, #9b51e0); font-size:13px; padding:10px 18px;" onclick="openCreatePaymentLinkModal()">🔗 Link de Cobro</button>
-                    <button class="admin-btn" style="background:var(--accent-purple); font-size:13px; padding:10px 18px;" onclick="document.getElementById('ip-search-modal').classList.add('active');">🔍 Consultar IP</button>
+                    <button class="admin-btn" style="background:var(--accent-purple); font-size:13px; padding:10px 18px;" onclick="openBansModal()">🛡️ Control de Baneos</button>
                     <button class="admin-btn" style="background:#333; color:var(--text-color); border:1px solid var(--border-color); font-size:13px; padding:10px 18px;" onclick="switchSidebar('contracts')">📄 Ver Contratos</button>
                 </div>
 
@@ -835,7 +835,7 @@
                 <input type="text" id="order-search-input" class="admin-input"
                     style="flex:1; min-width:200px; padding:12px;" placeholder="Buscar por Nombre, ID, Resumen..." />
                 
-                <button class="admin-btn" style="background:var(--accent-purple); height:45px;" onclick="document.getElementById('ip-search-modal').classList.add('active')">🔍 Consultar IP</button>
+                <button class="admin-btn" style="background:var(--accent-purple); height:45px;" onclick="openBansModal()">🛡️ Control de Baneos</button>
 
                 <select id="order-status-filter" class="admin-input"
                     style="width:200px; padding:12px; height:45px; background:var(--surface-color); color:var(--text-color); border:1px solid var(--border-color); border-radius:14px;">
@@ -1774,10 +1774,8 @@
             
             <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Tipo de Bloqueo</label>
             <select id="ban-type" class="admin-input" style="margin-bottom:14px; width:100%;">
-                <option value="both">IP y Dispositivo</option>
-                <option value="user">Usuario y Equipos Vinculados</option>
-                <option value="ip">Solo IP</option>
-                <option value="device">Solo Dispositivo</option>
+                <option value="user">Usuario / Cuenta</option>
+                <option value="ip">Solo Dirección IP</option>
             </select>
 
             <label style="display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase;">Duración de la Suspensión</label>
@@ -1889,40 +1887,86 @@
     </div>
 
     <!-- ============================================== -->
-    <!-- MODAL: IP SEARCH -->
+    <!-- MODAL: BANS & IP CONTROL -->
     <!-- ============================================== -->
     <div class="admin-modal-overlay" id="ip-search-modal">
-        <div class="admin-modal" style="max-width:600px; width:90%; padding: 24px;">
+        <div class="admin-modal" style="max-width:760px; width:95%; padding: 24px;">
             <button class="modal-close" onclick="document.getElementById('ip-search-modal').classList.remove('active')">✕</button>
-            <h2 style="font-weight:900; margin-bottom:10px;">🔍 Consultar IP o Dispositivo</h2>
-            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Ingresa una IP o un User-Agent para ver su historial de pedidos y estado de bloqueo.</p>
-            
-            <div style="display:flex; gap:10px; margin-bottom: 20px;">
-                <input type="text" id="ip-search-input" class="admin-input" placeholder="Ej: 192.168.1.1 o Mozilla/5.0..." style="flex:1;">
-                <button class="admin-btn" style="background:var(--accent-purple);" onclick="performIpSearch()">Buscar</button>
+            <div style="margin-bottom:14px;">
+                <h2 style="font-weight:900; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                    <span>🛡️ Control de Baneos y Seguridad</span>
+                </h2>
+                <p style="font-size:13px; color:var(--text-muted); margin:0;">Gestiona las restricciones de IP, cuentas suspendidas y lista de bloqueos en tiempo real.</p>
             </div>
 
-            <div id="ip-search-ban-status" style="margin-bottom:16px;"></div>
-            <div id="ip-search-ban-actions" style="margin-bottom:20px; display:none; gap:10px;">
-                <input type="text" id="ip-ban-reason" class="admin-input" placeholder="Motivo del baneo (opcional)" style="flex:1; font-size:13px;">
-                <button class="admin-btn" id="btn-ban-ip" style="background:var(--accent-red); font-size:13px;" onclick="banCurrentIp()">Banear</button>
-                <button class="admin-btn" id="btn-unban-ip" style="background:var(--accent-green); font-size:13px; display:none;" onclick="unbanCurrentIp()">Desbanear</button>
+            <!-- SUBTABS -->
+            <div style="display:flex; gap:8px; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
+                <button class="admin-btn" id="subtab-ban-list-btn" style="background:var(--accent-purple); font-size:13px; padding:8px 16px; height:auto;" onclick="switchBanSubTab('list')">
+                    📋 Lista de Baneados (<span id="all-bans-count-badge">0</span>)
+                </button>
+                <button class="admin-btn" id="subtab-ban-search-btn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-color); font-size:13px; padding:8px 16px; height:auto;" onclick="switchBanSubTab('search')">
+                    🔍 Consultar / Banear IP
+                </button>
             </div>
 
-            <div style="max-height:300px; overflow-y:auto; border: 1px solid var(--border-color); border-radius: 12px; background:var(--bg-color);">
-                <table class="orders-table" style="margin:0;">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Cliente</th>
-                            <th>Total</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ip-search-results">
-                        <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Realiza una búsqueda...</td></tr>
-                    </tbody>
-                </table>
+            <!-- VIEW 1: LIST OF ALL BANNED ENTITIES & USERS -->
+            <div id="ban-view-list" style="display:block;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+                    <input type="text" id="ban-filter-search" class="admin-input" placeholder="Filtrar por IP, usuario, motivo..." style="flex:1; min-width:200px; font-size:13px;" oninput="filterBansList(this.value)">
+                    <div style="display:flex; gap:8px;">
+                        <button class="admin-btn" style="background:rgba(255,255,255,0.08); font-size:12px; padding:8px 14px; height:auto;" onclick="loadAllBans()">🔄 Refrescar</button>
+                        <button class="admin-btn" style="background:rgba(235,87,87,0.15); color:var(--accent-red); border:1px solid rgba(235,87,87,0.3); font-size:12px; padding:8px 14px; height:auto; font-weight:700;" onclick="purgeUserAgentBans()" title="Elimina bloqueos de navegadores y restaura acceso a usuarios afectados por User-Agent">🧹 Purgar Baneos de iPhone / UA</button>
+                    </div>
+                </div>
+
+                <div style="max-height:380px; overflow-y:auto; border: 1px solid var(--border-color); border-radius: 12px; background:var(--bg-color);">
+                    <table class="orders-table" style="margin:0;">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Identificador / Objetivo</th>
+                                <th>Motivo</th>
+                                <th>Vencimiento</th>
+                                <th style="text-align:right;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-bans-tbody">
+                            <tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">Cargando baneados...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW 2: SEARCH IP -->
+            <div id="ban-view-search" style="display:none;">
+                <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">Ingresa una dirección IP para consultar sus pedidos, inicios de sesión y estado de bloqueo:</p>
+                <div style="display:flex; gap:10px; margin-bottom: 16px;">
+                    <input type="text" id="ip-search-input" class="admin-input" placeholder="Ej: 181.129.54.12" style="flex:1;">
+                    <button class="admin-btn" style="background:var(--accent-purple);" onclick="performIpSearch()">Buscar</button>
+                </div>
+
+                <div id="ip-search-ban-status" style="margin-bottom:14px;"></div>
+                <div id="ip-search-ban-actions" style="margin-bottom:16px; display:none; gap:10px;">
+                    <input type="text" id="ip-ban-reason" class="admin-input" placeholder="Motivo del baneo (opcional)" style="flex:1; font-size:13px;">
+                    <button class="admin-btn" id="btn-ban-ip" style="background:var(--accent-red); font-size:13px;" onclick="banCurrentIp()">Banear IP</button>
+                    <button class="admin-btn" id="btn-unban-ip" style="background:var(--accent-green); font-size:13px; display:none;" onclick="unbanCurrentIp()">Desbanear</button>
+                </div>
+
+                <div style="max-height:280px; overflow-y:auto; border: 1px solid var(--border-color); border-radius: 12px; background:var(--bg-color);">
+                    <table class="orders-table" style="margin:0;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ip-search-results">
+                            <tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">Ingresa una IP y haz clic en Buscar...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -3101,6 +3145,200 @@
             document.getElementById('ban-target-uid').value = '';
         };
 
+        // --- 🛡️ CONTROL DE BANEOS & SEGURIDAD ---
+        let rawBannedData = { bannedEntities: [], bannedUsers: [] };
+
+        window.openBansModal = function() {
+            document.getElementById('ip-search-modal').classList.add('active');
+            switchBanSubTab('list');
+        };
+
+        window.switchBanSubTab = function(tab) {
+            const listBtn = document.getElementById('subtab-ban-list-btn');
+            const searchBtn = document.getElementById('subtab-ban-search-btn');
+            const listView = document.getElementById('ban-view-list');
+            const searchView = document.getElementById('ban-view-search');
+
+            if (tab === 'list') {
+                listBtn.style.background = 'var(--accent-purple)';
+                listBtn.style.color = '#fff';
+                searchBtn.style.background = 'transparent';
+                searchBtn.style.color = 'var(--text-color)';
+                listView.style.display = 'block';
+                searchView.style.display = 'none';
+                loadAllBans();
+            } else {
+                searchBtn.style.background = 'var(--accent-purple)';
+                searchBtn.style.color = '#fff';
+                listBtn.style.background = 'transparent';
+                listBtn.style.color = 'var(--text-color)';
+                searchView.style.display = 'block';
+                listView.style.display = 'none';
+            }
+        };
+
+        window.loadAllBans = async function() {
+            const tbody = document.getElementById('all-bans-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Cargando lista de baneados...</td></tr>';
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=getBannedList', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.ok) {
+                    rawBannedData = data;
+                    const total = (data.bannedEntities || []).length + (data.bannedUsers || []).length;
+                    document.getElementById('all-bans-count-badge').textContent = total;
+                    renderAllBansTable();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--accent-red);">Error: ${data.error || 'No se pudo cargar'}</td></tr>`;
+                }
+            } catch (err) {
+                console.error("Error loading bans:", err);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--accent-red);">Error de conexión al cargar lista.</td></tr>';
+            }
+        };
+
+        window.renderAllBansTable = function(filterQuery = '') {
+            const tbody = document.getElementById('all-bans-tbody');
+            const q = filterQuery.toLowerCase().trim();
+            const now = new Date();
+
+            let rows = [];
+
+            // 1. Process Banned Users
+            (rawBannedData.bannedUsers || []).forEach(u => {
+                const name = u.displayName || u.email || u.uid;
+                const match = !q || name.toLowerCase().includes(q) || (u.banReason && u.banReason.toLowerCase().includes(q)) || (u.phone && u.phone.includes(q)) || (u.happycode && u.happycode.toLowerCase().includes(q));
+                if (!match) return;
+
+                const isExpired = u.bannedUntil && new Date(u.bannedUntil) <= now;
+                const expiryLabel = u.bannedUntil 
+                    ? `<span style="font-size:11px; color:${isExpired ? 'var(--text-muted)' : '#ff9f43'}; font-weight:700;">⏳ ${new Date(u.bannedUntil).toLocaleString('es-CO')}${isExpired ? ' (Expiró)' : ''}</span>`
+                    : '<span style="font-size:11px; color:var(--accent-red); font-weight:700;">⛔ Permanente</span>';
+
+                rows.push(`
+                    <tr>
+                        <td><span style="background:rgba(155,81,224,0.15); color:var(--accent-purple); padding:3px 8px; border-radius:6px; font-weight:800; font-size:11px;">👤 CUENTA</span></td>
+                        <td>
+                            <strong style="color:var(--text-color);">${u.displayName || 'Sin nombre'}</strong>
+                            <div style="font-size:11px; color:var(--text-muted);">${u.email || u.phone || u.uid}</div>
+                        </td>
+                        <td style="font-size:12px; color:var(--text-muted); max-width:180px; word-break:break-word;">${u.banReason || 'Sin motivo especificado'}</td>
+                        <td>${expiryLabel}</td>
+                        <td style="text-align:right;">
+                            <button class="admin-btn" style="background:var(--accent-green); padding:5px 12px; font-size:11px; height:auto;" onclick="unbanEntityItem('user', '${u.uid}', '${u.banGroupId || ''}')">🔓 Desbanear</button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            // 2. Process Banned Entities (IPs and legacy UAs)
+            (rawBannedData.bannedEntities || []).forEach(e => {
+                const isDevice = !!e.device;
+                const targetVal = e.ip || e.device || 'Desconocido';
+                const match = !q || targetVal.toLowerCase().includes(q) || (e.reason && e.reason.toLowerCase().includes(q));
+                if (!match) return;
+
+                const isExpired = e.bannedUntil && new Date(e.bannedUntil) <= now;
+                const expiryLabel = e.bannedUntil 
+                    ? `<span style="font-size:11px; color:${isExpired ? 'var(--text-muted)' : '#ff9f43'}; font-weight:700;">⏳ ${new Date(e.bannedUntil).toLocaleString('es-CO')}${isExpired ? ' (Expiró)' : ''}</span>`
+                    : '<span style="font-size:11px; color:var(--accent-red); font-weight:700;">⛔ Permanente</span>';
+
+                const typeBadge = isDevice
+                    ? '<span style="background:rgba(255,159,67,0.15); color:#ff9f43; padding:3px 8px; border-radius:6px; font-weight:800; font-size:11px;">⚠️ USER-AGENT</span>'
+                    : '<span style="background:rgba(0,117,235,0.15); color:#0075eb; padding:3px 8px; border-radius:6px; font-weight:800; font-size:11px;">🌐 IP</span>';
+
+                rows.push(`
+                    <tr>
+                        <td>${typeBadge}</td>
+                        <td>
+                            <code style="font-size:11px; color:var(--text-color); word-break:break-all;">${targetVal}</code>
+                            ${e.linkedUid ? `<div style="font-size:10px; color:var(--text-muted);">Vinculado a UID: ${e.linkedUid}</div>` : ''}
+                        </td>
+                        <td style="font-size:12px; color:var(--text-muted); max-width:180px; word-break:break-word;">${e.reason || 'Sin motivo'}</td>
+                        <td>${expiryLabel}</td>
+                        <td style="text-align:right;">
+                            <button class="admin-btn" style="background:var(--accent-green); padding:5px 12px; font-size:11px; height:auto;" onclick="unbanEntityItem('entity', '${e.id}', '${e.banGroupId || ''}')">🔓 Desbanear</button>
+                        </td>
+                    </tr>
+                `);
+            });
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">✅ No hay ${q ? 'coincidencias con el filtro' : 'bloqueos activos en el sistema'}.</td></tr>`;
+            } else {
+                tbody.innerHTML = rows.join('');
+            }
+        };
+
+        window.filterBansList = function(query) {
+            renderAllBansTable(query);
+        };
+
+        window.unbanEntityItem = async function(type, targetIdOrUid, banGroupId) {
+            const cascade = await hcConfirm("¿Deseas levantar esta suspensión y todos los bloqueos vinculados a este grupo?");
+            if (!cascade) return;
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const payload = { unbanAssociated: cascade };
+                if (type === 'user') payload.targetUid = targetIdOrUid;
+                else payload.targetId = targetIdOrUid;
+                if (banGroupId) payload.banGroupId = banGroupId;
+
+                const res = await fetch('/api/account?action=unbanEntity', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert("✅ Suspensión levantada exitosamente.", "success");
+                    loadAllBans();
+                } else {
+                    hcAlert(data.error || "Error al desbanear", "error");
+                }
+            } catch (err) {
+                console.error(err);
+                hcAlert("Error de conexión al desbanear.", "error");
+            }
+        };
+
+        window.purgeUserAgentBans = async function() {
+            const confirmed = await hcConfirm("¿Deseas purgar todos los bloqueos accidentales de User-Agents / navegadores (como iPhones/Safari) y restaurar las cuentas bloqueadas por error?");
+            if (!confirmed) return;
+
+            try {
+                const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
+                const res = await fetch('/api/account?action=purgeDeviceBans', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                    hcAlert(`✅ Limpieza completada: ${data.deletedDeviceBans} bloqueos de UA eliminados y ${data.unbannedUsersCount} cuentas restauradas.`, "success");
+                    loadAllBans();
+                } else {
+                    hcAlert(data.error || "Error al purgar baneos", "error");
+                }
+            } catch (err) {
+                console.error("Error purging device bans:", err);
+                hcAlert("Error de conexión.", "error");
+            }
+        };
+
         window.performIpSearch = async function() {
             let input = document.getElementById('ip-search-input').value.trim();
             if (!input) return;
@@ -3114,8 +3352,7 @@
 
             // Check orders locally (wildcard includes)
             const matchingOrders = allOrders.filter(o => 
-                (o.clientIp && o.clientIp.toLowerCase().includes(lowerInput)) || 
-                (o.clientDevice && o.clientDevice.toLowerCase().includes(lowerInput))
+                (o.clientIp && o.clientIp.toLowerCase().includes(lowerInput))
             );
             
             // Check loginHistory
@@ -3124,9 +3361,7 @@
                 const loginsSnap = await getDocs(collection(db, 'loginHistory'));
                 loginsSnap.forEach(doc => {
                     const data = doc.data();
-                    if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
-                        (data.userAgent && data.userAgent.toLowerCase().includes(lowerInput)) ||
-                        (data.device && data.device.toLowerCase().includes(lowerInput))) {
+                    if (data.ip && data.ip.toLowerCase().includes(lowerInput)) {
                         matchingLogins.push(data);
                     }
                 });
@@ -3142,7 +3377,7 @@
                     html += matchingOrders.map(o => `
                         <tr>
                             <td style="font-family:monospace; font-weight:700;">${o.id}</td>
-                            <td>${o.nombre || o.customerName || 'Cliente'} <br> <span style="font-size:10px; color:var(--text-muted);">${o.clientDevice || o.clientIp || '—'}</span></td>
+                            <td>${o.nombre || o.customerName || 'Cliente'} <br> <span style="font-size:10px; color:var(--text-muted);">${o.clientIp || '—'}</span></td>
                             <td style="color:var(--primary-color); font-weight:700;">$${(o.total || 0).toLocaleString()}</td>
                             <td style="font-size:12px; color:var(--text-muted);">${new Date(o.createdAt).toLocaleDateString()}</td>
                         </tr>
@@ -3154,7 +3389,7 @@
                     html += matchingLogins.map(l => `
                         <tr>
                             <td style="font-family:monospace; font-weight:700;">UID</td>
-                            <td>${l.email || l.uid || '—'} <br> <span style="font-size:10px; color:var(--text-muted);">${l.userAgent || l.device || l.ip}</span></td>
+                            <td>${l.email || l.uid || '—'} <br> <span style="font-size:10px; color:var(--text-muted);">${l.ip || '—'}</span></td>
                             <td style="color:var(--accent-green); font-weight:700;">LOGIN</td>
                             <td style="font-size:12px; color:var(--text-muted);">${new Date(l.timestamp).toLocaleDateString()}</td>
                         </tr>
@@ -3176,8 +3411,7 @@
 
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if ((data.ip && data.ip.toLowerCase().includes(lowerInput)) || 
-                        (data.device && data.device.toLowerCase().includes(lowerInput))) {
+                    if (data.ip && data.ip.toLowerCase().includes(lowerInput)) {
                         if (!data.bannedUntil || new Date(data.bannedUntil) > now) {
                             isBanned = true;
                             reason = data.reason || 'Bloqueo manual';
@@ -3195,11 +3429,11 @@
                 actionsDiv.style.display = 'flex';
 
                 if (isBanned) {
-                    statusDiv.innerHTML = `<div style="background:rgba(235,87,87,0.1); color:var(--accent-red); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">⛔ Esta IP/Dispositivo está BANEADO. Motivo: ${reason}${bannedUntilStr}</div>`;
+                    statusDiv.innerHTML = `<div style="background:rgba(235,87,87,0.1); color:var(--accent-red); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">⛔ Esta IP está BANEADA. Motivo: ${reason}${bannedUntilStr}</div>`;
                     btnBan.style.display = 'none';
                     btnUnban.style.display = 'block';
                 } else {
-                    statusDiv.innerHTML = `<div style="background:rgba(46,213,115,0.1); color:var(--accent-green); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">✅ Esta IP/Dispositivo NO está baneado.</div>`;
+                    statusDiv.innerHTML = `<div style="background:rgba(46,213,115,0.1); color:var(--accent-green); padding:10px; border-radius:10px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px;">✅ Esta IP NO está baneada.</div>`;
                     btnBan.style.display = 'block';
                     btnUnban.style.display = 'none';
                 }
@@ -3214,10 +3448,9 @@
             const reason = document.getElementById('ip-ban-reason').value.trim() || 'Bloqueo manual por Admin';
             if (!input) return;
 
-            if (!confirm(`¿Estás seguro de suspender a: ${input}?`)) return;
+            if (!confirm(`¿Estás seguro de suspender la IP: ${input}?`)) return;
 
             try {
-                const isIp = input.includes('.') || input.includes(':');
                 const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
                 const res = await fetch('/api/account?action=banEntity', {
                     method: 'POST',
@@ -3226,9 +3459,8 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        ip: isIp ? input : null,
-                        device: !isIp ? input : null,
-                        type: isIp ? 'ip' : 'device',
+                        ip: input,
+                        type: 'ip',
                         duration: '24h',
                         reason
                     })
@@ -3236,7 +3468,7 @@
 
                 const data = await res.json();
                 if (data.ok) {
-                    hcAlert("Baneado exitosamente.", "success");
+                    hcAlert("IP baneada exitosamente.", "success");
                     performIpSearch();
                 } else {
                     hcAlert(data.error || "Error al banear", "error");
@@ -3250,12 +3482,10 @@
         window.unbanCurrentIp = async function() {
             const input = document.getElementById('ip-search-input').value.trim();
             if (!input) return;
-            const lowerInput = input.toLowerCase();
 
-            const cascade = await hcConfirm(`¿Deseas DESBANEAR a: ${input} y todos los dispositivos/cuentas vinculadas (Linked Bans)?`);
+            const cascade = await hcConfirm(`¿Deseas DESBANEAR a: ${input} y todos los bloqueos vinculados?`);
 
             try {
-                const isIp = input.includes('.') || input.includes(':');
                 const token = auth.currentUser ? await auth.currentUser.getIdToken() : '';
                 const res = await fetch('/api/account?action=unbanEntity', {
                     method: 'POST',
@@ -3264,8 +3494,7 @@
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        ip: isIp ? input : null,
-                        device: !isIp ? input : null,
+                        ip: input,
                         unbanAssociated: cascade
                     })
                 });

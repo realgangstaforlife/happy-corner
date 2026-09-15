@@ -67,23 +67,77 @@ const initPromise = fetch('/api/getConfig')
 
 // --- 🛡️ SISTEMA DE SEGURIDAD GLOBAL ---
 if (window.location.pathname !== '/banned' && window.location.pathname !== '/catalogo') {
-    (async function runSecurityCheck() {
-        if (localStorage.getItem('hc_blacklist') || document.cookie.includes('hc_banned')) {
-            window.location.href = '/banned';
-            return;
-        }
-        try {
-            const res = await fetch('/api/account?action=checkBan');
-            const data = await res.json();
-            if (data.banned) {
-                localStorage.setItem('hc_blacklist', 'true');
-                window.location.href = '/banned?reason=' + encodeURIComponent(data.reason);
+    if (localStorage.getItem('hc_blacklist') || document.cookie.includes('hc_banned')) {
+        window.location.href = '/banned';
+    } else {
+        (async function runInitialSecurityCheck() {
+            try {
+                const res = await fetch('/api/account?action=checkBan');
+                const data = await res.json();
+                if (data.banned) {
+                    localStorage.setItem('hc_blacklist', 'true');
+                    window.location.href = '/banned?reason=' + encodeURIComponent(data.reason || 'Acceso suspendido.');
+                }
+            } catch (e) {
+                console.error("Error validando seguridad inicial.");
             }
-        } catch (e) {
-            console.error("Error validando seguridad.");
-        }
-    })();
+        })();
+    }
 }
+
+// Live account-level ban watcher for authenticated sessions
+initPromise.then(() => {
+    onAuthStateChanged(auth, (user) => {
+        if (!user) return;
+
+        // Check token with backend checkBan (will auto-cascade IP if banned)
+        user.getIdToken().then(token => {
+            fetch('/api/account?action=checkBan', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(r => r.json()).then(data => {
+                if (data.banned) {
+                    localStorage.setItem('hc_blacklist', 'true');
+                    signOut(auth).catch(() => {});
+                    if (window.location.pathname !== '/banned' && window.location.pathname !== '/catalogo') {
+                        window.location.href = '/banned?reason=' + encodeURIComponent(data.reason || 'Tu cuenta se encuentra suspendida.');
+                    }
+                }
+            }).catch(() => {});
+        }).catch(() => {});
+
+        // Real-time Firestore document listener
+        try {
+            onSnapshot(doc(db, 'users', user.uid), async (snap) => {
+                if (snap.exists()) {
+                    const uData = snap.data();
+                    const now = new Date();
+                    let isBanned = uData.banned === true;
+                    if (isBanned && uData.bannedUntil && new Date(uData.bannedUntil) <= now) {
+                        isBanned = false;
+                    }
+
+                    if (isBanned) {
+                        localStorage.setItem('hc_blacklist', 'true');
+                        try {
+                            const token = await user.getIdToken();
+                            await fetch('/api/account?action=checkBan', {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                        } catch (err) {}
+                        await signOut(auth);
+                        if (window.location.pathname !== '/banned' && window.location.pathname !== '/catalogo') {
+                            window.location.href = '/banned?reason=' + encodeURIComponent(uData.banReason || 'Tu cuenta se encuentra suspendida.');
+                        }
+                    } else if (localStorage.getItem('hc_blacklist') && !document.cookie.includes('hc_banned')) {
+                        localStorage.removeItem('hc_blacklist');
+                    }
+                }
+            });
+        } catch (snapErr) {
+            console.warn("Could not attach realtime user snapshot for security:", snapErr);
+        }
+    });
+});
 
 export { initPromise, auth, db, provider, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, RecaptchaVerifier, signInWithPhoneNumber, signOut, onAuthStateChanged, doc, getDoc, setDoc, onSnapshot };
 
